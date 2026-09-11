@@ -158,21 +158,19 @@ frameset with no test IDs rather than a React demo.
 
 **Cross-tenant reuse.** A tenant gets not a copy but a short list of typed
 patches against a **pinned base version**, so the base improves once and is
-inherited everywhere while each institution's delta stays reviewable. The
-version pin means a base change cannot silently re-target a patch at a step that
-moved, and a patch whose path does not resolve is *rejected and reported*, never
-created.
+inherited everywhere while each institution's delta stays reviewable. The pin
+means a base change cannot silently re-target a patch at a step that moved, and
+an unresolvable patch is *rejected and reported*, never created.
 
-Building it surfaced a weakness in path-patches: renaming one button needs
-patching two places — the step that clicks it and the condition that waits for
-it — and I missed the second, producing a flow that clicked the right button and
-then timed out waiting for the old one. The fix was a `rename` patch that
-rewrites a label everywhere it is referenced and reports the site count, so zero
-is visible rather than silent. `evidence/11` runs the same capability against a
-second institution with four patches, one touching two sites; the relabelled
-`Member No.` field resolves automatically and reports `relaxed match at [s04]`.
-That drift signal is the other half: per-step fingerprints recorded at discovery
-are recompared on every replay, so a diverged tenant reports it on runs that
+Building it surfaced a weakness: renaming one button needs patching two places —
+the step that clicks it and the condition that waits for it — and I missed the
+second, producing a flow that clicked the right button then timed out waiting
+for the old one. Hence a `rename` patch that rewrites a label at every reference
+and reports the site count, so zero is visible. `evidence/11` runs the same
+capability against a second institution with four patches, one touching two
+sites; the relabelled `Member No.` resolves automatically and reports `relaxed
+match at [s04]`. Per-step fingerprints are the other half: recorded at discovery
+and recompared every replay, so a diverged tenant reports drift on runs that
 still succeed — which is when you want to know.
 
 ## 5. Escalation & handoff
@@ -191,13 +189,17 @@ automation must already be stopped during that window rather than still clicking
 while a request sits in a queue. Both sides re-check the lease on every action,
 so a stale console tab cannot drive a session it no longer holds.
 
-Release signals are scoped to the handoff that asked for them. An earlier
-version cached the last signal and handed it to the next `requestHandoff()`,
+Two defects in this mechanism were found by adversarial review, both in the
+part that authorises irreversible work. Release signals were cached and reused,
 so one operator clearing an unrelated popup silently satisfied *every* later
-handoff in the run — including the confirmation gate on the irreversible
-posting step, which routes through the same call. That is the worst bug in this
-system and it survived because no test exercised two handoffs in one run;
-`tests/control.test.ts` now does.
+handoff in the run; they are now scoped to the handoff that asked for them. And
+`POST /resolve` checked nothing at all — not the lease, not who was calling —
+so the approval gate on a posting was satisfiable by a bare unauthenticated
+POST, recorded against a default operator name. Releasing now requires holding
+the lease, `SessionControl.release()` refuses anyone who is not the current
+holder, and `/input` authorises the *caller* rather than whoever last claimed.
+`tests/broker.test.ts` and `tests/control.test.ts` cover both; neither had any
+coverage before, which is why both shipped.
 
 An escalation nobody answers is bounded by `escalationTimeoutMs` and returns
 `needs_human` with the intervention id. "Escalate" without a bound is not a
@@ -232,15 +234,17 @@ too — the console is reachable over HTTP and would otherwise be a confused
 deputy. It is the intersection of the deployment's policy and the capability's
 own declared origins.
 
-Making that second half mean anything took two fixes. The recorder used to
+Making that second half mean anything took three fixes. The recorder used to
 stamp the deployment's entire allowlist onto every capability — and a
 deployment serving many institutions lists all their hosts, so every capability
 declared permission to drive every one of them and the guard was vacuous.
-Capabilities now declare only the origins their recording actually touched. And
-because origins legitimately differ per tenant, they come from a
-deployment-owned registry (`config/tenants.json`) keyed by tenant rather than
-from the overlay asking for them; an unknown tenant inherits nothing and fails
-closed.
+Capabilities now declare only the origins their recording actually touched.
+Origins legitimately differ per tenant, so they come from a deployment-owned
+registry (`config/tenants.json`) keyed by tenant rather than from the overlay
+asking for them. And "fails closed" had to be made literal: declining to *set*
+origins for an unknown tenant left the base's in place, so an unknown tenant now
+resolves to an empty list, and an empty list denies every navigation rather than
+permitting any.
 
 **Risk classification is a heuristic floor, not a guarantee.** During discovery
 we guess from a label whether "Post Account" commits something, and label
@@ -249,14 +253,27 @@ never authorises. The durable control is that every recorded step carries an
 explicit reviewed risk label and unattended replay requires `approved`.
 
 That holds only if the label cannot be edited downstream, and originally it
-could: a four-line tenant overlay patching `steps[10].risk` to `"safe"` posted a
-real irreversible transaction with no human involved. Overlays now refuse a set
-of guarded paths — `approval`, any `risk`, `confirmAtRisk`, `maxSteps`,
-`allowedOrigins` — because an overlay is a specialisation, not a privilege
-escalation. The same reasoning applies inside a recoverable-condition handler:
-its `do` list is a plain action list, so a recovery declared as "click Post
-Account" would have walked straight through the gate. Recovery actions are now
-risk-classified like any other step.
+could: a tenant overlay patching `steps[10].risk` to `"safe"` posted a real
+irreversible transaction with no human involved. My first fix denylisted
+guarded *path spellings*, and that was the wrong shape of control — it lost
+immediately to patching one level up, rewriting the whole of `steps[10]` with
+`risk: "safe"` through a path the denylist never saw. Anything that enumerates
+ways of saying a thing loses to someone who says it differently.
+
+The check is now on the resolved artifact rather than the patch: apply
+everything, then compare a set of invariants — approval, capability risk, the
+step sequence, every step's risk label, the confirmation threshold, the step
+budget, outcome classifications — against the base by value, and revert
+anything that moved. Path spelling becomes irrelevant. The overlaid capability
+is then re-validated against the schema, because the one code path that mutates
+a typed artifact is the last place to skip it: an out-of-enum `confirmAtRisk`
+ranks as `undefined` and opens the gate rather than closing it.
+
+The same reasoning applies inside a recoverable-condition handler: its `do`
+list is a plain action list, so a recovery declared as "click Post Account"
+would have walked straight through the gate. Recovery actions are now
+risk-classified like any other step, and the effective threshold is the
+stricter of the deployment's and the capability's.
 
 Irreversible actions **escalate rather than block**. In back-office banking the
 irreversible step is usually the entire point; a system that refuses to post
@@ -292,13 +309,15 @@ into the page; secrets never are, and password fields are masked structurally.
 One deliberate asymmetry: the operator's live view is unmasked, because a masked
 screen is useless to the person we just asked to finish a real task.
 
-Limits I would not paper over. Every guardrail above except the first was found
-to be bypassable by adversarial testing *after* I had written prose asserting it
-held — the lease, the risk label, the origin scoping, the pseudonyms. A
-guardrail nobody has attacked is a claim, not a control, and the tests covering
-these were written after the fact rather than alongside them. The risk heuristic
-also has false positives (it flags "Open Sub-Account", which only opens a form)
-and would miss an app whose commit button says "OK". Pattern-based redaction is best-effort by nature. And
+Limits I would not paper over. Every guardrail above except the allowlist was
+found bypassable by adversarial review *after* I had written prose asserting it
+held — and the first round of fixes was itself bypassed by the obvious next
+variation, because I had denylisted path spellings instead of checking values.
+Two rounds of that is the honest signal here: my instinct is to write the
+control and the claim at the same time, and the claim is cheap. The tests that
+now cover these were all written after something broke. The risk heuristic also
+has false positives (it flags "Open Sub-Account", which only opens a form) and
+would miss an app whose commit button says "OK". Pattern-based redaction is best-effort by nature. And
 discovery sends screenshots to a third-party model — masked, but the honest
 answer for production is a model inside the institution's boundary. Replay,
 where the volume is, never calls a model at all.
@@ -307,21 +326,19 @@ where the volume is, never calls a model at all.
 
 **Cut deliberately.** No desktop surface — the seam is designed, only the web
 driver exists. No real-time co-browsing; the console polls screenshots, enough to
-prove the control model, and would be a CDP screencast in production. No tenant
-registry, queue, scheduler or persistence beyond JSON on disk — git is a good
-store for artifacts that are reviewed, versioned and diffed by humans. No auth on
-the operator console. No confidence scoring or flakiness signal.
+prove the control model, and would be a CDP screencast in production. No queue,
+scheduler or persistence beyond JSON on disk — git is a good store for artifacts
+reviewed, versioned and diffed by humans. No user accounts on the operator
+console (authorization is enforced; authentication is a shared-secret env var at
+best). No confidence scoring or flakiness signal.
 
-**What probing closed, and what it did not.** The earlier version of this
-system could not discover any unhappy path: the model proposed outcomes from
-the one run it saw, and those proposals were validated only against the success
-screen. Running a real model showed how bad that was — every detector it
-proposed was a guess at wording, and none of them matched. Probing fixes the
-paths a job declares an input for, and proves proposed recoveries by re-running
-them. It does not fix what no probe covers: an application error page, a
-downstream outage banner, a condition that needs a second operator to set up.
-Those still ship `verified: false` and are what review is for — `@1.0.0` versus
-`@1.1.0`, with the review decisions recorded in `scripts/apply-review.ts`.
+**What probing closed, and what it did not.** Running a real model showed that
+every outcome detector it proposed was a guess at wording, and none matched.
+Probing fixes the paths a job declares an input for, and proves proposed
+recoveries by re-running them. It does not fix what no probe covers — an
+application error page, an outage banner, a condition needing a second operator
+to set up. Those ship `verified: false` and are what review is for: `@1.0.0`
+versus `@1.1.0`, with the decisions recorded in `scripts/apply-review.ts`.
 
 **Verified against a live model, with two caveats.** `gemini-2.5-flash-lite`
 drove the real application end to end (`evidence/00-discovery-gemini-live`). Two

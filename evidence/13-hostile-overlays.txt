@@ -1,34 +1,56 @@
 ### overlay tries to downgrade the irreversible posting step to 'safe'
-  [overlay] tenant hostile: 0 patch(es) applied, 2 REJECTED
-    ✗ steps[10].risk — refused — an overlay may not reclassify how risky a step is
-    ✗ policy.allowedOrigins — tenant "hostile" is not in the deployment tenant registry
+  [overlay] tenant hostile: 1 patch(es) applied, 2 REJECTED
+    ~ steps[10].risk — downgrade the irreversible posting step
+    ✗ step risk labels — refused — an overlay may not change step risk labels ("s00:safe,s01:safe,s02:safe,s03:safe,s04:safe,s05:safe,s06:mutating,s07:safe,s08:safe,s09:safe,s10:safe" → reverted to "s00:safe,s01:safe,s02:safe,s03:safe,s04:safe,s05:safe,s06:mutating,s07:safe,s08:safe,s09:safe,s10:irreversible")
+    ✗ policy.allowedOrigins — tenant "hostile" is not in the deployment tenant registry; this capability may now navigate nowhere
 
-  replay run replay-20260911-195626-sh2p
+  replay run replay-20260911-202827-5y15
   capability: meridian.member.open-sub-account@1.0.0
   operator console: http://127.0.0.1:4312/
 
 
-  ⚠ NEEDS_HUMAN  (10 steps, 3924ms)
-    escalation: not-raised
-    RISKY_ACTION_CONFIRMATION: step "s10" is irreversible: Post the new sub-account (irreversible)
-    evidence: evidence/replay-20260911-195626-sh2p
+  ✗ FAILURE  (0 steps, 513ms)
+    class:    POLICY_DENIED
+    step:     s00
+    expected: navigation within the capability's declared origins
+    observed: http://127.0.0.1:4311/ is refused: this capability declares no permitted origins
+    evidence: evidence/replay-20260911-202827-5y15
+
+
+### same downgrade, smuggled through the ancestor path steps[10]
+  [overlay] tenant hostile: 1 patch(es) applied, 2 REJECTED
+    ~ steps[10] — rewrite the whole step, carrying risk: safe
+    ✗ step risk labels — refused — an overlay may not change step risk labels ("s00:safe,s01:safe,s02:safe,s03:safe,s04:safe,s05:safe,s06:mutating,s07:safe,s08:safe,s09:safe,s10:safe" → reverted to "s00:safe,s01:safe,s02:safe,s03:safe,s04:safe,s05:safe,s06:mutating,s07:safe,s08:safe,s09:safe,s10:irreversible")
+    ✗ policy.allowedOrigins — tenant "hostile" is not in the deployment tenant registry; this capability may now navigate nowhere
+
+  replay run replay-20260911-202830-8c86
+  capability: meridian.member.open-sub-account@1.0.0
+  operator console: http://127.0.0.1:4312/
+
+
+  ✗ FAILURE  (0 steps, 513ms)
+    class:    POLICY_DENIED
+    step:     s00
+    expected: navigation within the capability's declared origins
+    observed: http://127.0.0.1:4311/ is refused: this capability declares no permitted origins
+    evidence: evidence/replay-20260911-202830-8c86
 
 
 ### overlay tries to point this capability at another institution
-  [overlay] tenant hostile: 1 patch(es) applied, 2 REJECTED
+  [overlay] tenant hostile: 2 patch(es) applied, 1 REJECTED
     ~ steps[0].action.url — point at the other institution
-    ✗ policy.allowedOrigins — refused — origins come from the deployment tenant registry, not the overlay
-    ✗ policy.allowedOrigins — tenant "hostile" is not in the deployment tenant registry
+    ~ policy.allowedOrigins — grant itself the origin
+    ✗ policy.allowedOrigins — tenant "hostile" is not in the deployment tenant registry; this capability may now navigate nowhere
 
-  replay run replay-20260911-195632-hazz
+  replay run replay-20260911-202832-pphe
   capability: meridian.member.savings-balance@1.1.0
   operator console: http://127.0.0.1:4312/
 
 
-  ✗ FAILURE  (0 steps, 512ms)
+  ✗ FAILURE  (0 steps, 513ms)
     class:    POLICY_DENIED
     step:     s00
     expected: navigation within the capability's declared origins
-    observed: http://127.0.0.1:4321/ is outside the origins this capability declares (http://127.0.0.1:4311)
-    evidence: evidence/replay-20260911-195632-hazz
+    observed: http://127.0.0.1:4321/ is refused: this capability declares no permitted origins
+    evidence: evidence/replay-20260911-202832-pphe
 

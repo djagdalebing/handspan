@@ -1,8 +1,8 @@
 {
   "url": "http://127.0.0.1:4311/desk",
   "title": "MERIDIAN Core :: Desk",
-  "at": "2026-09-11T19:55:41.869Z",
-  "text": "MERIDIAN CORE Member Services 7.2.1 OPER: DEMO\n---\nMENU Member Inquiry Account Services Teller Ops Reports\n---\nCONFIRM SUB-ACCOUNT — «memberId#4c9afd» Review the details below. Posting this request opens the account immediately and cannot be undone from this screen. Member: «memberId#4c9afd» — OKONKWO, PAT R Account Type: HOLIDAY CLUB Opening Deposit: $75.00",
+  "at": "2026-09-11T20:27:42.344Z",
+  "text": "MERIDIAN CORE Member Services 7.2.1 OPER: DEMO\n---\nMENU Member Inquiry Account Services Teller Ops Reports\n---\nCONFIRM SUB-ACCOUNT — «memberId#8cb247» Review the details below. Posting this request opens the account immediately and cannot be undone from this screen. Member: «memberId#8cb247» — OKONKWO, PAT R Account Type: HOLIDAY CLUB Opening Deposit: $75.00",
   "nodes": [
     {
       "ref": "n2_0",
@@ -56,11 +56,11 @@
       "ref": "n3_1",
       "role": "readout",
       "name": "Member",
-      "value": "«memberId#4c9afd» — OKONKWO, PAT R",
+      "value": "«memberId#8cb247» — OKONKWO, PAT R",
       "framePath": [
         "main"
       ],
-      "group": "CONFIRM SUB-ACCOUNT — «memberId#4c9afd»",
+      "group": "CONFIRM SUB-ACCOUNT — «memberId#8cb247»",
       "bounds": {
         "x": 159,
         "y": 101,
@@ -76,7 +76,7 @@
       "framePath": [
         "main"
       ],
-      "group": "CONFIRM SUB-ACCOUNT — «memberId#4c9afd»",
+      "group": "CONFIRM SUB-ACCOUNT — «memberId#8cb247»",
       "bounds": {
         "x": 159,
         "y": 119,

@@ -94,6 +94,9 @@ export function renderConsole(i: Intervention, control: ControlState): string {
 </div>
 <script>
 const ID = ${JSON.stringify(i.id)};
+// Every mutating call names the operator; the broker checks that this is who
+// holds the lease before it will act.
+const OPERATOR = ${JSON.stringify(i.operator ?? 'operator-1')};
 const shot = document.getElementById('shot');
 
 function refresh(){ shot.src = '/i/' + ID + '/screenshot?t=' + Date.now(); }
@@ -101,13 +104,14 @@ setInterval(refresh, 1200);
 
 async function post(path, body){
   const r = await fetch('/i/' + ID + path, {
-    method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(body||{})
+    method:'POST', headers:{'content-type':'application/json'},
+    body: JSON.stringify({ operator: OPERATOR, ...(body||{}) })
   });
   const j = await r.json().catch(()=>({}));
   if(!r.ok) alert(j.error || ('HTTP ' + r.status));
   return j;
 }
-async function claim(){ await post('/claim', {operator:'operator-1'}); poll(); }
+async function claim(){ await post('/claim', {}); poll(); }
 async function send(body){ await post('/input', body); setTimeout(refresh, 350); poll(); }
 async function resolve(disposition){
   await post('/resolve', {disposition, note: document.getElementById('note').value});

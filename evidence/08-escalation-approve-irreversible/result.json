@@ -1,11 +1,11 @@
 {
-  "runId": "replay-20260911-195531-xdrn",
+  "runId": "replay-20260911-202731-werz",
   "capability": {
     "id": "meridian.member.open-sub-account",
     "version": "1.0.0"
   },
-  "startedAt": "2026-09-11T19:55:31.540Z",
-  "durationMs": 4818,
+  "startedAt": "2026-09-11T20:27:31.378Z",
+  "durationMs": 4859,
   "stepsExecuted": 11,
   "evidenceDir": "evidence/08-escalation-approve-irreversible",
   "recoveries": [],
@@ -16,7 +16,7 @@
   },
   "status": "success",
   "outputs": {
-    "confirmationNumber": "CNF56535790",
+    "confirmationNumber": "CNF58455670",
     "newAccountNumber": "S-1014"
   }
 }

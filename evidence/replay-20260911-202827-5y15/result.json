@@ -1,13 +1,13 @@
 {
-  "runId": "replay-20260911-202832-pphe",
+  "runId": "replay-20260911-202827-5y15",
   "capability": {
-    "id": "meridian.member.savings-balance",
-    "version": "1.1.0"
+    "id": "meridian.member.open-sub-account",
+    "version": "1.0.0"
   },
-  "startedAt": "2026-09-11T20:28:32.353Z",
+  "startedAt": "2026-09-11T20:28:28.010Z",
   "durationMs": 513,
   "stepsExecuted": 0,
-  "evidenceDir": "evidence/13-guardrails-hostile-overlay",
+  "evidenceDir": "evidence/replay-20260911-202827-5y15",
   "recoveries": [],
   "drift": {
     "changedSteps": [],
@@ -19,7 +19,7 @@
     "class": "POLICY_DENIED",
     "stepId": "s00",
     "expected": "navigation within the capability's declared origins",
-    "observed": "http://127.0.0.1:4321/ is refused: this capability declares no permitted origins",
+    "observed": "http://127.0.0.1:4311/ is refused: this capability declares no permitted origins",
     "evidence": []
   }
 }

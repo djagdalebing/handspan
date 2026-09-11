@@ -1,11 +1,11 @@
 {
-  "runId": "replay-20260911-195544-h53a",
+  "runId": "replay-20260911-202744-6x5e",
   "capability": {
     "id": "meridian.member.savings-balance",
     "version": "1.0.0"
   },
-  "startedAt": "2026-09-11T19:55:44.437Z",
-  "durationMs": 36743,
+  "startedAt": "2026-09-11T20:27:44.912Z",
+  "durationMs": 37183,
   "stepsExecuted": 7,
   "evidenceDir": "evidence/10-escalation-stuck-recovery",
   "recoveries": [
@@ -24,7 +24,7 @@
   "outputs": {
     "memberName": "RIVERA, DANA Q",
     "accountStatus": "ACTIVE",
-    "ssnLast4": "«ssnLast4#3d05a3»",
+    "ssnLast4": "«ssnLast4#aaa671»",
     "savingsBalance": 4812.55
   }
 }

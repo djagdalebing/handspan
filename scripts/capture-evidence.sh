@@ -113,6 +113,12 @@ say "13. guardrails — two hostile overlays, both refused"
     --input memberId=34567 --input accountType="VACATION CLUB" --input openingDeposit=50.00 \
     --no-escalation 2>&1 || true
   echo
+  echo "### same downgrade, smuggled through the ancestor path steps[10]"
+  npx tsx src/cli.ts replay meridian.member.open-sub-account \
+    --overlay tests/fixtures/hostile-overlay-ancestor-path.json \
+    --input memberId=34567 --input accountType="VACATION CLUB" --input openingDeposit=50.00 \
+    --no-escalation 2>&1 || true
+  echo
   echo "### overlay tries to point this capability at another institution"
   npx tsx src/cli.ts replay meridian.member.savings-balance@1.1.0 \
     --overlay tests/fixtures/hostile-overlay-foreign-origin.json \

@@ -108,10 +108,22 @@ export class Policy {
       : { decision: 'deny', reason: `action kind "${kind}" is not permitted by policy` };
   }
 
-  /** Gate on declared step risk. */
-  checkRisk(risk: Risk, what: string): Decision {
-    if (RANK[risk] >= RANK[this.config.confirmAtRisk]) {
-      return { decision: 'confirm', reason: `${what} is classified ${risk}` };
+  /**
+   * Gate on declared step risk.
+   *
+   * `capabilityThreshold` is the capability's own `policy.confirmAtRisk`. The
+   * effective threshold is whichever of the two is *stricter*, so neither the
+   * deployment nor a capability can loosen what the other requires — a
+   * capability that asks for confirmation on mutating steps gets it even
+   * where the deployment only insists on irreversible ones.
+   */
+  checkRisk(risk: Risk, what: string, capabilityThreshold?: Risk): Decision {
+    const threshold = capabilityThreshold !== undefined &&
+      RANK[capabilityThreshold] < RANK[this.config.confirmAtRisk]
+      ? capabilityThreshold
+      : this.config.confirmAtRisk;
+    if (RANK[risk] >= RANK[threshold]) {
+      return { decision: 'confirm', reason: `${what} is classified ${risk} (threshold ${threshold})` };
     }
     return { decision: 'allow' };
   }

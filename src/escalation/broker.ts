@@ -67,6 +67,22 @@ interface Registration {
   observe: () => Promise<Observation>;
 }
 
+/**
+ * Optional shared secret for the mutating console endpoints.
+ *
+ * The console has no user accounts — that is a documented cut — but "no
+ * authentication" must not also mean "no authorization". The lease check below
+ * is the real control; this is defence in depth for a broker reachable beyond
+ * localhost, and is enforced whenever the variable is set.
+ */
+const OPERATOR_TOKEN = process.env.HS_OPERATOR_TOKEN ?? '';
+
+function tokenOk(req: Request): boolean {
+  if (!OPERATOR_TOKEN) return true;
+  const supplied = req.get('x-operator-token') ?? String((req.body ?? {}).token ?? '');
+  return supplied === OPERATOR_TOKEN;
+}
+
 export class EscalationBroker {
   private interventions = new Map<string, Intervention>();
   private sessions = new Map<string, Registration>();
@@ -271,7 +287,9 @@ export class EscalationBroker {
       const i = this.interventions.get(req.params.id!);
       const reg = i ? this.sessions.get(i.runId) : undefined;
       if (!i || !reg) return res.status(404).json({ error: 'unknown intervention' });
-      const operator = String(req.body?.operator ?? 'operator');
+      if (!tokenOk(req)) return res.status(403).json({ error: 'operator token required' });
+      const operator = String(req.body?.operator ?? '').trim();
+      if (!operator) return res.status(400).json({ error: 'an operator name is required to take control' });
       if (!reg.control.claim(operator)) {
         return res.status(409).json({ error: `control is ${reg.control.current}, cannot claim` });
       }
@@ -289,9 +307,15 @@ export class EscalationBroker {
       const i = this.interventions.get(req.params.id!);
       const reg = i ? this.sessions.get(i.runId) : undefined;
       if (!i || !reg) return res.status(404).json({ error: 'unknown intervention' });
-      const operator = i.operator ?? 'operator';
-      if (!reg.control.canOperate(operator)) {
-        return res.status(409).json({ error: `control is ${reg.control.current}; claim it first` });
+      if (!tokenOk(req)) return res.status(403).json({ error: 'operator token required' });
+      // Authorize the *caller*, not whoever happens to be recorded as holder —
+      // otherwise anyone who can reach the broker drives as the person who
+      // claimed.
+      const operator = String(req.body?.operator ?? '').trim();
+      if (!operator || !reg.control.canOperate(operator)) {
+        return res.status(409).json({
+          error: `control is ${reg.control.current} and held by "${reg.control.controller}"; claim it as yourself first`,
+        });
       }
       const surface = reg.surface;
       const body = req.body ?? {};
@@ -338,14 +362,33 @@ export class EscalationBroker {
       }
     });
 
+    /**
+     * Handing control back. This is the endpoint that authorises an
+     * irreversible step, so it is the one that must not be satisfiable by a
+     * bare POST: the caller has to name themselves and already hold the lease.
+     */
     app.post('/i/:id/resolve', (req, res) => {
       const i = this.interventions.get(req.params.id!);
       const reg = i ? this.sessions.get(i.runId) : undefined;
       if (!i || !reg) return res.status(404).json({ error: 'unknown intervention' });
+      if (!tokenOk(req)) return res.status(403).json({ error: 'operator token required' });
+
+      const operator = String(req.body?.operator ?? '').trim();
+      if (!operator || !reg.control.canOperate(operator)) {
+        reg.log.event('policy.decision', {
+          escalationId: i.id, decision: 'deny', actor: operator || '(anonymous)',
+          reason: 'attempted to resolve an intervention without holding the lease',
+        });
+        return res.status(409).json({
+          error: `control is ${reg.control.current} and held by "${reg.control.controller}"; ` +
+            `claim it as yourself before resolving`,
+        });
+      }
+
       const signal: ReleaseSignal = {
         disposition: (req.body?.disposition ?? 'resume') as ReleaseSignal['disposition'],
         note: String(req.body?.note ?? ''),
-        operator: i.operator ?? 'operator',
+        operator,
       };
       if (!reg.control.release(signal)) {
         return res.status(409).json({ error: `control is ${reg.control.current}, cannot release` });

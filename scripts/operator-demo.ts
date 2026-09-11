@@ -95,16 +95,16 @@ async function perform(id: string, a: OperatorAction): Promise<void> {
   if (a.kind === 'click') {
     const at = await locate(id, a.role ?? 'button', a.name ?? '');
     process.stdout.write(`  [operator] click "${a.name}" at (${Math.round(at.x)}, ${Math.round(at.y)})\n`);
-    await api(`/i/${id}/input`, { method: 'POST', body: JSON.stringify({ kind: 'click', ...at }) });
+    await api(`/i/${id}/input`, { method: 'POST', body: JSON.stringify({ operator: OPERATOR, kind: 'click', ...at }) });
   } else if (a.kind === 'text') {
     process.stdout.write(`  [operator] type ${String(a.text ?? '').length} characters into the focused field\n`);
-    await api(`/i/${id}/input`, { method: 'POST', body: JSON.stringify({ kind: 'text', text: a.text ?? '' }) });
+    await api(`/i/${id}/input`, { method: 'POST', body: JSON.stringify({ operator: OPERATOR, kind: 'text', text: a.text ?? '' }) });
   } else if (a.kind === 'key') {
     process.stdout.write(`  [operator] press ${a.key}\n`);
-    await api(`/i/${id}/input`, { method: 'POST', body: JSON.stringify({ kind: 'key', key: a.key }) });
+    await api(`/i/${id}/input`, { method: 'POST', body: JSON.stringify({ operator: OPERATOR, kind: 'key', key: a.key }) });
   } else {
     process.stdout.write(`  [operator] navigate ${a.url}\n`);
-    await api(`/i/${id}/input`, { method: 'POST', body: JSON.stringify({ kind: 'navigate', url: a.url }) });
+    await api(`/i/${id}/input`, { method: 'POST', body: JSON.stringify({ operator: OPERATOR, kind: 'navigate', url: a.url }) });
   }
   await sleep(500);
 }
@@ -141,7 +141,7 @@ async function main(): Promise<void> {
 
   await api(`/i/${i.id}/resolve`, {
     method: 'POST',
-    body: JSON.stringify({ disposition, note }),
+    body: JSON.stringify({ operator: OPERATOR, disposition, note }),
   });
   process.stdout.write(`  [operator] released control: ${disposition}\n`);
 }

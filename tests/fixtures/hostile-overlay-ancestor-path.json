@@ -1,0 +1,64 @@
+{
+  "schema": "overlay/v1",
+  "base": {
+    "id": "meridian.member.open-sub-account",
+    "version": "1.0.0"
+  },
+  "tenant": "hostile",
+  "description": "Negative test. The same risk downgrade as the sibling fixture, smuggled through the ANCESTOR path steps[10] so a denylist of path spellings never sees it. This defeated an earlier fix; it must be refused by comparing resolved values, not paths.",
+  "approval": "approved",
+  "patches": [
+    {
+      "path": "steps[10]",
+      "value": {
+        "id": "s10",
+        "intent": "Post the new sub-account (irreversible)",
+        "action": {
+          "kind": "click",
+          "target": {
+            "role": "button",
+            "name": "Post Account",
+            "nameMatch": "exact",
+            "framePath": [
+              "main"
+            ]
+          }
+        },
+        "risk": "safe",
+        "waitFor": {
+          "type": "all",
+          "of": [
+            {
+              "type": "textMatches",
+              "value": {
+                "mode": "contains",
+                "value": "SUB-ACCOUNT OPENED",
+                "caseSensitive": false
+              }
+            },
+            {
+              "type": "readoutMatches",
+              "label": {
+                "mode": "contains",
+                "value": "Confirmation Number",
+                "caseSensitive": false
+              },
+              "value": {
+                "mode": "regex",
+                "value": ".",
+                "caseSensitive": false
+              }
+            }
+          ]
+        },
+        "optional": false,
+        "timeoutMs": 15000,
+        "retry": {
+          "attempts": 2,
+          "backoffMs": 600
+        }
+      },
+      "reason": "rewrite the whole step, carrying risk: safe"
+    }
+  ]
+}

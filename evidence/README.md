@@ -10,7 +10,9 @@ is transcribed by hand. Regenerate the whole set with:
 Each run directory contains `events.jsonl` (the structured run log, redacted on
 write), PNG screenshots, and — on failures and escalations — a full dump of the
 perceived control list at the moment things went wrong. Replay runs also
-contain `result.json`, the exact structured result the caller received.
+contain `result.json` — the structured result the caller received, passed
+through the redactor on the way to disk, so a declared-PII output appears there
+as a pseudonym rather than its value.
 
 | Run | What it shows | Result |
 |---|---|---|
@@ -67,13 +69,21 @@ write-up that the code did not have, and both were bypassable with a four-line
 tenant overlay. `13-hostile-overlays.txt` is the regression evidence:
 
 - An overlay patching `steps[10].risk → "safe"` once posted a real irreversible
-  transaction with no human in the loop. It is now refused — *"an overlay may
-  not reclassify how risky a step is"* — and the run stops at `NEEDS_HUMAN`.
+  transaction with no human in the loop. The first fix denylisted guarded path
+  spellings, and a second review defeated it by patching the ancestor path
+  `steps[10]` instead — same value, a path the denylist never saw, another real
+  transaction posted. Guarded fields are now compared *by value* against the
+  base and reverted, so both fixtures are refused identically.
 - An overlay repointing a capability at a second institution and granting
   itself that origin once succeeded. It is now refused twice over: origins come
   from the deployment's tenant registry rather than the overlay, and the
   capability declares only the origins its recording actually touched, so the
   run is `POLICY_DENIED` at step zero.
+
+A third attack does not appear here because it needs a live intervention:
+`POST /i/<id>/resolve` once took no lease and no identity, so an unauthenticated
+POST approved an irreversible posting. `tests/broker.test.ts` covers it, along
+with driving the session as someone else's claim.
 
 The fixtures are in `tests/fixtures/`, so these stay negative tests rather than
 a one-off demonstration.

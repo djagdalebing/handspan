@@ -184,7 +184,16 @@ export class ReplayEngine {
                 'session expired mid-flow', { stepId: step.id,
                   detail: 'capability is not read-only, so automatic restart is refused' });
             }
-            i = 0; this.interstitialCounts.clear(); continue;
+            // "Resume" means carry on from here, exactly as it does everywhere
+            // else. Restarting a mutating flow from step one is the duplicate
+            // posting this guard exists to prevent, so an operator saying
+            // "resume" must not be the thing that triggers it.
+            this.interstitialCounts.clear();
+            this.o.log.event('note', {
+              message: 'operator resumed a mutating flow after session loss; continuing from the current step rather than restarting',
+              atStep: step.id,
+            });
+            continue;
           }
           if (restarts >= 1) {
             return fail('SESSION_LOST', 'an authenticated session for the whole flow',
@@ -319,15 +328,22 @@ export class ReplayEngine {
         if (urlCheck.decision === 'deny') {
           return { kind: 'result', result: this.failFor(cap, 'POLICY_DENIED', 'navigation within the deployment allowlist', urlCheck.reason, step.id) };
         }
+        // An empty list denies everything. That is deliberate: it is what an
+        // overlay for an unknown tenant resolves to, and "no origins declared"
+        // must mean "go nowhere" rather than "go anywhere".
         const declared = cap.policy.allowedOrigins;
-        if (declared.length > 0 && !declared.some((o) => url.startsWith(o))) {
-          const reason = `${url} is outside the origins this capability declares (${declared.join(', ')})`;
+        if (!declared.some((o) => url.startsWith(o))) {
+          const reason = declared.length === 0
+            ? `${url} is refused: this capability declares no permitted origins`
+            : `${url} is outside the origins this capability declares (${declared.join(', ')})`;
           this.o.log.event('policy.decision', { stepId: step.id, url, decision: 'deny', reason });
           return { kind: 'result', result: this.failFor(cap, 'POLICY_DENIED', 'navigation within the capability\'s declared origins', reason, step.id) };
         }
       }
 
-      const riskCheck = this.o.policy.checkRisk(step.risk, `step "${step.id}" (${step.intent})`);
+      const riskCheck = this.o.policy.checkRisk(
+        step.risk, `step "${step.id}" (${step.intent})`, cap.policy.confirmAtRisk
+      );
       if (riskCheck.decision === 'confirm') {
         const gate = await this.gateRiskyStep(cap, step, riskCheck.reason);
         if (gate.kind === 'result') return gate;
@@ -533,7 +549,8 @@ export class ReplayEngine {
         // Post Account" would commit a transaction with no human involved and
         // no declared step risk to stop it.
         const risk = Policy.classify(action.kind, node?.name);
-        if (this.o.policy.checkRisk(risk, `recovery for ${hit.code}`).decision === 'confirm') {
+        if (this.o.policy.checkRisk(risk, `recovery for ${hit.code}`, cap.policy.confirmAtRisk)
+              .decision === 'confirm') {
           this.o.log.event('policy.decision', {
             code: hit.code, decision: 'deny', risk, control: node?.name,
             reason: 'a recoverable-condition handler may not perform a risky action',
@@ -666,8 +683,11 @@ export class ReplayEngine {
       this.unresolvedEscalation = { reason: `${reason}: ${summary}` };
       return null;
     }
+    // Never wait for an operator longer than the run itself is allowed to
+    // live, or the run cap is decorative and the run simply hangs past it.
+    const remaining = this.o.policy.config.runTimeoutMs - (Date.now() - this.t0);
     const { intervention, signal } = await broker.raise({
-      timeoutMs: this.o.policy.config.escalationTimeoutMs,
+      timeoutMs: Math.max(5_000, Math.min(this.o.policy.config.escalationTimeoutMs, remaining)),
       runId: this.o.runId,
       mode: 'replay',
       capabilityId: `${cap.id}@${cap.version}`,

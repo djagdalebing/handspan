@@ -86,44 +86,73 @@ describe('tenant overlays', () => {
 describe('overlay guardrails', () => {
   const registry = { northgate: { label: 'Northgate', origins: ['http://b.example'] } };
 
-  // An overlay is a specialisation, not a privilege escalation. Patching a
-  // step's risk to "safe" was enough to post an irreversible transaction with
-  // no human in the loop.
-  it('refuses to let a tenant reclassify how risky a step is', () => {
+  // An overlay is a specialisation, not a privilege escalation.
+  it('reverts a step risk a tenant tried to downgrade', () => {
     const b = base();
     b.steps[1]!.risk = 'irreversible';
     const r = applyOverlay(b, overlay([{ path: 'steps[1].risk', value: 'safe' }]), registry);
     expect(r.capability.steps[1]!.risk).toBe('irreversible');
-    expect(r.rejected.some((x) => /may not reclassify/.test(x.reason))).toBe(true);
+    expect(r.rejected.some((x) => /step risk labels/.test(x.path))).toBe(true);
   });
 
-  it('refuses to let a tenant move the confirmation threshold', () => {
-    const r = applyOverlay(base(), overlay([{ path: 'policy.confirmAtRisk', value: 'safe' }]), registry);
+  /**
+   * The regression that matters. Guarding path *spellings* loses to anyone who
+   * spells it differently: rewriting the whole of `steps[1]` writes the same
+   * value through a path no denylist saw, and that posted a real irreversible
+   * transaction. The check has to be on the resolved value.
+   */
+  it('reverts a risk downgrade smuggled through an ancestor path', () => {
+    const b = base();
+    b.steps[1]!.risk = 'irreversible';
+    const smuggled = { ...JSON.parse(JSON.stringify(b.steps[1])), risk: 'safe' };
+    const r = applyOverlay(b, overlay([{ path: 'steps[1]', value: smuggled }]), registry);
+    expect(r.capability.steps[1]!.risk).toBe('irreversible');
+    expect(r.rejected.some((x) => /step risk labels/.test(x.path))).toBe(true);
+  });
+
+  it('reverts a wholesale rewrite of the policy object', () => {
+    const r = applyOverlay(
+      base(),
+      overlay([{ path: 'policy', value: { allowedOrigins: ['http://evil.example'], maxSteps: 999, confirmAtRisk: 'safe' } }]),
+      registry
+    );
     expect(r.capability.policy.confirmAtRisk).toBe('irreversible');
-    expect(r.rejected.some((x) => /confirmation threshold/.test(x.reason))).toBe(true);
+    expect(r.capability.policy.maxSteps).toBe(20);
+    expect(r.capability.policy.allowedOrigins).toEqual(['http://b.example']);
   });
 
-  it('refuses to let a tenant grant itself origins', () => {
+  it('refuses to let a tenant add or remove steps', () => {
+    const b = base();
+    const extra = JSON.parse(JSON.stringify(b.steps[1]));
+    const r = applyOverlay(b, overlay([{ path: 'steps', value: [...b.steps, extra] }]), registry);
+    expect(r.capability.steps).toHaveLength(2);
+    expect(r.rejected.some((x) => /step sequence/.test(x.path))).toBe(true);
+  });
+
+  // Origins are a deployment fact about the tenant, not an overlay assertion.
+  it('takes origins from the deployment registry, ignoring what the overlay asked for', () => {
     const r = applyOverlay(
       base(),
       overlay([{ path: 'policy.allowedOrigins', value: ['http://evil.example'] }]),
       registry
     );
     expect(r.capability.policy.allowedOrigins).toEqual(['http://b.example']);
-    expect(r.rejected.some((x) => /tenant registry/.test(x.reason))).toBe(true);
   });
 
-  // Origins are a deployment fact about the tenant, not an overlay assertion.
-  it('takes origins from the deployment tenant registry', () => {
-    const r = applyOverlay(base(), overlay(), registry);
-    expect(r.capability.policy.allowedOrigins).toEqual(['http://b.example']);
-    expect(r.applied.some((a) => /tenant registry/.test(a.reason))).toBe(true);
-  });
-
-  // Failing closed: an unknown tenant inherits nothing it can drive.
-  it('reports an unknown tenant rather than inheriting the base origins silently', () => {
+  // Fails closed: an unknown tenant is left able to navigate nowhere, rather
+  // than silently inheriting the base's origins.
+  it('leaves an unknown tenant with no permitted origins at all', () => {
     const r = applyOverlay(base(), overlay(), {});
+    expect(r.capability.policy.allowedOrigins).toEqual([]);
     expect(r.rejected.some((x) => /not in the deployment tenant registry/.test(x.reason))).toBe(true);
+  });
+
+  // The one code path that mutates a typed artifact is the last place to skip
+  // the schema: an out-of-enum threshold ranks as undefined and opens the gate.
+  it('rejects an overlay that would produce an invalid capability', () => {
+    expect(() =>
+      applyOverlay(base(), overlay([{ path: 'steps[1].timeoutMs', value: 'not-a-number' }]), registry)
+    ).toThrow();
   });
 
   it('still allows the entry point to be repointed', () => {

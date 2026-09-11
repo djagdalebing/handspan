@@ -101,9 +101,16 @@ export class SessionControl {
     return this.state === 'HUMAN' && this.holder === operator;
   }
 
-  /** The operator hands control back and says what should happen next. */
+  /**
+   * The operator hands control back and says what should happen next.
+   *
+   * Only the operator currently holding the lease may do this. Accepting a
+   * release from `PENDING` — nobody having claimed — meant the approval gate
+   * on an irreversible step could be satisfied by anyone who could reach the
+   * broker, which is the opposite of a single-writer invariant.
+   */
   release(signal: ReleaseSignal): boolean {
-    if (this.state !== 'HUMAN' && this.state !== 'PENDING') return false;
+    if (!this.canOperate(signal.operator)) return false;
 
     const waiters = this.waiters;
     this.waiters = [];

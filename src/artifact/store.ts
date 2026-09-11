@@ -87,36 +87,34 @@ export function loadTenantRegistry(path = 'config/tenants.json'): TenantRegistry
 }
 
 /**
- * Paths an overlay may never write.
+ * Invariants an overlay may not change, compared **by value** against the base.
  *
- * An overlay is a *specialisation*, not a privilege escalation. Each of these
- * is a guardrail, and letting a tenant file relax one would mean the weakest
- * overlay in the fleet sets the safety level for the capability it derives
- * from. Patching `steps[N].risk` to "safe" is enough to post an irreversible
- * transaction with no human in the loop; patching `policy.allowedOrigins` is
- * enough to point one institution's capability at another's instance.
+ * An earlier version denylisted path *spellings* (`steps[10].risk`), which is
+ * the wrong shape of control and was defeated by patching one level up:
+ * rewriting the whole of `steps[10]` with `risk: "safe"` wrote the same value
+ * through a path the denylist never saw, and posted a real irreversible
+ * transaction. Anything that enumerates ways of saying a thing loses to
+ * someone who says it differently.
  *
- * Origins still have to vary per tenant — that is the whole point — so they
- * come from the deployment's tenant registry rather than from the overlay.
+ * So the check is on the resolved artifact, not the patch: apply everything,
+ * then compare these fields to the base and revert any that moved. Path
+ * spelling becomes irrelevant.
  */
-const GUARDED_PATHS: Array<{ re: RegExp; why: string }> = [
-  { re: /^approval$/, why: 'approval is granted by review, not by an overlay' },
-  { re: /(^|\.)risk$/, why: 'an overlay may not reclassify how risky a step is' },
-  { re: /^policy\.confirmAtRisk$/, why: 'an overlay may not move the human-confirmation threshold' },
-  { re: /^policy\.allowedOrigins$/, why: 'origins come from the deployment tenant registry, not the overlay' },
-  { re: /^policy\.maxSteps$/, why: 'an overlay may not raise the step budget' },
+const INVARIANTS: Array<{ name: string; read: (c: Capability) => unknown }> = [
+  { name: 'approval', read: (c) => c.approval },
+  { name: 'risk', read: (c) => c.risk },
+  { name: 'policy.confirmAtRisk', read: (c) => c.policy.confirmAtRisk },
+  { name: 'policy.maxSteps', read: (c) => c.policy.maxSteps },
+  // The flow's shape and each step's declared risk. A tenant specialises how a
+  // step is carried out; it does not get to add steps, remove them, reorder
+  // them, or decide that posting a transaction is no longer irreversible.
+  { name: 'step sequence', read: (c) => c.steps.map((x) => x.id).join(',') },
+  { name: 'step risk labels', read: (c) => c.steps.map((x) => `${x.id}:${x.risk}`).join(',') },
+  // Whether a recognised screen is an answer or a failure is part of the
+  // caller's contract, not a tenant's presentation detail.
+  { name: 'outcome classifications', read: (c) => c.outcomes.map((o) => `${o.code}:${o.classification}`).join(',') },
 ];
 
-/**
- * Applies a tenant overlay to its base capability.
- *
- * Two rules make this safe enough to run unattended:
- *   - the overlay pins a base *version*, so a base change cannot silently
- *     re-target a patch at a step that has moved;
- *   - a patch whose path does not resolve is *rejected and reported*, never
- *     created. A patch that quietly invents `steps[7]` because the base now
- *     has six steps is how a tenant ends up running a flow nobody wrote.
- */
 export function applyOverlay(
   base: Capability,
   overlay: Overlay,
@@ -152,20 +150,26 @@ export function applyOverlay(
   }
 
   for (const patch of overlay.patches) {
-    const guard = GUARDED_PATHS.find((g) => g.re.test(patch.path));
-    if (guard) {
-      rejected.push({ path: patch.path, reason: `refused — ${guard.why}` });
-      continue;
-    }
     const ok = setAtPath(clone as unknown as Record<string, unknown>, patch.path, patch.value);
     if (ok) applied.push({ path: patch.path, reason: patch.reason });
     else rejected.push({ path: patch.path, reason: 'path does not exist on the base capability' });
   }
 
+  // Revert anything that moved a guarded value, however it was spelled.
+  for (const inv of INVARIANTS) {
+    const before = inv.read(base);
+    const after = inv.read(clone);
+    if (JSON.stringify(before) === JSON.stringify(after)) continue;
+    restoreInvariant(clone, base, inv.name);
+    rejected.push({
+      path: inv.name,
+      reason: `refused — an overlay may not change ${inv.name} (${JSON.stringify(after)} → reverted to ${JSON.stringify(before)})`,
+    });
+  }
+
   // Origins are a deployment fact about the tenant, not something the tenant's
-  // own file gets to assert. An unknown tenant inherits nothing and is left
-  // with the base's origins, which will not match its instance — it fails
-  // closed rather than open.
+  // own file asserts. An unknown tenant gets an empty list, which the engine
+  // treats as "navigate nowhere" — the failure has to be closed, not silent.
   const tenant = registry[overlay.tenant];
   if (tenant) {
     clone.policy = { ...clone.policy, allowedOrigins: [...tenant.origins] };
@@ -174,9 +178,11 @@ export function applyOverlay(
       reason: `from the tenant registry (${tenant.label ?? overlay.tenant})`,
     });
   } else {
+    clone.policy = { ...clone.policy, allowedOrigins: [] };
     rejected.push({
       path: 'policy.allowedOrigins',
-      reason: `tenant "${overlay.tenant}" is not in the deployment tenant registry`,
+      reason: `tenant "${overlay.tenant}" is not in the deployment tenant registry; ` +
+        `this capability may now navigate nowhere`,
     });
   }
 
@@ -187,7 +193,34 @@ export function applyOverlay(
   };
   clone.approval = overlay.approval === 'approved' && base.approval === 'approved' ? 'approved' : 'draft';
 
-  return { capability: clone, applied, rejected };
+  // Re-validate. An overlay writes arbitrary values into a typed document, so
+  // the one code path that mutates an artifact is the last place to skip the
+  // schema — an out-of-enum `confirmAtRisk` would rank as `undefined` and
+  // open the gate rather than close it.
+  const capability = parseCapability(clone);
+  return { capability, applied, rejected };
+}
+
+/** Puts one guarded field back the way the base had it. */
+function restoreInvariant(clone: Capability, base: Capability, name: string): void {
+  switch (name) {
+    case 'approval': clone.approval = base.approval; break;
+    case 'risk': clone.risk = base.risk; break;
+    case 'policy.confirmAtRisk': clone.policy.confirmAtRisk = base.policy.confirmAtRisk; break;
+    case 'policy.maxSteps': clone.policy.maxSteps = base.policy.maxSteps; break;
+    case 'outcome classifications':
+      for (const o of clone.outcomes) {
+        const original = base.outcomes.find((b) => b.code === o.code);
+        if (original) o.classification = original.classification;
+      }
+      break;
+    // A changed sequence or risk label means the step list itself is not
+    // trustworthy, so the whole list goes back.
+    case 'step sequence':
+    case 'step risk labels':
+      clone.steps = JSON.parse(JSON.stringify(base.steps)) as Capability['steps'];
+      break;
+  }
 }
 
 /**

@@ -1,32 +1,32 @@
-{"seq":0,"at":"2026-09-11T19:56:22.939Z","runId":"replay-20260911-195622-2opr","type":"run.start","data":{"mode":"replay","capability":"meridian.member.savings-balance","version":"1.1.0","approval":"approved","inputs":["memberId"]}}
-{"seq":1,"at":"2026-09-11T19:56:23.446Z","runId":"replay-20260911-195622-2opr","type":"observe","data":{"url":"about:blank","title":"","nodes":0}}
-{"seq":2,"at":"2026-09-11T19:56:23.449Z","runId":"replay-20260911-195622-2opr","type":"policy.decision","data":{"stepId":"s00","url":"http://127.0.0.1:4321/","decision":"allow"}}
-{"seq":3,"at":"2026-09-11T19:56:23.450Z","runId":"replay-20260911-195622-2opr","type":"step.start","data":{"stepId":"s00","intent":"Open MERIDIAN Core Member Services at its entry point","kind":"navigate","risk":"safe","attempt":1}}
-{"seq":4,"at":"2026-09-11T19:56:23.997Z","runId":"replay-20260911-195622-2opr","type":"observe","data":{"url":"http://127.0.0.1:4321/","title":"NORTHGATE CU :: Sign On","nodes":3}}
-{"seq":5,"at":"2026-09-11T19:56:23.998Z","runId":"replay-20260911-195622-2opr","type":"step.end","data":{"stepId":"s00","ok":true}}
-{"seq":6,"at":"2026-09-11T19:56:24.004Z","runId":"replay-20260911-195622-2opr","type":"observe","data":{"url":"http://127.0.0.1:4321/","title":"NORTHGATE CU :: Sign On","nodes":3}}
-{"seq":7,"at":"2026-09-11T19:56:24.006Z","runId":"replay-20260911-195622-2opr","type":"step.start","data":{"stepId":"s01","intent":"Enter the operator ID on the sign-on screen","kind":"type","risk":"safe","target":"textbox \"Operator ID\"","resolved":"Operator ID","attempt":1}}
-{"seq":8,"at":"2026-09-11T19:56:24.096Z","runId":"replay-20260911-195622-2opr","type":"observe","data":{"url":"http://127.0.0.1:4321/","title":"NORTHGATE CU :: Sign On","nodes":3}}
-{"seq":9,"at":"2026-09-11T19:56:24.097Z","runId":"replay-20260911-195622-2opr","type":"step.end","data":{"stepId":"s01","ok":true}}
-{"seq":10,"at":"2026-09-11T19:56:24.102Z","runId":"replay-20260911-195622-2opr","type":"observe","data":{"url":"http://127.0.0.1:4321/","title":"NORTHGATE CU :: Sign On","nodes":3}}
-{"seq":11,"at":"2026-09-11T19:56:24.103Z","runId":"replay-20260911-195622-2opr","type":"step.start","data":{"stepId":"s02","intent":"Enter the operator password on the sign-on screen","kind":"type","risk":"safe","target":"textbox \"Password\"","resolved":"Password","attempt":1}}
-{"seq":12,"at":"2026-09-11T19:56:24.175Z","runId":"replay-20260911-195622-2opr","type":"observe","data":{"url":"http://127.0.0.1:4321/","title":"NORTHGATE CU :: Sign On","nodes":3}}
-{"seq":13,"at":"2026-09-11T19:56:24.176Z","runId":"replay-20260911-195622-2opr","type":"step.end","data":{"stepId":"s02","ok":true}}
-{"seq":14,"at":"2026-09-11T19:56:24.181Z","runId":"replay-20260911-195622-2opr","type":"observe","data":{"url":"http://127.0.0.1:4321/","title":"NORTHGATE CU :: Sign On","nodes":3}}
-{"seq":15,"at":"2026-09-11T19:56:24.182Z","runId":"replay-20260911-195622-2opr","type":"step.start","data":{"stepId":"s03","intent":"Submit the sign-on form","kind":"click","risk":"safe","target":"button \"Sign On\"","resolved":"Sign On","attempt":1}}
-{"seq":16,"at":"2026-09-11T19:56:24.820Z","runId":"replay-20260911-195622-2opr","type":"observe","data":{"url":"http://127.0.0.1:4321/desk","title":"MERIDIAN Core :: Desk","nodes":5}}
-{"seq":17,"at":"2026-09-11T19:56:24.822Z","runId":"replay-20260911-195622-2opr","type":"step.end","data":{"stepId":"s03","ok":true}}
-{"seq":18,"at":"2026-09-11T19:56:24.834Z","runId":"replay-20260911-195622-2opr","type":"observe","data":{"url":"http://127.0.0.1:4321/desk","title":"MERIDIAN Core :: Desk","nodes":5}}
-{"seq":19,"at":"2026-09-11T19:56:24.835Z","runId":"replay-20260911-195622-2opr","type":"drift.detected","data":{"stepId":"s04","recorded":"92140295","actual":"3345ae32","url":"http://127.0.0.1:4321/desk"}}
-{"seq":20,"at":"2026-09-11T19:56:24.836Z","runId":"replay-20260911-195622-2opr","type":"drift.detected","data":{"stepId":"s04","degraded":"relaxed-name","matched":"Member No.","recorded":"Member Number"}}
-{"seq":21,"at":"2026-09-11T19:56:24.838Z","runId":"replay-20260911-195622-2opr","type":"step.start","data":{"stepId":"s04","intent":"Enter the member number into the inquiry form","kind":"type","risk":"safe","target":"textbox \"Member Number\"","resolved":"Member No.","attempt":1}}
-{"seq":22,"at":"2026-09-11T19:56:24.880Z","runId":"replay-20260911-195622-2opr","type":"observe","data":{"url":"http://127.0.0.1:4321/desk","title":"MERIDIAN Core :: Desk","nodes":5}}
-{"seq":23,"at":"2026-09-11T19:56:24.882Z","runId":"replay-20260911-195622-2opr","type":"step.end","data":{"stepId":"s04","ok":true}}
-{"seq":24,"at":"2026-09-11T19:56:24.892Z","runId":"replay-20260911-195622-2opr","type":"observe","data":{"url":"http://127.0.0.1:4321/desk","title":"MERIDIAN Core :: Desk","nodes":5}}
-{"seq":25,"at":"2026-09-11T19:56:24.894Z","runId":"replay-20260911-195622-2opr","type":"drift.detected","data":{"stepId":"s05","recorded":"92140295","actual":"3345ae32","url":"http://127.0.0.1:4321/desk"}}
-{"seq":26,"at":"2026-09-11T19:56:24.895Z","runId":"replay-20260911-195622-2opr","type":"step.start","data":{"stepId":"s05","intent":"Run the member search","kind":"click","risk":"safe","target":"button \"Find\"","resolved":"Find","attempt":1}}
-{"seq":27,"at":"2026-09-11T19:56:24.974Z","runId":"replay-20260911-195622-2opr","type":"observe","data":{"url":"http://127.0.0.1:4321/desk","title":"MERIDIAN Core :: Desk","nodes":5}}
-{"seq":28,"at":"2026-09-11T19:56:25.509Z","runId":"replay-20260911-195622-2opr","type":"step.end","data":{"stepId":"s05","ok":true}}
-{"seq":29,"at":"2026-09-11T19:56:25.527Z","runId":"replay-20260911-195622-2opr","type":"observe","data":{"url":"http://127.0.0.1:4321/desk","title":"MERIDIAN Core :: Desk","nodes":10}}
-{"seq":30,"at":"2026-09-11T19:56:25.567Z","runId":"replay-20260911-195622-2opr","type":"note","data":{"evidence":"030-checkpoint-ok.png","label":"checkpoint-ok"}}
-{"seq":31,"at":"2026-09-11T19:56:25.568Z","runId":"replay-20260911-195622-2opr","type":"run.end","data":{"status":"success","outputs":{"memberName":"RIVERA, DANA Q","accountStatus":"ACTIVE","savingsBalance":4812.55}}}
+{"seq":0,"at":"2026-09-11T20:28:23.858Z","runId":"replay-20260911-202823-878k","type":"run.start","data":{"mode":"replay","capability":"meridian.member.savings-balance","version":"1.1.0","approval":"approved","inputs":["memberId"]}}
+{"seq":1,"at":"2026-09-11T20:28:24.364Z","runId":"replay-20260911-202823-878k","type":"observe","data":{"url":"about:blank","title":"","nodes":0}}
+{"seq":2,"at":"2026-09-11T20:28:24.365Z","runId":"replay-20260911-202823-878k","type":"policy.decision","data":{"stepId":"s00","url":"http://127.0.0.1:4321/","decision":"allow"}}
+{"seq":3,"at":"2026-09-11T20:28:24.366Z","runId":"replay-20260911-202823-878k","type":"step.start","data":{"stepId":"s00","intent":"Open MERIDIAN Core Member Services at its entry point","kind":"navigate","risk":"safe","attempt":1}}
+{"seq":4,"at":"2026-09-11T20:28:24.902Z","runId":"replay-20260911-202823-878k","type":"observe","data":{"url":"http://127.0.0.1:4321/","title":"NORTHGATE CU :: Sign On","nodes":3}}
+{"seq":5,"at":"2026-09-11T20:28:24.904Z","runId":"replay-20260911-202823-878k","type":"step.end","data":{"stepId":"s00","ok":true}}
+{"seq":6,"at":"2026-09-11T20:28:24.910Z","runId":"replay-20260911-202823-878k","type":"observe","data":{"url":"http://127.0.0.1:4321/","title":"NORTHGATE CU :: Sign On","nodes":3}}
+{"seq":7,"at":"2026-09-11T20:28:24.911Z","runId":"replay-20260911-202823-878k","type":"step.start","data":{"stepId":"s01","intent":"Enter the operator ID on the sign-on screen","kind":"type","risk":"safe","target":"textbox \"Operator ID\"","resolved":"Operator ID","attempt":1}}
+{"seq":8,"at":"2026-09-11T20:28:24.988Z","runId":"replay-20260911-202823-878k","type":"observe","data":{"url":"http://127.0.0.1:4321/","title":"NORTHGATE CU :: Sign On","nodes":3}}
+{"seq":9,"at":"2026-09-11T20:28:24.989Z","runId":"replay-20260911-202823-878k","type":"step.end","data":{"stepId":"s01","ok":true}}
+{"seq":10,"at":"2026-09-11T20:28:24.994Z","runId":"replay-20260911-202823-878k","type":"observe","data":{"url":"http://127.0.0.1:4321/","title":"NORTHGATE CU :: Sign On","nodes":3}}
+{"seq":11,"at":"2026-09-11T20:28:24.996Z","runId":"replay-20260911-202823-878k","type":"step.start","data":{"stepId":"s02","intent":"Enter the operator password on the sign-on screen","kind":"type","risk":"safe","target":"textbox \"Password\"","resolved":"Password","attempt":1}}
+{"seq":12,"at":"2026-09-11T20:28:25.070Z","runId":"replay-20260911-202823-878k","type":"observe","data":{"url":"http://127.0.0.1:4321/","title":"NORTHGATE CU :: Sign On","nodes":3}}
+{"seq":13,"at":"2026-09-11T20:28:25.072Z","runId":"replay-20260911-202823-878k","type":"step.end","data":{"stepId":"s02","ok":true}}
+{"seq":14,"at":"2026-09-11T20:28:25.077Z","runId":"replay-20260911-202823-878k","type":"observe","data":{"url":"http://127.0.0.1:4321/","title":"NORTHGATE CU :: Sign On","nodes":3}}
+{"seq":15,"at":"2026-09-11T20:28:25.078Z","runId":"replay-20260911-202823-878k","type":"step.start","data":{"stepId":"s03","intent":"Submit the sign-on form","kind":"click","risk":"safe","target":"button \"Sign On\"","resolved":"Sign On","attempt":1}}
+{"seq":16,"at":"2026-09-11T20:28:25.716Z","runId":"replay-20260911-202823-878k","type":"observe","data":{"url":"http://127.0.0.1:4321/desk","title":"MERIDIAN Core :: Desk","nodes":5}}
+{"seq":17,"at":"2026-09-11T20:28:25.717Z","runId":"replay-20260911-202823-878k","type":"step.end","data":{"stepId":"s03","ok":true}}
+{"seq":18,"at":"2026-09-11T20:28:25.728Z","runId":"replay-20260911-202823-878k","type":"observe","data":{"url":"http://127.0.0.1:4321/desk","title":"MERIDIAN Core :: Desk","nodes":5}}
+{"seq":19,"at":"2026-09-11T20:28:25.730Z","runId":"replay-20260911-202823-878k","type":"drift.detected","data":{"stepId":"s04","recorded":"92140295","actual":"3345ae32","url":"http://127.0.0.1:4321/desk"}}
+{"seq":20,"at":"2026-09-11T20:28:25.731Z","runId":"replay-20260911-202823-878k","type":"drift.detected","data":{"stepId":"s04","degraded":"relaxed-name","matched":"Member No.","recorded":"Member Number"}}
+{"seq":21,"at":"2026-09-11T20:28:25.732Z","runId":"replay-20260911-202823-878k","type":"step.start","data":{"stepId":"s04","intent":"Enter the member number into the inquiry form","kind":"type","risk":"safe","target":"textbox \"Member Number\"","resolved":"Member No.","attempt":1}}
+{"seq":22,"at":"2026-09-11T20:28:25.785Z","runId":"replay-20260911-202823-878k","type":"observe","data":{"url":"http://127.0.0.1:4321/desk","title":"MERIDIAN Core :: Desk","nodes":5}}
+{"seq":23,"at":"2026-09-11T20:28:25.787Z","runId":"replay-20260911-202823-878k","type":"step.end","data":{"stepId":"s04","ok":true}}
+{"seq":24,"at":"2026-09-11T20:28:25.798Z","runId":"replay-20260911-202823-878k","type":"observe","data":{"url":"http://127.0.0.1:4321/desk","title":"MERIDIAN Core :: Desk","nodes":5}}
+{"seq":25,"at":"2026-09-11T20:28:25.799Z","runId":"replay-20260911-202823-878k","type":"drift.detected","data":{"stepId":"s05","recorded":"92140295","actual":"3345ae32","url":"http://127.0.0.1:4321/desk"}}
+{"seq":26,"at":"2026-09-11T20:28:25.801Z","runId":"replay-20260911-202823-878k","type":"step.start","data":{"stepId":"s05","intent":"Run the member search","kind":"click","risk":"safe","target":"button \"Find\"","resolved":"Find","attempt":1}}
+{"seq":27,"at":"2026-09-11T20:28:25.877Z","runId":"replay-20260911-202823-878k","type":"observe","data":{"url":"http://127.0.0.1:4321/desk","title":"MERIDIAN Core :: Desk","nodes":5}}
+{"seq":28,"at":"2026-09-11T20:28:26.409Z","runId":"replay-20260911-202823-878k","type":"step.end","data":{"stepId":"s05","ok":true}}
+{"seq":29,"at":"2026-09-11T20:28:26.422Z","runId":"replay-20260911-202823-878k","type":"observe","data":{"url":"http://127.0.0.1:4321/desk","title":"MERIDIAN Core :: Desk","nodes":10}}
+{"seq":30,"at":"2026-09-11T20:28:26.464Z","runId":"replay-20260911-202823-878k","type":"note","data":{"evidence":"030-checkpoint-ok.png","label":"checkpoint-ok"}}
+{"seq":31,"at":"2026-09-11T20:28:26.466Z","runId":"replay-20260911-202823-878k","type":"run.end","data":{"status":"success","outputs":{"memberName":"RIVERA, DANA Q","accountStatus":"ACTIVE","savingsBalance":4812.55}}}
