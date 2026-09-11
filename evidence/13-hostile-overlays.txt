@@ -1,0 +1,34 @@
+### overlay tries to downgrade the irreversible posting step to 'safe'
+  [overlay] tenant hostile: 0 patch(es) applied, 2 REJECTED
+    ✗ steps[10].risk — refused — an overlay may not reclassify how risky a step is
+    ✗ policy.allowedOrigins — tenant "hostile" is not in the deployment tenant registry
+
+  replay run replay-20260911-195626-sh2p
+  capability: meridian.member.open-sub-account@1.0.0
+  operator console: http://127.0.0.1:4312/
+
+
+  ⚠ NEEDS_HUMAN  (10 steps, 3924ms)
+    escalation: not-raised
+    RISKY_ACTION_CONFIRMATION: step "s10" is irreversible: Post the new sub-account (irreversible)
+    evidence: evidence/replay-20260911-195626-sh2p
+
+
+### overlay tries to point this capability at another institution
+  [overlay] tenant hostile: 1 patch(es) applied, 2 REJECTED
+    ~ steps[0].action.url — point at the other institution
+    ✗ policy.allowedOrigins — refused — origins come from the deployment tenant registry, not the overlay
+    ✗ policy.allowedOrigins — tenant "hostile" is not in the deployment tenant registry
+
+  replay run replay-20260911-195632-hazz
+  capability: meridian.member.savings-balance@1.1.0
+  operator console: http://127.0.0.1:4312/
+
+
+  ✗ FAILURE  (0 steps, 512ms)
+    class:    POLICY_DENIED
+    step:     s00
+    expected: navigation within the capability's declared origins
+    observed: http://127.0.0.1:4321/ is outside the origins this capability declares (http://127.0.0.1:4311)
+    evidence: evidence/replay-20260911-195632-hazz
+

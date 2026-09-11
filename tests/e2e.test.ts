@@ -39,20 +39,23 @@ afterAll(async () => {
   await new Promise<void>((r) => server?.close(() => r()));
 });
 
-/** The recorded artifact, repointed at this test's instance. */
+/**
+ * The recorded artifact, repointed at this test's instance — through the same
+ * mechanism a real tenant uses. The overlay may move the entry point; the
+ * origins it is allowed to reach come from the deployment's tenant registry,
+ * not from the overlay itself.
+ */
 function capability() {
   const base = findCapability('meridian.member.savings-balance', '1.1.0');
   if (!base) throw new Error('capability meridian.member.savings-balance@1.1.0 is not recorded');
-  return applyOverlay(base, zOverlay.parse({
+  const overlay = zOverlay.parse({
     schema: 'overlay/v1',
     base: { id: base.id, version: base.version },
     tenant: 'e2e',
     approval: 'approved',
-    patches: [
-      { path: 'steps[0].action.url', value: `${ORIGIN}/` },
-      { path: 'policy.allowedOrigins', value: [ORIGIN] },
-    ],
-  })).capability;
+    patches: [{ path: 'steps[0].action.url', value: `${ORIGIN}/` }],
+  });
+  return applyOverlay(base, overlay, { e2e: { label: 'e2e harness', origins: [ORIGIN] } }).capability;
 }
 
 function engine() {

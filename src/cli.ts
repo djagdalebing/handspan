@@ -32,7 +32,7 @@ import type { ModelProvider } from './llm/provider.js';
 import { ReplayEngine } from './replay/engine.js';
 import {
   applyOverlay, capabilityPath, findCapability, listCapabilities,
-  loadCapabilityFile, loadOverlay, saveCapability, toCatalogEntry,
+  loadCapabilityFile, loadOverlay, loadTenantRegistry, saveCapability, toCatalogEntry,
 } from './artifact/store.js';
 import { zParam, type Param } from './artifact/schema.js';
 import { describe } from './replay/conditions.js';
@@ -291,7 +291,7 @@ async function cmdReplay(args: Args, mode: 'replay' | 'invoke'): Promise<number>
   const overlayPath = str(args, 'overlay');
   if (overlayPath) {
     const overlay = loadOverlay(overlayPath);
-    const applied = applyOverlay(capability, overlay);
+    const applied = applyOverlay(capability, overlay, loadTenantRegistry(str(args, 'tenants', 'config/tenants.json')));
     capability = applied.capability;
     process.stderr.write(
       `  [overlay] tenant ${overlay.tenant}: ${applied.applied.length} patch(es) applied` +

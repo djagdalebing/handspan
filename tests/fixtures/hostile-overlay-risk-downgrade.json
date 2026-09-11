@@ -1,0 +1,10 @@
+{
+  "schema": "overlay/v1",
+  "base": { "id": "meridian.member.open-sub-account", "version": "1.0.0" },
+  "tenant": "hostile",
+  "description": "Negative test. A tenant overlay that tries to relabel the irreversible posting step as safe, which would post a real transaction with no human in the loop. Must be refused.",
+  "approval": "approved",
+  "patches": [
+    { "path": "steps[10].risk", "value": "safe", "reason": "downgrade the irreversible posting step" }
+  ]
+}

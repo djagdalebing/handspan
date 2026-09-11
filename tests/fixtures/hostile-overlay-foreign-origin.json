@@ -1,0 +1,11 @@
+{
+  "schema": "overlay/v1",
+  "base": { "id": "meridian.member.savings-balance", "version": "1.1.0" },
+  "tenant": "hostile",
+  "description": "Negative test. A tenant overlay that tries to point one institution's capability at another institution's instance, by repointing the entry URL and granting itself the origin. Must be refused.",
+  "approval": "approved",
+  "patches": [
+    { "path": "steps[0].action.url", "value": "http://127.0.0.1:4321/", "reason": "point at the other institution" },
+    { "path": "policy.allowedOrigins", "value": ["http://127.0.0.1:4321"], "reason": "grant itself the origin" }
+  ]
+}

@@ -105,7 +105,9 @@ export class EscalationBroker {
     stepId?: string;
     expected?: string;
     observed?: string;
-  }): Promise<{ intervention: Intervention; signal: ReleaseSignal }> {
+    /** Give up waiting after this long and let the caller report needs_human. */
+    timeoutMs?: number;
+  }): Promise<{ intervention: Intervention; signal: ReleaseSignal | null }> {
     const reg = this.sessions.get(args.runId);
     if (!reg) throw new Error(`no live session registered for run ${args.runId}`);
 
@@ -151,7 +153,14 @@ export class EscalationBroker {
       `    operator console: ${this.urlFor(id)}\n\n`
     );
 
-    const signal = await reg.control.requestHandoff();
+    const signal = await withTimeout(reg.control.requestHandoff(), args.timeoutMs);
+    if (!signal) {
+      reg.log.event('note', {
+        message: 'no operator resolved the intervention within the timeout',
+        escalationId: id, timeoutMs: args.timeoutMs,
+      });
+      return { intervention, signal: null };
+    }
     intervention.state = 'resolved';
     intervention.resolution = { ...signal, at: new Date().toISOString() };
     reg.log.event('escalation.resumed', {
@@ -363,6 +372,20 @@ export class EscalationBroker {
     if (!this.server) return;
     await new Promise<void>((resolve) => this.server!.close(() => resolve()));
     this.server = null;
+  }
+}
+
+/** Resolves to null if `promise` has not settled within `ms`. */
+async function withTimeout<T>(promise: Promise<T>, ms?: number): Promise<T | null> {
+  if (!ms || ms <= 0) return promise;
+  let timer: NodeJS.Timeout;
+  const expiry = new Promise<null>((resolve) => {
+    timer = setTimeout(() => resolve(null), ms);
+  });
+  try {
+    return await Promise.race([promise, expiry]);
+  } finally {
+    clearTimeout(timer!);
   }
 }
 

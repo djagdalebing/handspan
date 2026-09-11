@@ -125,7 +125,13 @@ export interface Surface {
   observe(): Promise<Observation>;
   /** Resolution of `target` to a concrete control happens inside the surface. */
   act(action: Action, resolved: UiNode | null): Promise<ActionResult>;
-  screenshot(opts?: { maskSensitive?: boolean }): Promise<Buffer>;
+  /**
+   * `maskValues` are literal strings to black out wherever they appear on
+   * screen. Label-based masking only covers "Label: value" rows, which misses
+   * anything the application renders inline — a member number in a panel
+   * heading, for instance.
+   */
+  screenshot(opts?: { maskSensitive?: boolean; maskValues?: string[] }): Promise<Buffer>;
   /** Current location, in whatever form the surface uses (URL, window title). */
   location(): Promise<string>;
   close(): Promise<void>;

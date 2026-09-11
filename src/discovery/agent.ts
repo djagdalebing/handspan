@@ -152,7 +152,9 @@ export async function runDiscovery(o: DiscoveryOptions): Promise<DiscoveryOutcom
     }];
 
     if (o.includeScreenshots) {
-      const png = await o.surface.screenshot({ maskSensitive: true }).catch(() => null);
+      const png = await o.surface
+        .screenshot({ maskSensitive: true, maskValues: o.redactor.piiLiterals() })
+        .catch(() => null);
       if (png) parts.push({ image: { mimeType: 'image/png', data: png } });
     }
 

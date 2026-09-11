@@ -68,7 +68,10 @@ export class RunLog {
   /** Screenshot with sensitive values masked in-page before capture. */
   async screenshot(surface: Surface, label: string): Promise<string | null> {
     try {
-      const buf = await surface.screenshot({ maskSensitive: true });
+      const buf = await surface.screenshot({
+        maskSensitive: true,
+        maskValues: this.redactor.piiLiterals(),
+      });
       const name = `${String(this.seq).padStart(3, '0')}-${slug(label)}.png`;
       writeFileSync(join(this.dir, name), buf);
       this.event('note', { evidence: name, label });

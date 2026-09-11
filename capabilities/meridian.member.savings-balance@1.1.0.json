@@ -412,8 +412,7 @@
   ],
   "policy": {
     "allowedOrigins": [
-      "http://127.0.0.1:4311",
-      "http://127.0.0.1:4321"
+      "http://127.0.0.1:4311"
     ],
     "maxSteps": 20,
     "confirmAtRisk": "irreversible"
@@ -426,10 +425,10 @@
     "s05": "92140295"
   },
   "provenance": {
-    "recordedAt": "2026-09-11T18:35:44.746Z",
+    "recordedAt": "2026-09-11T19:54:05.630Z",
     "recordedBy": "llm",
     "model": "scripted",
-    "discoveryRunId": "discover-20260911-183541-x6qt",
+    "discoveryRunId": "discover-20260911-195402-gfke",
     "goal": "Sign on as the operator, look up member 12345 in Member Inquiry, and reach the member detail screen showing their share savings balance.",
     "derivedFrom": {
       "id": "meridian.member.savings-balance",

@@ -47,7 +47,7 @@ describe('tenant overlays', () => {
   // Inventing a path would silently produce a flow nobody wrote.
   it('rejects a patch whose path does not exist rather than creating it', () => {
     const r = applyOverlay(base(), overlay([{ path: 'steps[9].action.url', value: 'x' }]));
-    expect(r.rejected).toHaveLength(1);
+    expect(r.rejected.some((x) => x.path === 'steps[9].action.url' && /does not exist/.test(x.reason))).toBe(true);
     expect(r.capability.steps).toHaveLength(2);
   });
 
@@ -80,6 +80,59 @@ describe('tenant overlays', () => {
     const b = base();
     b.approval = 'draft';
     expect(applyOverlay(b, overlay()).capability.approval).toBe('draft');
+  });
+});
+
+describe('overlay guardrails', () => {
+  const registry = { northgate: { label: 'Northgate', origins: ['http://b.example'] } };
+
+  // An overlay is a specialisation, not a privilege escalation. Patching a
+  // step's risk to "safe" was enough to post an irreversible transaction with
+  // no human in the loop.
+  it('refuses to let a tenant reclassify how risky a step is', () => {
+    const b = base();
+    b.steps[1]!.risk = 'irreversible';
+    const r = applyOverlay(b, overlay([{ path: 'steps[1].risk', value: 'safe' }]), registry);
+    expect(r.capability.steps[1]!.risk).toBe('irreversible');
+    expect(r.rejected.some((x) => /may not reclassify/.test(x.reason))).toBe(true);
+  });
+
+  it('refuses to let a tenant move the confirmation threshold', () => {
+    const r = applyOverlay(base(), overlay([{ path: 'policy.confirmAtRisk', value: 'safe' }]), registry);
+    expect(r.capability.policy.confirmAtRisk).toBe('irreversible');
+    expect(r.rejected.some((x) => /confirmation threshold/.test(x.reason))).toBe(true);
+  });
+
+  it('refuses to let a tenant grant itself origins', () => {
+    const r = applyOverlay(
+      base(),
+      overlay([{ path: 'policy.allowedOrigins', value: ['http://evil.example'] }]),
+      registry
+    );
+    expect(r.capability.policy.allowedOrigins).toEqual(['http://b.example']);
+    expect(r.rejected.some((x) => /tenant registry/.test(x.reason))).toBe(true);
+  });
+
+  // Origins are a deployment fact about the tenant, not an overlay assertion.
+  it('takes origins from the deployment tenant registry', () => {
+    const r = applyOverlay(base(), overlay(), registry);
+    expect(r.capability.policy.allowedOrigins).toEqual(['http://b.example']);
+    expect(r.applied.some((a) => /tenant registry/.test(a.reason))).toBe(true);
+  });
+
+  // Failing closed: an unknown tenant inherits nothing it can drive.
+  it('reports an unknown tenant rather than inheriting the base origins silently', () => {
+    const r = applyOverlay(base(), overlay(), {});
+    expect(r.rejected.some((x) => /not in the deployment tenant registry/.test(x.reason))).toBe(true);
+  });
+
+  it('still allows the entry point to be repointed', () => {
+    const r = applyOverlay(
+      base(),
+      overlay([{ path: 'steps[0].action.url', value: 'http://b.example/' }]),
+      registry
+    );
+    expect(r.capability.steps[0]!.action).toMatchObject({ url: 'http://b.example/' });
   });
 });
 

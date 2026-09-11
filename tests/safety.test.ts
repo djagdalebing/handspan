@@ -99,3 +99,50 @@ describe('credentials', () => {
     expect(new EnvCredentialProvider('HS_TEST_SECRET_').resolve('my-key')).toBe('v');
   });
 });
+
+describe('redaction of system identifiers', () => {
+  // Every shipped result.json once pointed at a directory that did not exist:
+  // a run id like `replay-20260911-190755-dsw9` contains a 14-digit run, so
+  // the card-number pattern devoured it.
+  it('leaves run ids and evidence paths intact', () => {
+    const r = new Redactor();
+    const out = r.value({
+      runId: 'replay-20260911-190755-dsw9',
+      evidenceDir: 'evidence/replay-20260911-190755-dsw9',
+      stepId: 's05',
+    });
+    expect(out).toEqual({
+      runId: 'replay-20260911-190755-dsw9',
+      evidenceDir: 'evidence/replay-20260911-190755-dsw9',
+      stepId: 's05',
+    });
+  });
+
+  it('still scrubs a registered secret out of a preserved field', () => {
+    const r = new Redactor();
+    r.registerSecret('hunter2', 'PWD');
+    expect((r.value({ runId: 'run-hunter2-1' }) as { runId: string }).runId)
+      .toBe('run-«secret:PWD»-1');
+  });
+
+  // An unsalted hash of a five-digit member id is 100,000 candidates: an
+  // encoding, not a pseudonym.
+  it('salts pseudonyms so they cannot be enumerated back', () => {
+    const a = new Redactor();
+    const b = new Redactor();
+    a.register('12345', 'pii', 'memberId');
+    b.register('12345', 'pii', 'memberId');
+    const ta = a.string('member 12345');
+    const tb = b.string('member 12345');
+    expect(ta).not.toContain('12345');
+    expect(ta).not.toBe(tb);                       // different salt per process
+    expect(ta).toBe(a.string('member 12345'));     // stable within one run
+  });
+
+  it('exposes declared PII literals so screenshots can mask them', () => {
+    const r = new Redactor();
+    r.register('12345', 'pii', 'memberId');
+    r.registerSecret('hunter2', 'PWD');
+    expect(r.piiLiterals()).toEqual(['12345']);    // secrets are never handed to the page
+  });
+});

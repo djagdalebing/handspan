@@ -1,0 +1,21 @@
+{
+  "runId": "replay-20260911-195626-sh2p",
+  "capability": {
+    "id": "meridian.member.open-sub-account",
+    "version": "1.0.0"
+  },
+  "startedAt": "2026-09-11T19:56:27.092Z",
+  "durationMs": 3924,
+  "stepsExecuted": 10,
+  "evidenceDir": "evidence/replay-20260911-195626-sh2p",
+  "recoveries": [],
+  "drift": {
+    "changedSteps": [],
+    "relaxedTargets": [],
+    "frameMismatches": []
+  },
+  "status": "needs_human",
+  "escalationId": "not-raised",
+  "reason": "RISKY_ACTION_CONFIRMATION: step \"s10\" is irreversible: Post the new sub-account (irreversible)",
+  "stepId": "s10"
+}

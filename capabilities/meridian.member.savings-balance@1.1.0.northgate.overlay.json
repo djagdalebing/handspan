@@ -14,13 +14,6 @@
       "reason": "Northgate's instance is hosted separately."
     },
     {
-      "path": "policy.allowedOrigins",
-      "value": [
-        "http://127.0.0.1:4321"
-      ],
-      "reason": "Scope this specialisation to Northgate's origin so it cannot drive another institution's instance."
-    },
-    {
       "path": "outputs[2].source.selectColumn",
       "value": "BALANCE",
       "reason": "Northgate's account grid heads the balance column 'BALANCE'."

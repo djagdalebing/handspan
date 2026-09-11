@@ -251,8 +251,8 @@ export class WebSurface implements Surface, LiveControl {
 
   // ----------------------------------------------------------- evidence --
 
-  async screenshot(opts: { maskSensitive?: boolean } = {}): Promise<Buffer> {
-    const restore = opts.maskSensitive === false ? null : await this.maskSensitive();
+  async screenshot(opts: { maskSensitive?: boolean; maskValues?: string[] } = {}): Promise<Buffer> {
+    const restore = opts.maskSensitive === false ? null : await this.maskSensitive(opts.maskValues ?? []);
     try {
       return await this.page.screenshot({ fullPage: false });
     } finally {
@@ -266,15 +266,19 @@ export class WebSurface implements Surface, LiveControl {
    * post-processing the PNG means the sensitive pixels are never written to
    * disk at all, which is the property that actually matters.
    */
-  private async maskSensitive(): Promise<(() => Promise<void>) | null> {
+  private async maskSensitive(values: string[] = []): Promise<(() => Promise<void>) | null> {
     const pattern = this.opts.sensitiveLabelPattern.source;
     const flags = this.opts.sensitiveLabelPattern.flags;
+    // Only values already declared PII by the capability are sent into the
+    // page, and they came off this page to begin with. Secrets are never sent
+    // — password fields are masked structurally instead.
+    const literals = values.filter((v) => v.length >= 3);
     const frames = this.page.frames();
     const touched: Frame[] = [];
     for (const frame of frames) {
       try {
         const n = await frame.evaluate(
-          ({ src, fl }: { src: string; fl: string }) => {
+          ({ src, fl, lits }: { src: string; fl: string; lits: string[] }) => {
             const re = new RegExp(src, fl);
             const marks: HTMLElement[] = [];
             for (const row of Array.from(document.querySelectorAll('tr'))) {
@@ -286,6 +290,15 @@ export class WebSurface implements Surface, LiveControl {
             for (const inp of Array.from(document.querySelectorAll('input[type=password]'))) {
               marks.push(inp as HTMLElement);
             }
+            // Leaf elements whose own text carries a declared PII value.
+            if (lits.length > 0) {
+              for (const el of Array.from(document.body.querySelectorAll('*')) as HTMLElement[]) {
+                if (el.children.length > 0) continue;
+                const t = el.innerText ?? el.textContent ?? '';
+                if (!t) continue;
+                if (lits.some((v) => t.includes(v))) marks.push(el);
+              }
+            }
             (window as unknown as { __hs_masked: HTMLElement[] }).__hs_masked = marks;
             for (const m of marks) {
               m.dataset.hsPrev = m.getAttribute('style') ?? '';
@@ -294,7 +307,7 @@ export class WebSurface implements Surface, LiveControl {
             }
             return marks.length;
           },
-          { src: pattern, fl: flags }
+          { src: pattern, fl: flags, lits: literals }
         );
         if (n > 0) touched.push(frame);
       } catch {

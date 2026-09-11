@@ -51,19 +51,23 @@
     "outcomes": [
       {
         "code": "MINIMUM_DEPOSIT_NOT_MET",
-        "description": "The opening deposit was below the product minimum, so nothing was opened."
+        "description": "The opening deposit was below the product minimum, so nothing was opened.",
+        "verified": false
       },
       {
         "code": "ACCOUNT_TYPE_REQUIRED",
-        "description": "No account type was selected."
+        "description": "No account type was selected.",
+        "verified": false
       },
       {
         "code": "INVALID_DEPOSIT_AMOUNT",
-        "description": "The opening deposit was not a valid amount."
+        "description": "The opening deposit was not a valid amount.",
+        "verified": false
       },
       {
         "code": "MEMBER_NOT_FOUND",
-        "description": "No member record exists for the number supplied."
+        "description": "No member record exists for the number supplied.",
+        "verified": false
       }
     ]
   },
@@ -111,15 +115,18 @@
     "outcomes": [
       {
         "code": "MEMBER_NOT_FOUND",
-        "description": "No member record exists for the number supplied."
+        "description": "No member record exists for the number supplied.",
+        "verified": true
       },
       {
         "code": "INVALID_MEMBER_NUMBER",
-        "description": "The member number supplied was not numeric."
+        "description": "The member number supplied was not numeric.",
+        "verified": false
       },
       {
         "code": "MEMBER_RESTRICTED",
-        "description": "The operator is not authorised to view this member record."
+        "description": "The operator is not authorised to view this member record.",
+        "verified": true
       }
     ]
   },
@@ -163,19 +170,18 @@
     "outcomes": [
       {
         "code": "MEMBER_NOT_FOUND",
-        "description": "No member record exists for the number supplied."
+        "description": "No member record exists for the number supplied.",
+        "verified": true
       },
       {
         "code": "INVALID_MEMBER_NUMBER",
-        "description": "The member number supplied was not numeric."
+        "description": "The member number supplied was not numeric.",
+        "verified": false
       },
       {
         "code": "MEMBER_RESTRICTED",
-        "description": "The operator is not authorised to view this member record."
-      },
-      {
-        "code": "SYSTEM_ERROR",
-        "description": "MERIDIAN Core returned an unhandled application error (MCS-0500)."
+        "description": "The operator is not authorised to view this member record.",
+        "verified": true
       }
     ]
   },
@@ -198,7 +204,8 @@
     "outcomes": [
       {
         "code": "SIGNON_REJECTED",
-        "description": "The operator ID or password was rejected."
+        "description": "The operator ID or password was rejected.",
+        "verified": false
       }
     ]
   }

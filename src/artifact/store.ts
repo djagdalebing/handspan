@@ -78,6 +78,35 @@ export interface OverlayApplication {
   rejected: Array<{ path: string; reason: string }>;
 }
 
+/** Deployment-owned mapping of tenant to the origins that tenant may be driven at. */
+export type TenantRegistry = Record<string, { label?: string; origins: string[] }>;
+
+export function loadTenantRegistry(path = 'config/tenants.json'): TenantRegistry {
+  if (!existsSync(path)) return {};
+  return JSON.parse(readFileSync(path, 'utf8')) as TenantRegistry;
+}
+
+/**
+ * Paths an overlay may never write.
+ *
+ * An overlay is a *specialisation*, not a privilege escalation. Each of these
+ * is a guardrail, and letting a tenant file relax one would mean the weakest
+ * overlay in the fleet sets the safety level for the capability it derives
+ * from. Patching `steps[N].risk` to "safe" is enough to post an irreversible
+ * transaction with no human in the loop; patching `policy.allowedOrigins` is
+ * enough to point one institution's capability at another's instance.
+ *
+ * Origins still have to vary per tenant — that is the whole point — so they
+ * come from the deployment's tenant registry rather than from the overlay.
+ */
+const GUARDED_PATHS: Array<{ re: RegExp; why: string }> = [
+  { re: /^approval$/, why: 'approval is granted by review, not by an overlay' },
+  { re: /(^|\.)risk$/, why: 'an overlay may not reclassify how risky a step is' },
+  { re: /^policy\.confirmAtRisk$/, why: 'an overlay may not move the human-confirmation threshold' },
+  { re: /^policy\.allowedOrigins$/, why: 'origins come from the deployment tenant registry, not the overlay' },
+  { re: /^policy\.maxSteps$/, why: 'an overlay may not raise the step budget' },
+];
+
 /**
  * Applies a tenant overlay to its base capability.
  *
@@ -88,7 +117,11 @@ export interface OverlayApplication {
  *     created. A patch that quietly invents `steps[7]` because the base now
  *     has six steps is how a tenant ends up running a flow nobody wrote.
  */
-export function applyOverlay(base: Capability, overlay: Overlay): OverlayApplication {
+export function applyOverlay(
+  base: Capability,
+  overlay: Overlay,
+  registry: TenantRegistry = {}
+): OverlayApplication {
   if (overlay.base.id !== base.id) {
     throw new Error(`overlay targets ${overlay.base.id}, not ${base.id}`);
   }
@@ -119,9 +152,32 @@ export function applyOverlay(base: Capability, overlay: Overlay): OverlayApplica
   }
 
   for (const patch of overlay.patches) {
+    const guard = GUARDED_PATHS.find((g) => g.re.test(patch.path));
+    if (guard) {
+      rejected.push({ path: patch.path, reason: `refused — ${guard.why}` });
+      continue;
+    }
     const ok = setAtPath(clone as unknown as Record<string, unknown>, patch.path, patch.value);
     if (ok) applied.push({ path: patch.path, reason: patch.reason });
     else rejected.push({ path: patch.path, reason: 'path does not exist on the base capability' });
+  }
+
+  // Origins are a deployment fact about the tenant, not something the tenant's
+  // own file gets to assert. An unknown tenant inherits nothing and is left
+  // with the base's origins, which will not match its instance — it fails
+  // closed rather than open.
+  const tenant = registry[overlay.tenant];
+  if (tenant) {
+    clone.policy = { ...clone.policy, allowedOrigins: [...tenant.origins] };
+    applied.push({
+      path: 'policy.allowedOrigins',
+      reason: `from the tenant registry (${tenant.label ?? overlay.tenant})`,
+    });
+  } else {
+    rejected.push({
+      path: 'policy.allowedOrigins',
+      reason: `tenant "${overlay.tenant}" is not in the deployment tenant registry`,
+    });
   }
 
   clone.app = { ...clone.app, tenant: overlay.tenant };
@@ -211,7 +267,14 @@ export interface CatalogEntry {
     required: string[];
   };
   returns: Record<string, { type: string; description: string }>;
-  outcomes: Array<{ code: string; description: string }>;
+  /**
+   * Only *business* outcomes. A recognised application failure comes back as
+   * `status: "failure"`, so listing it here as something the caller handles
+   * would tell an agent that "the core is down" is a fact about the record it
+   * asked for. `verified` is exposed because an unproven detector is a
+   * different promise from a proven one.
+   */
+  outcomes: Array<{ code: string; description: string; verified: boolean }>;
 }
 
 export function toCatalogEntry(cap: Capability): CatalogEntry {
@@ -240,6 +303,8 @@ export function toCatalogEntry(cap: Capability): CatalogEntry {
       required: cap.inputs.filter((p) => p.required).map((p) => p.name),
     },
     returns,
-    outcomes: cap.outcomes.map((o) => ({ code: o.code, description: o.description })),
+    outcomes: cap.outcomes
+      .filter((o) => o.classification === 'business')
+      .map((o) => ({ code: o.code, description: o.description, verified: o.verified })),
   };
 }

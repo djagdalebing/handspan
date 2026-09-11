@@ -1,13 +1,13 @@
 {
-  "runId": "replay-«card#deb0»ws7z",
+  "runId": "replay-20260911-195528-imnw",
   "capability": {
     "id": "meridian.member.savings-balance",
     "version": "1.1.0"
   },
-  "startedAt": "2026-09-11T18:37:14.977Z",
-  "durationMs": 2,
+  "startedAt": "2026-09-11T19:55:28.342Z",
+  "durationMs": 1,
   "stepsExecuted": 0,
-  "evidenceDir": "evidence/replay-«card#deb0»ws7z",
+  "evidenceDir": "evidence/07-replay-invalid-input",
   "recoveries": [],
   "drift": {
     "changedSteps": [],

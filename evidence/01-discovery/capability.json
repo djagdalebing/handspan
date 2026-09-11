@@ -20,7 +20,7 @@
       "description": "The member number to look up.",
       "sensitivity": "pii",
       "pattern": "^[0-9]{5}$",
-      "example": "«memberId#5994»"
+      "example": "«memberId#b13c0b»"
     }
   ],
   "outputs": [
@@ -414,8 +414,7 @@
   ],
   "policy": {
     "allowedOrigins": [
-      "http://127.0.0.1:4311",
-      "http://127.0.0.1:4321"
+      "http://127.0.0.1:4311"
     ],
     "maxSteps": 20,
     "confirmAtRisk": "irreversible"
@@ -428,10 +427,10 @@
     "s05": "92140295"
   },
   "provenance": {
-    "recordedAt": "2026-09-11T18:35:44.746Z",
+    "recordedAt": "2026-09-11T19:54:05.630Z",
     "recordedBy": "llm",
     "model": "scripted",
-    "discoveryRunId": "discover-«card#d738»x6qt",
-    "goal": "Sign on as the operator, look up member «memberId#5994» in Member Inquiry, and reach the member detail screen showing their share savings balance."
+    "discoveryRunId": "discover-«card#5c0d1c»gfke",
+    "goal": "Sign on as the operator, look up member «memberId#b13c0b» in Member Inquiry, and reach the member detail screen showing their share savings balance."
   }
 }

@@ -15,7 +15,20 @@ say() { printf '\n\033[1m=== %s\033[0m\n' "$*"; }
 latest() { ls -dt evidence/"$1"-* 2>/dev/null | head -1; }
 keep() { # keep <prefix> <destination>
   local d; d="$(latest "$1")"
-  rm -rf "evidence/$2"; mv "$d" "evidence/$2"; echo "    -> evidence/$2"
+  rm -rf "evidence/$2"; mv "$d" "evidence/$2"
+  # The run wrote its own directory into result.json before this rename, so
+  # repoint it — otherwise the evidence path handed to the caller names a
+  # directory that no longer exists.
+  if [ -f "evidence/$2/result.json" ]; then
+    node -e '
+      const fs = require("fs");
+      const p = process.argv[1];
+      const r = JSON.parse(fs.readFileSync(p, "utf8"));
+      r.evidenceDir = process.argv[2];
+      fs.writeFileSync(p, JSON.stringify(r, null, 2) + "\n");
+    ' "evidence/$2/result.json" "evidence/$2"
+  fi
+  echo "    -> evidence/$2"
 }
 
 say "starting both tenant instances"
@@ -92,7 +105,22 @@ npx tsx src/cli.ts replay meridian.member.savings-balance@1.1.0 \
   --input memberId=12345 --no-escalation
 keep replay 11-cross-tenant-overlay
 
-say "13. agent-facing catalog"
+say "13. guardrails — two hostile overlays, both refused"
+{
+  echo "### overlay tries to downgrade the irreversible posting step to 'safe'"
+  npx tsx src/cli.ts replay meridian.member.open-sub-account \
+    --overlay tests/fixtures/hostile-overlay-risk-downgrade.json \
+    --input memberId=34567 --input accountType="VACATION CLUB" --input openingDeposit=50.00 \
+    --no-escalation 2>&1 || true
+  echo
+  echo "### overlay tries to point this capability at another institution"
+  npx tsx src/cli.ts replay meridian.member.savings-balance@1.1.0 \
+    --overlay tests/fixtures/hostile-overlay-foreign-origin.json \
+    --input memberId=12345 --no-escalation 2>&1 || true
+} | tee evidence/13-hostile-overlays.txt
+keep replay 13-guardrails-hostile-overlay
+
+say "14. agent-facing catalog"
 npx tsx src/cli.ts catalog --json > evidence/catalog.json
 npx tsx src/cli.ts invoke meridian.member.savings-balance@1.1.0 --input memberId=23456 --no-escalation \
   | tee evidence/agent-invocation.json

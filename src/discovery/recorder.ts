@@ -47,6 +47,10 @@ export interface RecordArgs {
   inputs: Param[];
   paramValues: Record<string, string>;
   entryUrl: string;
+  /**
+   * The deployment's allowlist. Used only as an upper bound: what the
+   * capability declares is derived from where it actually went.
+   */
   allowedOrigins: string[];
   model: string;
   runId: string;
@@ -230,7 +234,15 @@ export function recordCapability(outcome: DiscoveryOutcome, args: RecordArgs): R
     outcomes,
     interstitials,
     policy: {
-      allowedOrigins: args.allowedOrigins,
+      // Only the origins this flow actually touched.
+      //
+      // Stamping the deployment's whole allowlist here made this guard
+      // vacuous: a deployment serving many institutions lists all of their
+      // hosts, so every capability declared permission to drive every one of
+      // them, and the "a tenant-specialised capability cannot reach another
+      // institution" property was never true. Derive it from the recording
+      // instead, and let the tenant registry widen it deliberately.
+      allowedOrigins: originsUsed(args.entryUrl, steps),
       maxSteps: Math.max(steps.length + 6, 20),
       confirmAtRisk: 'irreversible',
     },
@@ -245,6 +257,23 @@ export function recordCapability(outcome: DiscoveryOutcome, args: RecordArgs): R
   } satisfies Record<string, unknown>);
 
   return { capability, warnings };
+}
+
+/** Distinct origins the recorded flow navigates to. */
+function originsUsed(entryUrl: string, steps: Step[]): string[] {
+  const origins = new Set<string>();
+  const add = (u: string) => {
+    try {
+      origins.add(new URL(u).origin);
+    } catch {
+      /* a templated URL with no resolvable origin; the runtime policy still applies */
+    }
+  };
+  add(entryUrl);
+  for (const step of steps) {
+    if (step.action.kind === 'navigate') add(step.action.url);
+  }
+  return [...origins];
 }
 
 // ------------------------------------------------------------- helpers ----

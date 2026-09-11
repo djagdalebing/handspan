@@ -35,8 +35,14 @@ export interface PolicyConfig {
   /** Steps at or above this risk need a human decision. */
   confirmAtRisk: Risk;
   maxSteps: number;
-  /** Wall-clock ceiling for a single run. */
+  /** Wall-clock ceiling for a single run. Enforced between steps. */
   runTimeoutMs: number;
+  /**
+   * How long a raised intervention waits for an operator before the run gives
+   * up and returns `needs_human`. Without a bound, "escalate" means "block
+   * forever", which is not a safety property — it is a hang.
+   */
+  escalationTimeoutMs: number;
 }
 
 export const DEFAULT_POLICY: PolicyConfig = {
@@ -47,6 +53,7 @@ export const DEFAULT_POLICY: PolicyConfig = {
   confirmAtRisk: 'irreversible',
   maxSteps: 40,
   runTimeoutMs: 5 * 60_000,
+  escalationTimeoutMs: 10 * 60_000,
 };
 
 export type Decision =

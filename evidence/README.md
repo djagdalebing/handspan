@@ -27,6 +27,7 @@ contain `result.json`, the exact structured result the caller received.
 | `09-escalation-human-takeover` | The operator posts it themselves in the live session, then releases with "complete". | `success`, **10** steps — the engine verified the checkpoint instead of replaying the step the human did |
 | `10-escalation-stuck-recovery` | The *unreviewed* draft's recovery fails, the run gets stuck, and an operator signs the session back on by hand. | `success` after handoff |
 | `11-cross-tenant-overlay` | The same capability run against a second institution via a tenant overlay. | `success`, drift reported |
+| `13-guardrails-hostile-overlay` | Two tenant overlays attempting privilege escalation, both refused. Output in `13-hostile-overlays.txt`. | `POLICY_DENIED` / `NEEDS_HUMAN` |
 | `12-agent-invocation` | What a calling agent gets back. | see `agent-invocation.json` |
 
 `catalog.json` is the agent-facing capability catalog. The `*.json` capability
@@ -58,6 +59,24 @@ produced four results worth reading in the log:
 Probes cost no model calls — they replay the artifact that was just recorded —
 and they run with irreversible steps blocked, so probing a flow that posts a
 transaction cannot post one.
+
+## Guardrails, demonstrated rather than asserted
+
+An earlier version of this system asserted two safety properties in its
+write-up that the code did not have, and both were bypassable with a four-line
+tenant overlay. `13-hostile-overlays.txt` is the regression evidence:
+
+- An overlay patching `steps[10].risk → "safe"` once posted a real irreversible
+  transaction with no human in the loop. It is now refused — *"an overlay may
+  not reclassify how risky a step is"* — and the run stops at `NEEDS_HUMAN`.
+- An overlay repointing a capability at a second institution and granting
+  itself that origin once succeeded. It is now refused twice over: origins come
+  from the deployment's tenant registry rather than the overlay, and the
+  capability declares only the origins its recording actually touched, so the
+  run is `POLICY_DENIED` at step zero.
+
+The fixtures are in `tests/fixtures/`, so these stay negative tests rather than
+a one-off demonstration.
 
 ## Things worth opening
 

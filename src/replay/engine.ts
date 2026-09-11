@@ -66,6 +66,8 @@ export class ReplayEngine {
   private startedAt = new Date().toISOString();
   private t0 = Date.now();
   private _lastObservation: Observation | null = null;
+  /** Set when an escalation was needed but nobody resolved it. */
+  private unresolvedEscalation: { escalationId?: string; reason: string } | null = null;
 
   /** The most recent screen this run perceived. Used by discovery probes. */
   get lastObservation(): Observation | null {
@@ -154,6 +156,11 @@ export class ReplayEngine {
 
       for (let i = 0; i < cap.steps.length; ) {
         const step = cap.steps[i]!;
+        const elapsed = Date.now() - this.t0;
+        if (elapsed > this.o.policy.config.runTimeoutMs) {
+          return fail('RUN_TIMEOUT', `the run to finish within ${this.o.policy.config.runTimeoutMs}ms`,
+            `still running after ${elapsed}ms at step "${step.id}"`, { stepId: step.id });
+        }
         if (this.stepsExecuted >= cap.policy.maxSteps) {
           return fail('RUN_TIMEOUT', `at most ${cap.policy.maxSteps} steps`, `step budget exhausted at "${step.id}"`, { stepId: step.id });
         }
@@ -357,6 +364,8 @@ export class ReplayEngine {
             continue;
           }
           if (signal?.disposition === 'complete') return { kind: 'human_completed' };
+          const pending = this.humanRequired(cap, step.id);
+          if (pending) return { kind: 'result', result: pending };
 
           const shot = await this.o.log.screenshot(this.o.surface, `${cls.toLowerCase()}-${step.id}`);
           const dump = this.o.log.dumpObservation(obs, `${cls.toLowerCase()}-${step.id}`);
@@ -449,6 +458,8 @@ export class ReplayEngine {
             continue;
           }
           if (signal?.disposition === 'complete') return { kind: 'human_completed' };
+          const pendingTimeout = this.humanRequired(cap, step.id);
+          if (pendingTimeout) return { kind: 'result', result: pendingTimeout };
 
           const shot = await this.o.log.screenshot(this.o.surface, `step-timeout-${step.id}`);
           const dump = this.o.log.dumpObservation(w.obs, `step-timeout-${step.id}`);
@@ -492,6 +503,8 @@ export class ReplayEngine {
           : null;
         if (signal?.disposition === 'resume') { changed = true; break; }  // operator cleared it by hand
         if (signal?.disposition === 'complete') return { changed, humanCompleted: true };
+        const pendingLoop = this.humanRequired(cap, step.id);
+        if (pendingLoop) return { changed, escalationResult: pendingLoop };
         const dump = this.o.log.dumpObservation(current, `interstitial-loop-${hit.code}`);
         return {
           changed,
@@ -513,6 +526,21 @@ export class ReplayEngine {
           if (!r.ok) break;
           node = r.node;
         }
+
+        // Recovery actions are risk-gated like any other step. Without this an
+        // interstitial is a hole straight through the confirmation gate: its
+        // `do` list is a plain action list, so a recovery declared as "click
+        // Post Account" would commit a transaction with no human involved and
+        // no declared step risk to stop it.
+        const risk = Policy.classify(action.kind, node?.name);
+        if (this.o.policy.checkRisk(risk, `recovery for ${hit.code}`).decision === 'confirm') {
+          this.o.log.event('policy.decision', {
+            code: hit.code, decision: 'deny', risk, control: node?.name,
+            reason: 'a recoverable-condition handler may not perform a risky action',
+          });
+          break;
+        }
+
         const done = await this.perform(action, bindings, node, 1);
         if (!done.ok) break;
       }
@@ -631,10 +659,15 @@ export class ReplayEngine {
     ctx: { stepId?: string; expected?: string; observed?: string }
   ): Promise<ReleaseSignal | null> {
     if (!this.o.allowEscalation) {
+      // An unattended caller still needs to be told a person is required —
+      // reporting this as a hard failure would read as "the automation is
+      // broken" when the truth is "this one needs a human".
       this.o.log.event('note', { message: 'escalation suppressed (unattended run)', reason, summary });
+      this.unresolvedEscalation = { reason: `${reason}: ${summary}` };
       return null;
     }
-    const { signal } = await broker.raise({
+    const { intervention, signal } = await broker.raise({
+      timeoutMs: this.o.policy.config.escalationTimeoutMs,
       runId: this.o.runId,
       mode: 'replay',
       capabilityId: `${cap.id}@${cap.version}`,
@@ -645,7 +678,34 @@ export class ReplayEngine {
       expected: ctx.expected,
       observed: ctx.observed,
     });
+    if (!signal) {
+      this.unresolvedEscalation = {
+        escalationId: intervention.id,
+        reason: `${reason}: ${summary} (no operator resolved it in time)`,
+      };
+    }
     return signal;
+  }
+
+  /**
+   * A `needs_human` result, if the last escalation went unresolved.
+   *
+   * This is a pending state, not a failure: the work is not wrong, it is
+   * waiting on a person. Collapsing it into `failure` is what makes callers
+   * retry things that will never succeed without someone looking.
+   */
+  private humanRequired(cap: Capability, stepId?: string): ReplayResult | null {
+    const pending = this.unresolvedEscalation;
+    if (!pending) return null;
+    this.unresolvedEscalation = null;
+    this.o.log.event('run.end', { status: 'needs_human', ...pending, stepId });
+    return {
+      ...(this.baseFor(cap) as object),
+      status: 'needs_human',
+      escalationId: pending.escalationId ?? 'not-raised',
+      reason: pending.reason,
+      stepId,
+    } as ReplayResult;
   }
 
   private async gateRiskyStep(
@@ -677,6 +737,12 @@ export class ReplayEngine {
       `step "${step.id}" is ${step.risk}: ${step.intent}`,
       { stepId: step.id, expected: 'operator approval to proceed', observed: reason });
 
+    if (!signal) {
+      // Nobody approved it, so nobody approved it. Proceeding would make the
+      // gate decorative; failing would say the flow is broken when it is not.
+      const pending = this.humanRequired(cap, step.id);
+      if (pending) return { kind: 'result', result: pending };
+    }
     if (!signal || signal.disposition === 'abort') {
       return {
         kind: 'result',

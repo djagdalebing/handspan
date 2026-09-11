@@ -18,5 +18,6 @@
   ],
   "confirmAtRisk": "irreversible",
   "maxSteps": 40,
-  "runTimeoutMs": 300000
+  "runTimeoutMs": 300000,
+  "escalationTimeoutMs": 600000
 }

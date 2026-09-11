@@ -1,0 +1,10 @@
+{
+  "northgate-cu": {
+    "label": "Northgate Credit Union",
+    "origins": ["http://127.0.0.1:4321"]
+  },
+  "meridian-default": {
+    "label": "Meridian reference instance",
+    "origins": ["http://127.0.0.1:4311"]
+  }
+}

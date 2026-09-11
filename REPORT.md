@@ -24,27 +24,23 @@ actions are human-scale verbs against one of them. Nothing above that line knows
 what a DOM is. Those are the same fields a Win32/UIA tree gives you, which is
 what makes the model plausible beyond a browser.
 
-Concretely that meant *not* using Playwright locators as the identity
-mechanism: a CSS selector cannot cross the seam, an accessible name can. The web
-driver injects its own perception pass deriving a name from whatever the page
-offers, falling back — the case that matters — to *the text in the table cell to
-the left of the field*. On the simulated app, which has no `id`, no `label` and
-no ARIA anywhere, that one heuristic is what makes "the textbox labelled Member
-Number" a resolvable thing to say.
-
-Acting uses real element handles: perception parks live element references on
-`window` and returns indices, giving trusted input events without stamping
-synthetic attributes into a bank's DOM or letting anything selector-shaped reach
-an artifact. Bounds are still translated to main-frame coordinates, which keeps
-the operator console and a future coordinate-only driver honest.
+That meant *not* using Playwright locators as identity: a CSS selector cannot
+cross the seam, an accessible name can. The web driver derives a name from
+whatever the page offers, falling back — the case that matters — to *the text in
+the table cell to the left of the field*. On an app with no `id`, no `label` and
+no ARIA, that one heuristic is what makes "the textbox labelled Member Number" a
+resolvable thing to say. Acting uses real element handles (perception parks live
+references on `window` and returns indices), giving trusted input events without
+stamping synthetic attributes into a bank's DOM or letting anything
+selector-shaped reach an artifact.
 
 Discovery and replay share everything except the decision-maker: the model picks
-from the same normalized control list the engine resolves against, by ephemeral
-`ref`, and never writes a selector. That is what makes a run *recordable* rather
-than something to reverse-engineer from a transcript. The cost of one process is
-that the console reaches the session by reference rather than RPC — but the
-control model is written as "ask the lease, then act", so the wire can get
-longer without the design changing.
+from the same control list the engine resolves against, by ephemeral `ref`, and
+never writes a selector. That is what makes a run *recordable* rather than
+something to reverse-engineer from a transcript. The cost of one process is that
+the console reaches the session by reference rather than RPC — but the control
+model is written as "ask the lease, then act", so the wire can get longer
+without the design changing.
 
 ## 2. Artifact schema
 
@@ -73,19 +69,17 @@ Also carried because it turned out to matter: parameter **sensitivity**
 regulated data); `secretRef`, so credentials resolve at run time and never enter
 the artifact; per-step **fingerprints** of the control skeleton, so drift is a
 signal rather than a mystery failure months later; and `approval`, because a
-model-authored flow against a bank system does not get to promote itself —
-discovery always emits `draft`.
+model-authored flow against a bank system does not get to promote itself.
 
 The recorder does three things beyond serialising the trace. It **minimises and
 verifies** each descriptor, starting from role + name + frame and adding
 disambiguators only while it still fails to uniquely re-resolve *against the
 screen it was recorded on*. It **canonicalises** values into parameters,
-including values embedded in panel headings and row text (`"MEMBER DETAIL —
+including those embedded in panel headings and row text (`"MEMBER DETAIL —
 12345"` → `"… — {{memberId}}"`), which is where record-specific data hides. And
-it **validates the model's proposals rather than trusting them**: a proposed
-`MEMBER_NOT_FOUND` detector that also fires on the success screen is discarded,
-and an output that cannot be extracted from the final screen is dropped with a
-warning. That validation caught a genuinely broken recording during development.
+it **validates the model's proposals rather than trusting them** — a detector
+that also fires on the success screen is discarded, an output that cannot be
+extracted is dropped with a warning.
 
 ## 3. Determinism & error handling
 
@@ -126,22 +120,20 @@ expires (18s → 3s), and a recognised outcome aborts the wait immediately
 production reads as a hang rather than as the handled condition it is.
 
 **Detectors are verified against real screens, not trusted.** This closes the
-most dangerous gap in the whole approach, and I only found it by running a real
-model. A model that has seen one successful run proposes business outcomes by
-guessing the wording: Gemini offered a `MEMBER_NOT_FOUND` detector matching
-*"No matching member found"*, which this application never prints. That
-detector never fires, so a legitimate outcome surfaces as a step timeout — the
-exact distinction the result contract rests on, broken silently. So discovery
-now probes. A job declares one cheap piece of human knowledge ("member 99999
-does not exist"), and the recorded flow is replayed against it to see what the
-application *actually* says; the detector is rebuilt from that, preferring the
-app's own error code (`MCS-0404`) over prose. Candidate markers are rejected if
-they also fire on the success screen or on another probe's screen. Where a
-recovery is missing entirely, it is read off the screen the flow stalled on —
-the message, and the single button that clears it — and then a *second* probe
-proves the proposal works. Probes cost no model calls, and run with
-irreversible steps blocked so probing a posting flow cannot post. What no probe
-covers ships flagged `verified: false`.
+most dangerous gap in the approach, and I only found it by running a real model.
+A model that has seen one successful run guesses at the wording: Gemini offered
+a `MEMBER_NOT_FOUND` detector matching *"No matching member found"*, which this
+application never prints. It never fires, so a legitimate outcome surfaces as a
+step timeout — the exact distinction the result contract rests on, broken
+silently. So discovery probes. A job declares one cheap piece of human knowledge
+("member 99999 does not exist"), the recorded flow is replayed against it, and
+the detector is rebuilt from what the app actually says, preferring its own
+error code (`MCS-0404`) over prose. Markers are rejected if they also fire on
+the success screen or another probe's. A missing recovery is read off the screen
+the flow stalled on — the message and the single button that clears it — and a
+*second* probe proves it works. Probes cost no model calls and run with
+irreversible steps blocked. What no probe covers ships flagged
+`verified: false`.
 
 Session expiry gets specific treatment because it cannot be resumed from:
 re-authenticating leaves you at the home screen, not where you were. The
@@ -199,6 +191,18 @@ automation must already be stopped during that window rather than still clicking
 while a request sits in a queue. Both sides re-check the lease on every action,
 so a stale console tab cannot drive a session it no longer holds.
 
+Release signals are scoped to the handoff that asked for them. An earlier
+version cached the last signal and handed it to the next `requestHandoff()`,
+so one operator clearing an unrelated popup silently satisfied *every* later
+handoff in the run — including the confirmation gate on the irreversible
+posting step, which routes through the same call. That is the worst bug in this
+system and it survived because no test exercised two handoffs in one run;
+`tests/control.test.ts` now does.
+
+An escalation nobody answers is bounded by `escalationTimeoutMs` and returns
+`needs_human` with the intervention id. "Escalate" without a bound is not a
+safety property, it is a hang.
+
 The human gets *the same session* — the part that makes this real rather than a
 notification, since a bank session carries authentication, a navigation
 position, a half-filled form and often a server-side lock. The console polls
@@ -225,15 +229,34 @@ is.
 **The allowlist is the hard boundary.** Origin, scheme and path prefixes,
 checked on every navigation in discovery and replay, and on operator navigation
 too — the console is reachable over HTTP and would otherwise be a confused
-deputy. It is enforced as the intersection of the deployment's policy and the
-capability's own declared origins, so a tenant-specialised capability cannot
-drive another institution's instance just because the deployment can reach both.
+deputy. It is the intersection of the deployment's policy and the capability's
+own declared origins.
+
+Making that second half mean anything took two fixes. The recorder used to
+stamp the deployment's entire allowlist onto every capability — and a
+deployment serving many institutions lists all their hosts, so every capability
+declared permission to drive every one of them and the guard was vacuous.
+Capabilities now declare only the origins their recording actually touched. And
+because origins legitimately differ per tenant, they come from a
+deployment-owned registry (`config/tenants.json`) keyed by tenant rather than
+from the overlay asking for them; an unknown tenant inherits nothing and fails
+closed.
 
 **Risk classification is a heuristic floor, not a guarantee.** During discovery
 we guess from a label whether "Post Account" commits something, and label
 heuristics are defeatable. So the guess only decides *when to stop and ask*; it
 never authorises. The durable control is that every recorded step carries an
 explicit reviewed risk label and unattended replay requires `approved`.
+
+That holds only if the label cannot be edited downstream, and originally it
+could: a four-line tenant overlay patching `steps[10].risk` to `"safe"` posted a
+real irreversible transaction with no human involved. Overlays now refuse a set
+of guarded paths — `approval`, any `risk`, `confirmAtRisk`, `maxSteps`,
+`allowedOrigins` — because an overlay is a specialisation, not a privilege
+escalation. The same reasoning applies inside a recoverable-condition handler:
+its `do` list is a plain action list, so a recovery declared as "click Post
+Account" would have walked straight through the gate. Recovery actions are now
+risk-classified like any other step.
 
 Irreversible actions **escalate rather than block**. In back-office banking the
 irreversible step is usually the entire point; a system that refuses to post
@@ -249,17 +272,33 @@ screen and types the password as a literal, then writes it into its own prose
 ("Enter the password 'demo'…"). The real run did exactly this. So discovery
 registers the configured credential values with the redactor before the loop
 starts, and the recorder scrubs the literal out of the step description as well
-as the action. PII is declared and becomes a
-stable pseudonym — `«memberId#7f3a»` keeps a run debuggable without the log
-holding the identifier. A pattern sweep backstops sensitive data the
-*application* put on screen that we were never told about. Screenshots are
-masked in-page before capture, so sensitive pixels never reach disk. One
-deliberate asymmetry: the operator's live view is unmasked, because a masked
+as the action.
+
+PII becomes a pseudonym salted per process. An unsalted hash of a five-digit
+member number is 100,000 candidates — an encoding, not a pseudonym — and four
+hex characters over an SSN's last four is 10,000. Salting keeps the property
+that matters (one value reads the same way throughout a run, so the run stays
+traceable) and drops the one that did not survive contact with an adversary.
+System identifiers are exempt from the pattern sweep, because a run id contains
+a long digit run and the card-number pattern was eating it: every recorded
+`result.json` handed its caller an evidence path that did not exist.
+
+A pattern sweep backstops sensitive data the *application* put on screen that
+we were never told about. Screenshots are masked in-page before capture, so
+sensitive pixels never reach disk — by field label *and* by declared PII value,
+since label-matching only covers "Label: value" rows and misses a member number
+rendered inline in a panel heading. Only values already declared PII are sent
+into the page; secrets never are, and password fields are masked structurally.
+One deliberate asymmetry: the operator's live view is unmasked, because a masked
 screen is useless to the person we just asked to finish a real task.
 
-Limits I would not paper over. The risk heuristic has false positives (it flags
-"Open Sub-Account", which only opens a form) and would miss an app whose commit
-button says "OK". Pattern-based redaction is best-effort by nature. And
+Limits I would not paper over. Every guardrail above except the first was found
+to be bypassable by adversarial testing *after* I had written prose asserting it
+held — the lease, the risk label, the origin scoping, the pseudonyms. A
+guardrail nobody has attacked is a claim, not a control, and the tests covering
+these were written after the fact rather than alongside them. The risk heuristic
+also has false positives (it flags "Open Sub-Account", which only opens a form)
+and would miss an app whose commit button says "OK". Pattern-based redaction is best-effort by nature. And
 discovery sends screenshots to a third-party model — masked, but the honest
 answer for production is a model inside the institution's boundary. Replay,
 where the volume is, never calls a model at all.
@@ -285,17 +324,15 @@ Those still ship `verified: false` and are what review is for — `@1.0.0` versu
 `@1.1.0`, with the review decisions recorded in `scripts/apply-review.ts`.
 
 **Verified against a live model, with two caveats.** `gemini-2.5-flash-lite`
-drove the real application end to end; the run and the artifact it produced are
-in `evidence/00-discovery-gemini-live`. Two things about it are disclosed
-rather than tidied away. Its log leaked the operator password into the model's
-own prose and was scrubbed retroactively with the product's own redactor — the
-leak is the finding, and the fix is in §6. And three of its outputs were
-dropped because the model wrote readout labels with trailing colons that
-perception strips; that mismatch between two halves of my own system is fixed
-and tested, but that artifact predates the fix. The shipped demo path uses the
-scripted driver so the evidence regenerates without a key, and its script
-reproduces what Gemini actually returned — wrong marker and SSN output included
-— rather than an idealised version.
+drove the real application end to end (`evidence/00-discovery-gemini-live`). Two
+things are disclosed rather than tidied away: its log leaked the operator
+password into the model's own prose and was scrubbed retroactively with the
+product's own redactor, and three of its outputs were dropped by the
+trailing-colon mismatch described above — both fixed, but that artifact predates
+the fixes. The shipped demo path uses the scripted driver so the evidence
+regenerates without a key, and its script reproduces what Gemini actually
+returned — wrong marker and SSN output included — rather than an idealised
+version.
 
 **A practical note.** The Gemini free tier is 20 requests per day *per model*
 and a discovery run costs about seven, so the provider distinguishes three

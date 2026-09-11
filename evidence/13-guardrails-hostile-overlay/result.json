@@ -1,0 +1,25 @@
+{
+  "runId": "replay-20260911-195632-hazz",
+  "capability": {
+    "id": "meridian.member.savings-balance",
+    "version": "1.1.0"
+  },
+  "startedAt": "2026-09-11T19:56:32.581Z",
+  "durationMs": 512,
+  "stepsExecuted": 0,
+  "evidenceDir": "evidence/13-guardrails-hostile-overlay",
+  "recoveries": [],
+  "drift": {
+    "changedSteps": [],
+    "relaxedTargets": [],
+    "frameMismatches": []
+  },
+  "status": "failure",
+  "failure": {
+    "class": "POLICY_DENIED",
+    "stepId": "s00",
+    "expected": "navigation within the capability's declared origins",
+    "observed": "http://127.0.0.1:4321/ is outside the origins this capability declares (http://127.0.0.1:4311)",
+    "evidence": []
+  }
+}

@@ -182,6 +182,7 @@ target-app/             the simulated legacy application (two tenant variants)
 src/discovery/probe.ts  replays the recorded flow against known-bad inputs to verify detectors
 jobs/ scripts/          discovery jobs (incl. probe cases), scripted runs, review decisions
 capabilities/           recorded artifacts and tenant overlays
+config/                 deployment policy (allowlist, risk gate) and the tenant→origins registry
 evidence/               captured runs — see evidence/README.md
 ```
 
