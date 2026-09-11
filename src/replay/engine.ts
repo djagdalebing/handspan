@@ -17,13 +17,15 @@
  * asking a human to approve a risky click on a screen that has already told
  * us the member does not exist.
  */
-import type { Capability, Interstitial, Outcome, Step, StepAction, Target } from '../artifact/schema.js';
+import type { Capability, Interstitial, Outcome, Risk, Step, StepAction, Target } from '../artifact/schema.js';
 import type { Action, Observation, Surface, UiNode } from '../surface/types.js';
 import type { LiveControl } from '../surface/web/playwright-surface.js';
 import type { CredentialProvider } from '../safety/credentials.js';
 import type { Redactor } from '../safety/redact.js';
 import type { RunLog } from '../observability/run-log.js';
 import { Policy } from '../safety/policy.js';
+
+const RISK_RANK: Record<Risk, number> = { safe: 0, mutating: 1, irreversible: 2 };
 import { SessionControl, type ReleaseSignal } from '../escalation/control.js';
 import { broker, type EscalationReason } from '../escalation/broker.js';
 import { evaluate, describe, type ConditionTrace } from './conditions.js';
@@ -317,32 +319,40 @@ export class ReplayEngine {
         return { kind: 'result', result: this.failFor(cap, 'POLICY_DENIED', `action kind ${step.action.kind} permitted`, kindCheck.reason, step.id) };
       }
       if (step.action.kind === 'navigate') {
-        const url = interpolateDeep(step.action.url, bindings);
-        // Two allowlists, intersected. The runtime policy is the deployment's
-        // hard boundary; the capability's own declared origins are what a
-        // reviewer approved it to touch. A capability specialised for one
-        // tenant should not be able to drive another tenant's instance just
-        // because the deployment can reach both.
-        const urlCheck = this.o.policy.checkUrl(url);
-        this.o.log.event('policy.decision', { stepId: step.id, url, ...urlCheck });
-        if (urlCheck.decision === 'deny') {
-          return { kind: 'result', result: this.failFor(cap, 'POLICY_DENIED', 'navigation within the deployment allowlist', urlCheck.reason, step.id) };
-        }
-        // An empty list denies everything. That is deliberate: it is what an
-        // overlay for an unknown tenant resolves to, and "no origins declared"
-        // must mean "go nowhere" rather than "go anywhere".
-        const declared = cap.policy.allowedOrigins;
-        if (!declared.some((o) => url.startsWith(o))) {
-          const reason = declared.length === 0
-            ? `${url} is refused: this capability declares no permitted origins`
-            : `${url} is outside the origins this capability declares (${declared.join(', ')})`;
-          this.o.log.event('policy.decision', { stepId: step.id, url, decision: 'deny', reason });
-          return { kind: 'result', result: this.failFor(cap, 'POLICY_DENIED', 'navigation within the capability\'s declared origins', reason, step.id) };
+        // Two allowlists, intersected: the deployment's is the hard boundary,
+        // the capability's declared origins are what a reviewer approved it to
+        // touch. An empty declared list denies everything — that is what an
+        // overlay for an unknown tenant resolves to.
+        const denial = this.denyNavigation(cap, interpolateDeep(step.action.url, bindings));
+        if (denial) {
+          return { kind: 'result', result: this.failFor(cap, 'POLICY_DENIED', 'navigation within the permitted origins', denial, step.id) };
         }
       }
 
+      // Resolve the target before gating, so the gate sees the control that
+      // will actually be operated. The declared risk is a *floor*: an overlay
+      // may retarget a step it is not allowed to relabel, so a step declared
+      // safe that now points at "Post Account" is treated as irreversible.
+      let resolvedNode: UiNode | null = null;
+      const target = this.targetOf(step.action);
+      let boundTarget: Target | null = null;
+      if (target) {
+        boundTarget = interpolateDeep(target, bindings) as Target;
+        const probe = resolveTarget(obs, boundTarget);
+        if (probe.ok) resolvedNode = probe.node;
+      }
+      const derived = Policy.classify(step.action.kind, resolvedNode?.name ?? boundTarget?.name);
+      const effectiveRisk = RISK_RANK[derived] > RISK_RANK[step.risk] ? derived : step.risk;
+      if (effectiveRisk !== step.risk) {
+        this.o.log.event('policy.decision', {
+          stepId: step.id, declaredRisk: step.risk, derivedRisk: derived,
+          control: resolvedNode?.name ?? boundTarget?.name,
+          reason: 'the control this step targets is riskier than the step declares; gating at the higher one',
+        });
+      }
+
       const riskCheck = this.o.policy.checkRisk(
-        step.risk, `step "${step.id}" (${step.intent})`, cap.policy.confirmAtRisk
+        effectiveRisk, `step "${step.id}" (${step.intent})`, cap.policy.confirmAtRisk
       );
       if (riskCheck.decision === 'confirm') {
         const gate = await this.gateRiskyStep(cap, step, riskCheck.reason);
@@ -350,11 +360,10 @@ export class ReplayEngine {
         if (gate.kind === 'human_completed') return { kind: 'human_completed' };
       }
 
-      // 5. Resolve the target.
-      let resolvedNode: UiNode | null = null;
-      const target = this.targetOf(step.action);
-      if (target) {
-        const t = interpolateDeep(target, bindings) as Target;
+      // 5. Resolve the target (re-resolved: the risk gate may have paused for
+      //    a human, and the screen can have moved while they worked).
+      if (boundTarget) {
+        const t = boundTarget;
         const res = resolveTarget(obs, t);
         if (!res.ok) {
           if (step.optional) {
@@ -409,7 +418,7 @@ export class ReplayEngine {
         resolved: resolvedNode?.name, attempt,
       });
 
-      const performed = await this.perform(step.action, bindings, resolvedNode, depth);
+      const performed = await this.perform(cap, step.action, bindings, resolvedNode, depth);
       this.stepsExecuted++;
       if (!performed.ok) {
         if (attempt < step.retry.attempts) {
@@ -558,7 +567,7 @@ export class ReplayEngine {
           break;
         }
 
-        const done = await this.perform(action, bindings, node, 1);
+        const done = await this.perform(cap, action, bindings, node, 1);
         if (!done.ok) break;
       }
 
@@ -827,19 +836,51 @@ export class ReplayEngine {
     }
   }
 
+  /**
+   * The single place a URL is authorised. Returns a reason when the navigation
+   * must not happen: the deployment allowlist and the capability's own
+   * declared origins, intersected.
+   */
+  private denyNavigation(cap: Capability, url: string): string | null {
+    const check = this.o.policy.checkUrl(url);
+    if (check.decision === 'deny') {
+      this.o.log.event('policy.decision', { url, ...check });
+      return check.reason;
+    }
+    const declared = cap.policy.allowedOrigins;
+    if (!declared.some((o) => url.startsWith(o))) {
+      const reason = declared.length === 0
+        ? `${url} is refused: this capability declares no permitted origins`
+        : `${url} is outside the origins this capability declares (${declared.join(', ')})`;
+      this.o.log.event('policy.decision', { url, decision: 'deny', reason });
+      return reason;
+    }
+    this.o.log.event('policy.decision', { url, decision: 'allow' });
+    return null;
+  }
+
   private targetOf(action: StepAction): Target | null {
     return 'target' in action ? (action.target as Target) : null;
   }
 
   private async perform(
+    cap: Capability,
     action: StepAction,
     bindings: Bindings,
     node: UiNode | null,
     depth: number
   ): Promise<{ ok: boolean; error?: string }> {
     switch (action.kind) {
-      case 'navigate':
-        return this.o.surface.act({ kind: 'navigate', url: interpolateDeep(action.url, bindings) }, null);
+      case 'navigate': {
+        // Checked here rather than only in the step loop. A recovery handler's
+        // `do` list calls straight into this method, so URL checking in the
+        // caller left a hole: an interstitial declared as "navigate to another
+        // institution" reached it with no policy decision logged at all.
+        const url = interpolateDeep(action.url, bindings);
+        const denial = this.denyNavigation(cap, url);
+        if (denial) return { ok: false, error: denial };
+        return this.o.surface.act({ kind: 'navigate', url }, null);
+      }
       case 'press':
         return this.o.surface.act({ kind: 'press', key: action.key }, null);
       case 'wait':

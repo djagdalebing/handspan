@@ -228,11 +228,14 @@ is.
 
 ## 6. Safety
 
-**The allowlist is the hard boundary.** Origin, scheme and path prefixes,
-checked on every navigation in discovery and replay, and on operator navigation
-too — the console is reachable over HTTP and would otherwise be a confused
-deputy. It is the intersection of the deployment's policy and the capability's
-own declared origins.
+**The allowlist is the hard boundary** — and it is now enforced in exactly one
+place. Origin, scheme and path prefixes, as the intersection of the deployment's
+policy and the capability's declared origins, checked on every navigation in
+discovery and replay and on operator navigation too. It previously lived in the
+step loop only, which meant a *recovery* action — a recoverable-condition
+handler's `do` list calls straight into the executor — could navigate to another
+institution with no policy decision even logged. One chokepoint, `denyNavigation`,
+now sees every URL.
 
 Making that second half mean anything took three fixes. The recorder used to
 stamp the deployment's entire allowlist onto every capability — and a
@@ -252,7 +255,22 @@ heuristics are defeatable. So the guess only decides *when to stop and ask*; it
 never authorises. The durable control is that every recorded step carries an
 explicit reviewed risk label and unattended replay requires `approved`.
 
-That holds only if the label cannot be edited downstream, and originally it
+Neither of those controls may be switched off by the caller. `--risky proceed`
+and `--allow-draft` are refused unless the *deployment* sets
+`allowCallerOverrides`, and `invoke` — the agent-facing entry point — refuses
+them outright. The premise of this system is that an agent calls capabilities by
+name, which makes the caller the untrusted side of the boundary; an "audited
+override" supplied by the party the gate exists to constrain is not an override,
+it is an off switch. That was exactly how it shipped.
+
+The declared label is also only a *floor*. An overlay may not relabel a step's
+risk, but it may legitimately retarget one — that is what specialisation is —
+so a step declared `safe` could be pointed at "Post Account" without any risk
+*value* moving, and the value-comparison above would not notice. The gate
+therefore resolves the target first and re-derives the risk from the control it
+is actually about to operate, gating at whichever is higher.
+
+That floor holds only if the label cannot be edited downstream, and originally it
 could: a tenant overlay patching `steps[10].risk` to `"safe"` posted a real
 irreversible transaction with no human involved. My first fix denylisted
 guarded *path spellings*, and that was the wrong shape of control — it lost
@@ -291,6 +309,14 @@ registers the configured credential values with the redactor before the loop
 starts, and the recorder scrubs the literal out of the step description as well
 as the action.
 
+Which fields count as regulated is decided by label, and the list covers both
+spellings a label arrives in — `Member Name` and `memberName` — plus the bare
+person-words this domain uses (`Member:`, `Customer:`). A word-boundary pattern
+missed the camel-case form, which put a customer's name on disk in clear.
+Observation dumps additionally protect themselves: a dump is a picture of a
+whole screen and routinely shows regulated fields the running capability never
+declared, so it registers sensitive-labelled readout values before writing.
+
 PII becomes a pseudonym salted per process. An unsalted hash of a five-digit
 member number is 100,000 candidates — an encoding, not a pseudonym — and four
 hex characters over an SSN's last four is 10,000. Salting keeps the property
@@ -307,7 +333,10 @@ since label-matching only covers "Label: value" rows and misses a member number
 rendered inline in a panel heading. Only values already declared PII are sent
 into the page; secrets never are, and password fields are masked structurally.
 One deliberate asymmetry: the operator's live view is unmasked, because a masked
-screen is useless to the person we just asked to finish a real task.
+screen is useless to the person we just asked to finish a real task — which is
+also why the console binds loopback only and applies its token to reads as well
+as writes. Serving an unmasked banking screen on every interface was the wrong
+default by a wide margin.
 
 Limits I would not paper over. Every guardrail above except the allowlist was
 found bypassable by adversarial review *after* I had written prose asserting it
@@ -329,8 +358,8 @@ driver exists. No real-time co-browsing; the console polls screenshots, enough t
 prove the control model, and would be a CDP screencast in production. No queue,
 scheduler or persistence beyond JSON on disk — git is a good store for artifacts
 reviewed, versioned and diffed by humans. No user accounts on the operator
-console (authorization is enforced; authentication is a shared-secret env var at
-best). No confidence scoring or flakiness signal.
+console (authorization is enforced and the lease is real; authentication is a
+shared-secret env var at best). No confidence scoring or flakiness signal.
 
 **What probing closed, and what it did not.** Running a real model showed that
 every outcome detector it proposed was a guess at wording, and none matched.

@@ -20,7 +20,7 @@
       "description": "The member number to look up.",
       "sensitivity": "pii",
       "pattern": "^[0-9]{5}$",
-      "example": "«memberId#e85452»"
+      "example": "«memberId#78a4c9»"
     }
   ],
   "outputs": [
@@ -38,7 +38,7 @@
       },
       "transform": "trim",
       "required": true,
-      "sensitivity": "internal"
+      "sensitivity": "pii"
     },
     {
       "name": "accountStatus",
@@ -427,10 +427,10 @@
     "s05": "92140295"
   },
   "provenance": {
-    "recordedAt": "2026-09-11T20:26:04.896Z",
+    "recordedAt": "2026-09-11T20:59:34.712Z",
     "recordedBy": "llm",
     "model": "scripted",
-    "discoveryRunId": "discover-«card#32e6ad»53xy",
-    "goal": "Sign on as the operator, look up member «memberId#e85452» in Member Inquiry, and reach the member detail screen showing their share savings balance."
+    "discoveryRunId": "discover-«card#8e953e»w3i4",
+    "goal": "Sign on as the operator, look up member «memberId#78a4c9» in Member Inquiry, and reach the member detail screen showing their share savings balance."
   }
 }

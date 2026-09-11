@@ -1,13 +1,13 @@
 {
-  "runId": "replay-20260911-202830-8c86",
+  "runId": "replay-20260911-210151-l0ie",
   "capability": {
     "id": "meridian.member.open-sub-account",
     "version": "1.0.0"
   },
-  "startedAt": "2026-09-11T20:28:30.336Z",
-  "durationMs": 513,
+  "startedAt": "2026-09-11T21:01:52.051Z",
+  "durationMs": 511,
   "stepsExecuted": 0,
-  "evidenceDir": "evidence/replay-20260911-202830-8c86",
+  "evidenceDir": "evidence/replay-20260911-210151-l0ie",
   "recoveries": [],
   "drift": {
     "changedSteps": [],
@@ -18,7 +18,7 @@
   "failure": {
     "class": "POLICY_DENIED",
     "stepId": "s00",
-    "expected": "navigation within the capability's declared origins",
+    "expected": "navigation within the permitted origins",
     "observed": "http://127.0.0.1:4311/ is refused: this capability declares no permitted origins",
     "evidence": []
   }

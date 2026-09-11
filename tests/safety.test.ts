@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Policy } from '../src/safety/policy.js';
-import { Redactor } from '../src/safety/redact.js';
+import { Redactor, looksSensitive } from '../src/safety/redact.js';
 import { EnvCredentialProvider } from '../src/safety/credentials.js';
 
 const policy = Policy.from({
@@ -86,6 +86,36 @@ describe('redaction', () => {
     r.register('1234567', 'pii', 'account');
     r.register('12345', 'pii', 'member');
     expect(r.string('acct 1234567')).toMatch(/«account#\w+»$/);
+  });
+});
+
+describe('caller-supplied overrides', () => {
+  // The premise is that an *agent* invokes capabilities, so the caller is the
+  // untrusted side. An override supplied by the party the gate constrains is
+  // not an override, it is an off switch.
+  it('defaults to refusing caller overrides', () => {
+    expect(Policy.from({}).config.allowCallerOverrides).toBe(false);
+  });
+
+  it('only enables them when the deployment says so', () => {
+    expect(Policy.from({ allowCallerOverrides: true }).config.allowCallerOverrides).toBe(true);
+  });
+});
+
+describe('sensitive field labels', () => {
+  // A member's name is customer NPI. The list missed it, so `memberName`
+  // shipped classified `internal` and was written to disk in clear.
+  it.each(['Member Name', 'memberName', 'Home Address', 'Date of Birth', 'Phone', 'Email', 'SSN (last 4)'])(
+    'treats %s as regulated',
+    (label) => {
+      expect(looksSensitive(label)).toBe(true);
+    }
+  );
+
+  it('does not sweep up ordinary business fields', () => {
+    for (const label of ['Status', 'Home Branch', 'Account Type', 'Current Balance']) {
+      expect(looksSensitive(label)).toBe(false);
+    }
   });
 });
 

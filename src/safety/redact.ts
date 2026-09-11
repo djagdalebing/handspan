@@ -29,7 +29,27 @@ import type { Sensitivity } from '../artifact/schema.js';
  * sensitivity of a recorded output or parameter when nobody declared one.
  */
 export const SENSITIVE_LABEL =
-  /\bssn\b|social security|tax\s*id\b|\bein\b|date of birth|\bdob\b|password|passcode|\bpin\b|card number|routing|account number|driver.?s licen[cs]e|passport/i;
+  /\bssn\b|social security|tax\s*id\b|\bein\b|date of birth|\bdob\b|password|passcode|\bpin\b|card number|routing|account number|driver.?s licen[cs]e|passport|\bname\b|address|\bphone\b|\bemail\b|\bmaiden\b|\bmember\b|\bcustomer\b|\bholder\b|\bborrower\b/i;
+
+/**
+ * Whether a field label names regulated data.
+ *
+ * Labels arrive in two shapes — as a human reads them ("Member Name") and as
+ * an API names them ("memberName") — and a word-boundary pattern only matches
+ * the first. `memberName` shipped classified `internal` for exactly this
+ * reason, which put a customer's name on disk in clear. Splitting camel case
+ * first means one list covers both spellings.
+ *
+ * The list deliberately includes the person-words this domain uses as bare
+ * field labels — "Member", "Customer", "Holder" — because a confirmation
+ * screen renders the person as `Member: 12345 — RIVERA, DANA Q` under a label
+ * that says nothing about names. Over-classifying a field costs a pseudonym in
+ * a log; under-classifying one costs a customer's name on disk.
+ */
+export function looksSensitive(label: string): boolean {
+  const spaced = label.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ');
+  return SENSITIVE_LABEL.test(spaced);
+}
 
 const PATTERNS: Array<{ name: string; re: RegExp }> = [
   { name: 'ssn', re: /\b\d{3}-\d{2}-\d{4}\b/g },

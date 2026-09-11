@@ -280,6 +280,31 @@ function makeProvider(args: Args): ModelProvider {
 
 // ---------------------------------------------------------------- replay --
 
+/**
+ * Refuses caller-supplied flags that would weaken a guardrail, unless the
+ * *deployment* has opted in. `invoke` is the agent-facing entry point and
+ * never accepts them at all.
+ */
+function checkOverrides(args: Args, policy: Policy, mode: 'replay' | 'invoke'): void {
+  const requested = [
+    bool(args, 'risky') || str(args, 'risky') === 'proceed' ? '--risky proceed' : null,
+    bool(args, 'allow-draft') ? '--allow-draft' : null,
+  ].filter(Boolean) as string[];
+  if (requested.length === 0) return;
+  if (mode === 'invoke') {
+    throw new Error(
+      `${requested.join(' and ')} cannot be used with "invoke": a calling agent does not get to ` +
+      `switch off the controls that exist to constrain it. Use "replay" from an operator shell.`
+    );
+  }
+  if (!policy.config.allowCallerOverrides) {
+    throw new Error(
+      `${requested.join(' and ')} is refused: this deployment sets allowCallerOverrides=false in ` +
+      `config/policy.json. Change the deployment policy deliberately if an operator really needs it.`
+    );
+  }
+}
+
 async function cmdReplay(args: Args, mode: 'replay' | 'invoke'): Promise<number> {
   const ref = args._[1] ?? str(args, 'capability');
   if (!ref) throw new Error(`usage: ${mode} <capabilityId[@version]> --input k=v ...`);
@@ -302,6 +327,7 @@ async function cmdReplay(args: Args, mode: 'replay' | 'invoke'): Promise<number>
   }
 
   const inputs = kvPairs(args.repeated.input);
+  checkOverrides(args, loadPolicy(str(args, 'policy', 'config/policy.json')), mode);
   const rt = await bootstrap('replay', args);
 
   const fault = str(args, 'fault');

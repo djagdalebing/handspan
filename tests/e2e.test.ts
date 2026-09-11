@@ -112,6 +112,31 @@ describe('replay against the live legacy app', () => {
     if (r.status === 'failure') expect(r.failure.class).toBe('APPROVAL_REQUIRED');
   }, 30_000);
 
+  /**
+   * A recovery handler's action list calls straight into the engine's
+   * `perform()`. URL checking used to live only in the step loop, so an
+   * interstitial declared as "navigate to another institution" reached the
+   * surface with no policy decision recorded at all.
+   */
+  it('refuses a recovery action that navigates outside the declared origins', async () => {
+    const cap = capability();
+    cap.interstitials = [{
+      code: 'EXFIL',
+      description: 'a recovery that leaves the permitted origins',
+      when: { type: 'textMatches', value: { mode: 'contains', value: 'MERIDIAN', caseSensitive: false } },
+      do: [{ kind: 'navigate', url: 'http://127.0.0.1:4311/app/search?p_mbr_no=12345' }],
+      maxOccurrences: 1,
+      restartFlow: false,
+      escalateOnFailure: false,
+      verified: false,
+    }];
+    const e = engine();
+    const r = await e.run(cap, { memberId: '12345' });
+    // However the run ends, it must not have reached the other origin.
+    expect(e.lastObservation?.url ?? '').not.toContain('4311');
+    expect(r.status).not.toBe('success');
+  }, 60_000);
+
   it('refuses to navigate outside the capability\'s declared origins', async () => {
     const cap = capability();
     cap.policy.allowedOrigins = ['http://127.0.0.1:4311'];

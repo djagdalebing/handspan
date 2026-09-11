@@ -1,11 +1,11 @@
 {
-  "runId": "replay-20260911-202712-qz90",
+  "runId": "replay-20260911-210040-mji4",
   "capability": {
     "id": "meridian.member.savings-balance",
     "version": "1.1.0"
   },
-  "startedAt": "2026-09-11T20:27:12.717Z",
-  "durationMs": 3168,
+  "startedAt": "2026-09-11T21:00:40.925Z",
+  "durationMs": 3096,
   "stepsExecuted": 6,
   "evidenceDir": "evidence/04-replay-recovered-interstitial",
   "recoveries": [
@@ -22,7 +22,7 @@
   },
   "status": "success",
   "outputs": {
-    "memberName": "RIVERA, DANA Q",
+    "memberName": "«memberName#4ff97f»",
     "accountStatus": "ACTIVE",
     "savingsBalance": 4812.55
   }

@@ -218,8 +218,9 @@ export class EscalationBroker {
 
     // Machine-readable view of the queue. The HTML console is one client of
     // this; a real deployment would have others (a work queue, a pager).
-    app.get('/api/interventions', (_req, res) => {
-      res.json(this.list().map((i) => ({ ...i, evidenceDir: this.sessions.get(i.runId)?.log.dir })));
+    app.get('/api/interventions', (req, res) => {
+      if (!tokenOk(req)) return res.status(403).json({ error: 'operator token required' });
+      return res.json(this.list().map((i) => ({ ...i, evidenceDir: this.sessions.get(i.runId)?.log.dir })));
     });
 
     app.get('/api/i/:id', (req, res) => {
@@ -396,16 +397,29 @@ export class EscalationBroker {
       res.json({ ok: true, disposition: signal.disposition });
     });
 
+    // Loopback only. `app.listen(port)` binds every interface, which for a
+    // console that deliberately serves an *unmasked* live banking screen is
+    // the wrong default by a wide margin.
     await new Promise<void>((resolve) => {
-      this.server = app.listen(this.port, () => resolve());
+      this.server = app.listen(this.port, '127.0.0.1', () => resolve());
     });
   }
 
+  /**
+   * Resolves the session behind an intervention, enforcing the token on reads
+   * as well as writes. The screenshot endpoint serves an unmasked banking
+   * screen and the controls endpoint lists what is on it, so "read-only" is
+   * not a reason to skip the check.
+   */
   private regFor(req: Request, res: Response): Registration | null {
     const i = this.interventions.get(req.params.id!);
     const reg = i ? this.sessions.get(i.runId) : undefined;
     if (!i || !reg) {
       res.status(404).json({ error: 'unknown intervention' });
+      return null;
+    }
+    if (!tokenOk(req)) {
+      res.status(403).json({ error: 'operator token required' });
       return null;
     }
     return reg;

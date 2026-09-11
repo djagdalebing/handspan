@@ -38,7 +38,7 @@
       },
       "transform": "trim",
       "required": true,
-      "sensitivity": "internal"
+      "sensitivity": "pii"
     },
     {
       "name": "accountStatus",
@@ -425,15 +425,15 @@
     "s05": "92140295"
   },
   "provenance": {
-    "recordedAt": "2026-09-11T20:26:04.896Z",
+    "recordedAt": "2026-09-11T20:59:34.712Z",
     "recordedBy": "llm",
     "model": "scripted",
-    "discoveryRunId": "discover-20260911-202602-53xy",
+    "discoveryRunId": "discover-20260911-205932-w3i4",
     "goal": "Sign on as the operator, look up member 12345 in Member Inquiry, and reach the member detail screen showing their share savings balance.",
     "derivedFrom": {
       "id": "meridian.member.savings-balance",
       "version": "1.0.0"
     },
-    "reviewNote": "replaced the proposed SESSION_EXPIRED recovery with a call to the sign-on capability; added SYSTEM_ERROR as a recognised application failure so a 500 page reports as APP_ERROR; dropped 1 PII output(s) the caller does not need"
+    "reviewNote": "replaced the proposed SESSION_EXPIRED recovery with a call to the sign-on capability; added SYSTEM_ERROR as a recognised application failure so a 500 page reports as APP_ERROR; dropped ssnLast4 — the caller has no need for it; kept memberName as PII — returned to the caller, redacted in logs and evidence"
   }
 }

@@ -17,9 +17,13 @@
  *  2. An application error page (MCS-0500) is a recognised *failure*, not a
  *     business outcome. Probes only cover paths we gave them an input for, and
  *     there is no input that makes the core throw.
- *  3. The SSN output the model proposed is dropped. It is correctly classified
- *     PII by the recorder, but the capability's callers have no reason to
- *     receive it, and the safest field is the one you do not return.
+ *  3. The SSN output is dropped — the callers of this capability have no reason
+ *     to receive it, and the safest field is the one you do not return. The
+ *     member's name is *kept*: an agent confirming it has the right record
+ *     legitimately needs it. It stays classified PII, which is what governs
+ *     redaction in logs, evidence and screenshots — not whether the caller
+ *     gets it. Sensitivity and need-to-know are different questions and this
+ *     step is where a human answers the second one.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { findCapability, saveCapability } from '../src/artifact/store.js';
@@ -79,10 +83,16 @@ if (!cap.outcomes.some((o) => o.code === 'SYSTEM_ERROR')) {
 }
 
 // 3. Do not return regulated data the caller has no need for.
+const NOT_NEEDED = /ssn|social|tax|dob|birth|passport|licen[cs]e/i;
 const before = cap.outputs.length;
-cap.outputs = cap.outputs.filter((o) => o.sensitivity !== 'pii');
-if (cap.outputs.length !== before) {
-  notes.push(`dropped ${before - cap.outputs.length} PII output(s) the caller does not need`);
+const dropped = cap.outputs.filter((o) => NOT_NEEDED.test(o.name));
+cap.outputs = cap.outputs.filter((o) => !NOT_NEEDED.test(o.name));
+if (dropped.length > 0) {
+  notes.push(`dropped ${dropped.map((o) => o.name).join(', ')} — the caller has no need for it`);
+}
+const keptPii = cap.outputs.filter((o) => o.sensitivity === 'pii').map((o) => o.name);
+if (keptPii.length > 0) {
+  notes.push(`kept ${keptPii.join(', ')} as PII — returned to the caller, redacted in logs and evidence`);
 }
 
 cap.provenance.reviewNote = notes.join('; ');

@@ -32,7 +32,7 @@ import type { Observation, UiNode } from '../surface/types.js';
 import { evaluate } from '../replay/conditions.js';
 import { extractOutputs } from '../replay/extract.js';
 import { fingerprintObservation, resolveTarget } from '../replay/locator.js';
-import { SENSITIVE_LABEL } from '../safety/redact.js';
+import { looksSensitive } from '../safety/redact.js';
 import type { Bindings } from '../replay/template.js';
 import type { DiscoveryOutcome, RecordedAction } from './agent.js';
 import type { SummaryResponse } from './prompt.js';
@@ -477,7 +477,7 @@ function buildOutput(
   // reviewer can downgrade a false positive, but nobody reviews a leak that
   // already happened.
   const labelish = `${o.name} ${o.readoutLabel ?? ''} ${o.description}`;
-  const sensitive = SENSITIVE_LABEL.test(labelish);
+  const sensitive = looksSensitive(labelish);
   const common = {
     name: o.name.replace(/[^a-zA-Z0-9_]/g, '_').replace(/^[^a-zA-Z]+/, ''),
     type: o.type,

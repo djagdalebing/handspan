@@ -11,6 +11,8 @@ export HS_SECRET_MERIDIAN_OPERATOR_ID=demo
 export HS_SECRET_MERIDIAN_OPERATOR_PASSWORD=demo
 MODEL_ARGS="${MODEL_ARGS:---model scripted --script scripts/member-savings-balance.script.json}"
 
+SCRATCH="$(mktemp -d)"; export SCRATCH
+trap 'rm -rf "$SCRATCH"' EXIT
 say() { printf '\n\033[1m=== %s\033[0m\n' "$*"; }
 latest() { ls -dt evidence/"$1"-* 2>/dev/null | head -1; }
 keep() { # keep <prefix> <destination>
@@ -94,8 +96,10 @@ keep replay 09-escalation-human-takeover
 say "11. escalation — the unreviewed draft gets stuck; operator recovers by hand"
 npx tsx scripts/operator-demo.ts --disposition resume --note "signed the session back on manually" \
   --actions '[{"kind":"click","role":"textbox","name":"Operator ID"},{"kind":"text","text":"demo"},{"kind":"click","role":"textbox","name":"Password"},{"kind":"text","text":"demo"},{"kind":"click","role":"button","name":"Sign On"}]' & OP=$!
+# --allow-draft weakens a control, so it needs a deployment policy that permits
+# caller overrides. The default config/policy.json refuses them.
 npx tsx src/cli.ts replay meridian.member.savings-balance@1.0.0 --input memberId=12345 \
-  --fault session_expiry --allow-draft
+  --fault session_expiry --allow-draft --policy config/policy.operator-shell.json
 wait $OP || true
 keep replay 10-escalation-stuck-recovery
 
@@ -128,8 +132,13 @@ keep replay 13-guardrails-hostile-overlay
 
 say "14. agent-facing catalog"
 npx tsx src/cli.ts catalog --json > evidence/catalog.json
+# What a calling agent receives. Redacted on the way into the evidence
+# directory: the caller gets the real values, but evidence files outlive the
+# run and travel, so they do not carry regulated data.
 npx tsx src/cli.ts invoke meridian.member.savings-balance@1.1.0 --input memberId=23456 --no-escalation \
-  | tee evidence/agent-invocation.json
+  > "$SCRATCH/agent-invocation.raw.json"
+npx tsx scripts/redact-json.ts "$SCRATCH/agent-invocation.raw.json" evidence/agent-invocation.json
+cat evidence/agent-invocation.json
 keep replay 12-agent-invocation
 
 cp capabilities/*.json evidence/ 2>/dev/null || true

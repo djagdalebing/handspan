@@ -17,7 +17,7 @@
 import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Observation, Surface } from '../surface/types.js';
-import { Redactor } from '../safety/redact.js';
+import { looksSensitive, Redactor } from '../safety/redact.js';
 
 export type EventType =
   | 'run.start' | 'run.end'
@@ -82,8 +82,24 @@ export class RunLog {
     }
   }
 
-  /** Full perceived control list. Written on failure and on escalation. */
+  /**
+   * Full perceived control list. Written on failure and on escalation.
+   *
+   * The redactor only knows values it was told about — the capability's own
+   * declared parameters and outputs. A dump is a picture of the whole screen,
+   * which routinely carries regulated fields this capability never declared: a
+   * sub-account flow does not declare the member's name, but the name is right
+   * there on the screen it stalled on. So the dump protects itself using the
+   * one thing it does know, the field's own label, registering those values
+   * before writing so they are scrubbed from the node list *and* the page text.
+   */
   dumpObservation(obs: Observation, label: string): string {
+    for (const node of obs.nodes) {
+      if (node.role !== 'readout' || !node.value) continue;
+      if (looksSensitive(node.name)) {
+        this.redactor.register(node.value, 'pii', slug(node.name).replace(/-/g, '_'));
+      }
+    }
     const name = `${String(this.seq).padStart(3, '0')}-${slug(label)}.observation.json`;
     const payload = this.redactor.value({
       url: obs.url,

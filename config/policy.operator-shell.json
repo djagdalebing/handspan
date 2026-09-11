@@ -20,5 +20,5 @@
   "maxSteps": 40,
   "runTimeoutMs": 300000,
   "escalationTimeoutMs": 600000,
-  "allowCallerOverrides": false
+  "allowCallerOverrides": true
 }

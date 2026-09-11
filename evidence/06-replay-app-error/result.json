@@ -1,11 +1,11 @@
 {
-  "runId": "replay-20260911-202723-v38r",
+  "runId": "replay-20260911-210051-3oqp",
   "capability": {
     "id": "meridian.member.savings-balance",
     "version": "1.1.0"
   },
-  "startedAt": "2026-09-11T20:27:24.198Z",
-  "durationMs": 2510,
+  "startedAt": "2026-09-11T21:00:51.676Z",
+  "durationMs": 2490,
   "stepsExecuted": 6,
   "evidenceDir": "evidence/06-replay-app-error",
   "recoveries": [],
@@ -21,8 +21,8 @@
     "observed": "SYSTEM_ERROR: MERIDIAN Core returned an unhandled application error (MCS-0500).",
     "detail": "alert on screen: MCS-0500 An unexpected error occurred while processing your request. Contact the help desk and reference this code.",
     "evidence": [
-      "025-outcome-system-error.png",
-      "027-app-error-system-error.observation.json"
+      "026-outcome-system-error.png",
+      "028-app-error-system-error.observation.json"
     ]
   }
 }

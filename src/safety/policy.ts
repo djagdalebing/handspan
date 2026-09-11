@@ -43,6 +43,16 @@ export interface PolicyConfig {
    * forever", which is not a safety property — it is a hang.
    */
   escalationTimeoutMs: number;
+  /**
+   * Whether a caller may weaken the controls at invocation time
+   * (`--risky proceed`, `--allow-draft`).
+   *
+   * Off by default, because the premise of this system is that an *agent*
+   * invokes capabilities by name — so the caller is the untrusted side of the
+   * boundary. An "audited override" supplied by the party the gate exists to
+   * constrain is not an override, it is an off switch.
+   */
+  allowCallerOverrides: boolean;
 }
 
 export const DEFAULT_POLICY: PolicyConfig = {
@@ -54,6 +64,7 @@ export const DEFAULT_POLICY: PolicyConfig = {
   maxSteps: 40,
   runTimeoutMs: 5 * 60_000,
   escalationTimeoutMs: 10 * 60_000,
+  allowCallerOverrides: false,
 };
 
 export type Decision =
