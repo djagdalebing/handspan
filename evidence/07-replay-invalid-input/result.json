@@ -1,0 +1,24 @@
+{
+  "runId": "replay-«card#5eae»3nsq",
+  "capability": {
+    "id": "meridian.member.savings-balance",
+    "version": "1.1.0"
+  },
+  "startedAt": "2026-09-11T17:30:31.237Z",
+  "durationMs": 1,
+  "stepsExecuted": 0,
+  "evidenceDir": "evidence/replay-«card#5eae»3nsq",
+  "recoveries": [],
+  "drift": {
+    "changedSteps": [],
+    "relaxedTargets": [],
+    "frameMismatches": []
+  },
+  "status": "failure",
+  "failure": {
+    "class": "INVALID_INPUT",
+    "expected": "inputs satisfying the declared signature",
+    "observed": "input \"memberId\" does not match ^[0-9]{5}$",
+    "evidence": []
+  }
+}

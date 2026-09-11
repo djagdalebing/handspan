@@ -1,0 +1,15 @@
+{
+  "id": "meridian.session.signon",
+  "version": "1.0.0",
+  "name": "Sign on to MERIDIAN Core",
+  "description": "Authenticate an operator session against MERIDIAN Core and reach the Member Inquiry desk. Used on its own and as the recovery path for an expired session.",
+  "goal": "Sign on to MERIDIAN Core as the operator and reach the Member Inquiry screen.",
+  "entry": "http://127.0.0.1:4311/",
+  "app": { "vendor": "Meridian Systems", "product": "MERIDIAN Core Member Services", "productVersion": "7.2.1" },
+  "inputs": [],
+  "values": {},
+  "secretFields": [
+    { "nameMatches": "operator id", "secretRef": "MERIDIAN_OPERATOR_ID" },
+    { "nameMatches": "password", "secretRef": "MERIDIAN_OPERATOR_PASSWORD" }
+  ]
+}

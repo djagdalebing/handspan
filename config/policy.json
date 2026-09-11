@@ -1,0 +1,22 @@
+{
+  "allowedOrigins": [
+    "http://127.0.0.1:4311",
+    "http://127.0.0.1:4321"
+  ],
+  "allowedPathPrefixes": [],
+  "deniedPathPrefixes": [
+    "/__fault"
+  ],
+  "allowedActions": [
+    "navigate",
+    "click",
+    "type",
+    "select",
+    "press",
+    "wait",
+    "run_capability"
+  ],
+  "confirmAtRisk": "irreversible",
+  "maxSteps": 40,
+  "runTimeoutMs": 300000
+}

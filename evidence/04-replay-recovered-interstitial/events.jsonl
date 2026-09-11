@@ -1,0 +1,31 @@
+{"seq":0,"at":"2026-09-11T17:30:13.115Z","runId":"replay-20260911-173012-gzy8","type":"run.start","data":{"mode":"replay","capability":"meridian.member.savings-balance","version":"1.1.0","approval":"approved","inputs":["memberId"]}}
+{"seq":1,"at":"2026-09-11T17:30:13.608Z","runId":"replay-20260911-173012-gzy8","type":"observe","data":{"url":"about:blank","title":"","nodes":0}}
+{"seq":2,"at":"2026-09-11T17:30:13.612Z","runId":"replay-20260911-173012-gzy8","type":"policy.decision","data":{"stepId":"s00","url":"http://127.0.0.1:4311/","decision":"allow"}}
+{"seq":3,"at":"2026-09-11T17:30:13.613Z","runId":"replay-20260911-173012-gzy8","type":"step.start","data":{"stepId":"s00","intent":"Open MERIDIAN Core Member Services at its entry point","kind":"navigate","risk":"safe","attempt":1}}
+{"seq":4,"at":"2026-09-11T17:30:14.148Z","runId":"replay-20260911-173012-gzy8","type":"observe","data":{"url":"http://127.0.0.1:4311/","title":"MERIDIAN CORE :: Sign On","nodes":3}}
+{"seq":5,"at":"2026-09-11T17:30:14.153Z","runId":"replay-20260911-173012-gzy8","type":"step.end","data":{"stepId":"s00","ok":true}}
+{"seq":6,"at":"2026-09-11T17:30:14.160Z","runId":"replay-20260911-173012-gzy8","type":"observe","data":{"url":"http://127.0.0.1:4311/","title":"MERIDIAN CORE :: Sign On","nodes":3}}
+{"seq":7,"at":"2026-09-11T17:30:14.162Z","runId":"replay-20260911-173012-gzy8","type":"step.start","data":{"stepId":"s01","intent":"Enter the operator ID on the sign-on screen","kind":"type","risk":"safe","target":"textbox \"Operator ID\"","resolved":"Operator ID","attempt":1}}
+{"seq":8,"at":"2026-09-11T17:30:14.240Z","runId":"replay-20260911-173012-gzy8","type":"observe","data":{"url":"http://127.0.0.1:4311/","title":"MERIDIAN CORE :: Sign On","nodes":3}}
+{"seq":9,"at":"2026-09-11T17:30:14.243Z","runId":"replay-20260911-173012-gzy8","type":"step.end","data":{"stepId":"s01","ok":true}}
+{"seq":10,"at":"2026-09-11T17:30:14.248Z","runId":"replay-20260911-173012-gzy8","type":"observe","data":{"url":"http://127.0.0.1:4311/","title":"MERIDIAN CORE :: Sign On","nodes":3}}
+{"seq":11,"at":"2026-09-11T17:30:14.251Z","runId":"replay-20260911-173012-gzy8","type":"step.start","data":{"stepId":"s02","intent":"Enter the operator password on the sign-on screen","kind":"type","risk":"safe","target":"textbox \"Password\"","resolved":"Password","attempt":1}}
+{"seq":12,"at":"2026-09-11T17:30:14.322Z","runId":"replay-20260911-173012-gzy8","type":"observe","data":{"url":"http://127.0.0.1:4311/","title":"MERIDIAN CORE :: Sign On","nodes":3}}
+{"seq":13,"at":"2026-09-11T17:30:14.325Z","runId":"replay-20260911-173012-gzy8","type":"step.end","data":{"stepId":"s02","ok":true}}
+{"seq":14,"at":"2026-09-11T17:30:14.336Z","runId":"replay-20260911-173012-gzy8","type":"observe","data":{"url":"http://127.0.0.1:4311/","title":"MERIDIAN CORE :: Sign On","nodes":3}}
+{"seq":15,"at":"2026-09-11T17:30:14.339Z","runId":"replay-20260911-173012-gzy8","type":"step.start","data":{"stepId":"s03","intent":"Submit the sign-on form","kind":"click","risk":"safe","target":"button \"Sign On\"","resolved":"Sign On","attempt":1}}
+{"seq":16,"at":"2026-09-11T17:30:14.955Z","runId":"replay-20260911-173012-gzy8","type":"observe","data":{"url":"http://127.0.0.1:4311/desk","title":"MERIDIAN Core :: Desk","nodes":5}}
+{"seq":17,"at":"2026-09-11T17:30:14.958Z","runId":"replay-20260911-173012-gzy8","type":"step.end","data":{"stepId":"s03","ok":true}}
+{"seq":18,"at":"2026-09-11T17:30:14.971Z","runId":"replay-20260911-173012-gzy8","type":"observe","data":{"url":"http://127.0.0.1:4311/desk","title":"MERIDIAN Core :: Desk","nodes":5}}
+{"seq":19,"at":"2026-09-11T17:30:14.974Z","runId":"replay-20260911-173012-gzy8","type":"step.start","data":{"stepId":"s04","intent":"Enter the member number into the inquiry form","kind":"type","risk":"safe","target":"textbox \"Member Number\"","resolved":"Member Number","attempt":1}}
+{"seq":20,"at":"2026-09-11T17:30:15.032Z","runId":"replay-20260911-173012-gzy8","type":"observe","data":{"url":"http://127.0.0.1:4311/desk","title":"MERIDIAN Core :: Desk","nodes":5}}
+{"seq":21,"at":"2026-09-11T17:30:15.035Z","runId":"replay-20260911-173012-gzy8","type":"step.end","data":{"stepId":"s04","ok":true}}
+{"seq":22,"at":"2026-09-11T17:30:15.046Z","runId":"replay-20260911-173012-gzy8","type":"observe","data":{"url":"http://127.0.0.1:4311/desk","title":"MERIDIAN Core :: Desk","nodes":5}}
+{"seq":23,"at":"2026-09-11T17:30:15.050Z","runId":"replay-20260911-173012-gzy8","type":"step.start","data":{"stepId":"s05","intent":"Run the member search","kind":"click","risk":"safe","target":"button \"Search\"","resolved":"Search","attempt":1}}
+{"seq":24,"at":"2026-09-11T17:30:15.129Z","runId":"replay-20260911-173012-gzy8","type":"observe","data":{"url":"http://127.0.0.1:4311/desk","title":"MERIDIAN Core :: Desk","nodes":5}}
+{"seq":25,"at":"2026-09-11T17:30:15.653Z","runId":"replay-20260911-173012-gzy8","type":"interstitial.recovered","data":{"code":"COMPLIANCE_ACK","description":"A compliance review notice the operator must acknowledge before the record displays.","atStep":"s05","occurrence":1}}
+{"seq":26,"at":"2026-09-11T17:30:15.667Z","runId":"replay-20260911-173012-gzy8","type":"observe","data":{"url":"http://127.0.0.1:4311/desk","title":"MERIDIAN Core :: Desk","nodes":4}}
+{"seq":27,"at":"2026-09-11T17:30:16.286Z","runId":"replay-20260911-173012-gzy8","type":"step.end","data":{"stepId":"s05","ok":true}}
+{"seq":28,"at":"2026-09-11T17:30:16.314Z","runId":"replay-20260911-173012-gzy8","type":"observe","data":{"url":"http://127.0.0.1:4311/desk","title":"MERIDIAN Core :: Desk","nodes":10}}
+{"seq":29,"at":"2026-09-11T17:30:16.365Z","runId":"replay-20260911-173012-gzy8","type":"note","data":{"evidence":"029-checkpoint-ok.png","label":"checkpoint-ok"}}
+{"seq":30,"at":"2026-09-11T17:30:16.368Z","runId":"replay-20260911-173012-gzy8","type":"run.end","data":{"status":"success","outputs":{"memberName":"RIVERA, DANA Q","accountStatus":"ACTIVE","savingsBalance":4812.55}}}

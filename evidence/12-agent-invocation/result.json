@@ -1,0 +1,23 @@
+{
+  "runId": "replay-«card#1d43»31ak",
+  "capability": {
+    "id": "meridian.member.savings-balance",
+    "version": "1.1.0"
+  },
+  "startedAt": "2026-09-11T17:31:36.637Z",
+  "durationMs": 2590,
+  "stepsExecuted": 6,
+  "evidenceDir": "evidence/replay-«card#1d43»31ak",
+  "recoveries": [],
+  "drift": {
+    "changedSteps": [],
+    "relaxedTargets": [],
+    "frameMismatches": []
+  },
+  "status": "success",
+  "outputs": {
+    "memberName": "OKONKWO, PAT R",
+    "accountStatus": "ACTIVE",
+    "savingsBalance": 19.2
+  }
+}

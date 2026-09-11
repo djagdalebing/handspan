@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la /Users/devangjagdale/interfaceai 2>/dev/null; echo \"---\"; node --version 2>/dev/null; python3 --version 2>/dev/null; echo \"---\"; ls ~/.claude 2>/dev/null | head -20)"
+    ]
+  }
+}

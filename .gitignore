@@ -1,0 +1,6 @@
+node_modules/
+.env
+*.log
+evidence/**/*.tmp
+.scratch/
+evidence/.test/

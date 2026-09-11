@@ -1,0 +1,37 @@
+{
+  "schema": "overlay/v1",
+  "base": {
+    "id": "meridian.member.savings-balance",
+    "version": "1.1.0"
+  },
+  "tenant": "northgate-cu",
+  "description": "Northgate Credit Union runs the same MERIDIAN Core 7.2.1 product as the base recording, configured with their own field labels and column headings. Four patches; the rest of the flow is inherited, so a fix to the base reaches Northgate without re-recording.",
+  "approval": "approved",
+  "patches": [
+    {
+      "path": "steps[0].action.url",
+      "value": "http://127.0.0.1:4321/",
+      "reason": "Northgate's instance is hosted separately."
+    },
+    {
+      "path": "policy.allowedOrigins",
+      "value": [
+        "http://127.0.0.1:4321"
+      ],
+      "reason": "Scope this specialisation to Northgate's origin so it cannot drive another institution's instance."
+    },
+    {
+      "path": "outputs[2].source.selectColumn",
+      "value": "BALANCE",
+      "reason": "Northgate's account grid heads the balance column 'BALANCE'."
+    }
+  ],
+  "renames": [
+    {
+      "role": "button",
+      "from": "Search",
+      "to": "Find",
+      "reason": "Northgate labels the inquiry submit button 'Find'. This touches both the click step and the postcondition that waits for it."
+    }
+  ]
+}

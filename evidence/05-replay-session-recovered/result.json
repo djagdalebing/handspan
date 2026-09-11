@@ -1,0 +1,29 @@
+{
+  "runId": "replay-«card#1d1e»7nos",
+  "capability": {
+    "id": "meridian.member.savings-balance",
+    "version": "1.1.0"
+  },
+  "startedAt": "2026-09-11T17:30:18.673Z",
+  "durationMs": 5402,
+  "stepsExecuted": 10,
+  "evidenceDir": "evidence/replay-«card#1d1e»7nos",
+  "recoveries": [
+    {
+      "code": "SESSION_EXPIRED",
+      "atStep": "s03",
+      "occurrences": 1
+    }
+  ],
+  "drift": {
+    "changedSteps": [],
+    "relaxedTargets": [],
+    "frameMismatches": []
+  },
+  "status": "success",
+  "outputs": {
+    "memberName": "RIVERA, DANA Q",
+    "accountStatus": "ACTIVE",
+    "savingsBalance": 4812.55
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "url": "http://127.0.0.1:4311/signon",
+  "title": "MERIDIAN CORE :: Sign On",
+  "at": "2026-09-11T17:31:23.653Z",
+  "text": "MERIDIAN CORE — OPERATOR SIGN ON Invalid operator ID or password. Operator ID: «secretish#914f» system. Training data only. Use operator «secret:MERIDIAN_OPERATOR_PASSWORD» / password «secret:MERIDIAN_OPERATOR_PASSWORD».",
+  "nodes": [
+    {
+      "ref": "n0_0",
+      "role": "textbox",
+      "name": "Operator ID",
+      "value": "",
+      "framePath": [],
+      "domHint": "input name=p_uid type=text",
+      "bounds": {
+        "x": 470,
+        "y": 111,
+        "w": 136,
+        "h": 17
+      }
+    },
+    {
+      "ref": "n0_1",
+      "role": "textbox",
+      "name": "Password",
+      "value": "",
+      "framePath": [],
+      "domHint": "input name=p_pwd type=password",
+      "bounds": {
+        "x": 470,
+        "y": 134,
+        "w": 136,
+        "h": 17
+      }
+    },
+    {
+      "ref": "n0_2",
+      "role": "button",
+      "name": "Sign On",
+      "framePath": [],
+      "domHint": "input type=submit",
+      "bounds": {
+        "x": 470,
+        "y": 176,
+        "w": 58,
+        "h": 19
+      }
+    },
+    {
+      "ref": "n0_3",
+      "role": "alert",
+      "name": "Invalid operator ID or password.",
+      "framePath": [],
+      "domHint": "div",
+      "bounds": {
+        "x": 388,
+        "y": 61,
+        "w": 404,
+        "h": 28
+      }
+    }
+  ]
+}

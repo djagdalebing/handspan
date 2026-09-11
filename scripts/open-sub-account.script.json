@@ -1,0 +1,51 @@
+[
+  { "screen": "Operator sign-on", "reasoning": "Authenticate first.", "action": "type",
+    "intent": "Enter the operator ID on the sign-on screen", "ref": "@textbox:Operator ID", "text": "demo" },
+  { "screen": "Operator sign-on", "reasoning": "Supply the password.", "action": "type",
+    "intent": "Enter the operator password on the sign-on screen", "ref": "@textbox:Password", "text": "demo" },
+  { "screen": "Operator sign-on", "reasoning": "Submit credentials.", "action": "click",
+    "intent": "Submit the sign-on form", "ref": "@button:Sign On" },
+  { "screen": "Member Inquiry", "reasoning": "Locate the member before servicing the account.", "action": "type",
+    "intent": "Enter the member number into the inquiry form", "ref": "@textbox:Member Number",
+    "text": "12345", "parameterName": "memberId" },
+  { "screen": "Member Inquiry", "reasoning": "Retrieve the member record.", "action": "click",
+    "intent": "Run the member search", "ref": "@button:Search" },
+  { "screen": "Member Detail", "reasoning": "Sub-account opening starts from the member detail screen.",
+    "action": "click", "intent": "Start the sub-account opening flow", "ref": "@link:Open Sub-Account" },
+  { "screen": "Open Sub-Account", "reasoning": "Choose the product to open.", "action": "select",
+    "intent": "Select the sub-account product type", "ref": "@combobox:Account Type",
+    "option": "VACATION CLUB", "parameterName": "accountType" },
+  { "screen": "Open Sub-Account", "reasoning": "Enter the opening deposit.", "action": "type",
+    "intent": "Enter the opening deposit amount", "ref": "@textbox:Opening Deposit",
+    "text": "50.00", "parameterName": "openingDeposit" },
+  { "screen": "Open Sub-Account", "reasoning": "Move to the confirmation screen for review.", "action": "click",
+    "intent": "Continue to the confirmation screen", "ref": "@button:Continue" },
+  { "screen": "Confirm Sub-Account", "reasoning": "Posting the account is the point of the task; it is irreversible.",
+    "action": "click", "intent": "Post the new sub-account (irreversible)", "ref": "@button:Post Account" },
+  { "screen": "Sub-Account Opened", "reasoning": "The confirmation number is displayed, so the task is complete.",
+    "action": "finish", "intent": "Confirmation screen reached", "message": "Sub-account opened; confirmation number shown." },
+  {
+    "successMarker": "SUB-ACCOUNT OPENED",
+    "successReadoutLabel": "Confirmation Number",
+    "outputs": [
+      { "name": "confirmationNumber", "type": "string", "description": "Core confirmation number for the posting.",
+        "sourceKind": "readout", "readoutLabel": "Confirmation Number", "transform": "trim" },
+      { "name": "newAccountNumber", "type": "string", "description": "The account number assigned to the new sub-account.",
+        "sourceKind": "readout", "readoutLabel": "New Account Number", "transform": "trim" }
+    ],
+    "proposedOutcomes": [
+      { "code": "MINIMUM_DEPOSIT_NOT_MET", "description": "The opening deposit was below the product minimum, so nothing was opened.",
+        "textMarker": "Minimum opening deposit" },
+      { "code": "ACCOUNT_TYPE_REQUIRED", "description": "No account type was selected.",
+        "textMarker": "Account type is required" },
+      { "code": "INVALID_DEPOSIT_AMOUNT", "description": "The opening deposit was not a valid amount.",
+        "textMarker": "Opening deposit must be a valid amount" },
+      { "code": "MEMBER_NOT_FOUND", "description": "No member record exists for the number supplied.",
+        "textMarker": "No member record found" }
+    ],
+    "proposedInterstitials": [
+      { "code": "COMPLIANCE_ACK", "description": "A compliance review notice the operator must acknowledge before the record displays.",
+        "textMarker": "ACKNOWLEDGEMENT REQUIRED", "dismissButtonLabel": "Acknowledge" }
+    ]
+  }
+]

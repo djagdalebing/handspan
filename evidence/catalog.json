@@ -1,0 +1,201 @@
+[
+  {
+    "name": "meridian.member.open-sub-account",
+    "version": "1.0.0",
+    "description": "Open a new sub-account of a given type for a member with an opening deposit, and return the confirmation number. This capability posts an irreversible transaction.",
+    "risk": "irreversible",
+    "approval": "approved",
+    "app": {
+      "vendor": "Meridian Systems",
+      "product": "MERIDIAN Core Member Services"
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "memberId": {
+          "type": "string",
+          "description": "The member number. (PII — redacted in logs)",
+          "pattern": "^[0-9]{5}$"
+        },
+        "accountType": {
+          "type": "string",
+          "description": "The sub-account product to open.",
+          "enum": [
+            "SHARE SAVINGS",
+            "VACATION CLUB",
+            "HOLIDAY CLUB"
+          ]
+        },
+        "openingDeposit": {
+          "type": "string",
+          "description": "Opening deposit amount in dollars. Minimum 25.",
+          "pattern": "^[0-9]+(\\.[0-9]{2})?$"
+        }
+      },
+      "required": [
+        "memberId",
+        "accountType",
+        "openingDeposit"
+      ]
+    },
+    "returns": {
+      "confirmationNumber": {
+        "type": "string",
+        "description": "Core confirmation number for the posting."
+      },
+      "newAccountNumber": {
+        "type": "string",
+        "description": "The account number assigned to the new sub-account."
+      }
+    },
+    "outcomes": [
+      {
+        "code": "MINIMUM_DEPOSIT_NOT_MET",
+        "description": "The opening deposit was below the product minimum, so nothing was opened."
+      },
+      {
+        "code": "ACCOUNT_TYPE_REQUIRED",
+        "description": "No account type was selected."
+      },
+      {
+        "code": "INVALID_DEPOSIT_AMOUNT",
+        "description": "The opening deposit was not a valid amount."
+      },
+      {
+        "code": "MEMBER_NOT_FOUND",
+        "description": "No member record exists for the number supplied."
+      }
+    ]
+  },
+  {
+    "name": "meridian.member.savings-balance",
+    "version": "1.0.0",
+    "description": "Look up a member by number in MERIDIAN Core and return the current balance of their share savings account.",
+    "risk": "safe",
+    "approval": "draft",
+    "app": {
+      "vendor": "Meridian Systems",
+      "product": "MERIDIAN Core Member Services"
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "memberId": {
+          "type": "string",
+          "description": "The member number to look up. (PII — redacted in logs)",
+          "pattern": "^[0-9]{5}$"
+        }
+      },
+      "required": [
+        "memberId"
+      ]
+    },
+    "returns": {
+      "memberName": {
+        "type": "string",
+        "description": "The member's name as held on the core."
+      },
+      "accountStatus": {
+        "type": "string",
+        "description": "Membership status."
+      },
+      "savingsBalance": {
+        "type": "number",
+        "description": "Current balance of the share savings account in dollars."
+      }
+    },
+    "outcomes": [
+      {
+        "code": "MEMBER_NOT_FOUND",
+        "description": "No member record exists for the number supplied."
+      },
+      {
+        "code": "MEMBER_RESTRICTED",
+        "description": "The operator is not authorised to view this member record."
+      },
+      {
+        "code": "INVALID_MEMBER_NUMBER",
+        "description": "The member number supplied was not numeric."
+      }
+    ]
+  },
+  {
+    "name": "meridian.member.savings-balance",
+    "version": "1.1.0",
+    "description": "Look up a member by number in MERIDIAN Core and return the current balance of their share savings account.",
+    "risk": "safe",
+    "approval": "approved",
+    "app": {
+      "vendor": "Meridian Systems",
+      "product": "MERIDIAN Core Member Services"
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "memberId": {
+          "type": "string",
+          "description": "The member number to look up. (PII — redacted in logs)",
+          "pattern": "^[0-9]{5}$"
+        }
+      },
+      "required": [
+        "memberId"
+      ]
+    },
+    "returns": {
+      "memberName": {
+        "type": "string",
+        "description": "The member's name as held on the core."
+      },
+      "accountStatus": {
+        "type": "string",
+        "description": "Membership status."
+      },
+      "savingsBalance": {
+        "type": "number",
+        "description": "Current balance of the share savings account in dollars."
+      }
+    },
+    "outcomes": [
+      {
+        "code": "MEMBER_NOT_FOUND",
+        "description": "No member record exists for the number supplied."
+      },
+      {
+        "code": "MEMBER_RESTRICTED",
+        "description": "The operator is not authorised to view this member record."
+      },
+      {
+        "code": "INVALID_MEMBER_NUMBER",
+        "description": "The member number supplied was not numeric."
+      },
+      {
+        "code": "SYSTEM_ERROR",
+        "description": "MERIDIAN Core returned an unhandled application error (MCS-0500)."
+      }
+    ]
+  },
+  {
+    "name": "meridian.session.signon",
+    "version": "1.0.0",
+    "description": "Authenticate an operator session against MERIDIAN Core and reach the Member Inquiry desk. Used on its own and as the recovery path for an expired session.",
+    "risk": "safe",
+    "approval": "approved",
+    "app": {
+      "vendor": "Meridian Systems",
+      "product": "MERIDIAN Core Member Services"
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    },
+    "returns": {},
+    "outcomes": [
+      {
+        "code": "SIGNON_REJECTED",
+        "description": "The operator ID or password was rejected."
+      }
+    ]
+  }
+]

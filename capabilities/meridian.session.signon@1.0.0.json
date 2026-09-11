@@ -1,0 +1,180 @@
+{
+  "schema": "capability/v1",
+  "id": "meridian.session.signon",
+  "version": "1.0.0",
+  "name": "Sign on to MERIDIAN Core",
+  "description": "Authenticate an operator session against MERIDIAN Core and reach the Member Inquiry desk. Used on its own and as the recovery path for an expired session.",
+  "app": {
+    "vendor": "Meridian Systems",
+    "product": "MERIDIAN Core Member Services",
+    "productVersion": "7.2.1",
+    "surface": "web"
+  },
+  "approval": "approved",
+  "risk": "safe",
+  "inputs": [],
+  "outputs": [],
+  "preconditions": [],
+  "steps": [
+    {
+      "id": "s00",
+      "intent": "Open MERIDIAN Core Member Services at its entry point",
+      "action": {
+        "kind": "navigate",
+        "url": "http://127.0.0.1:4311/"
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "nodeExists",
+        "target": {
+          "role": "textbox",
+          "name": "Operator ID",
+          "nameMatch": "exact",
+          "framePath": []
+        }
+      },
+      "optional": false,
+      "timeoutMs": 20000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 800
+      }
+    },
+    {
+      "id": "s01",
+      "intent": "Enter the operator ID on the sign-on screen",
+      "action": {
+        "kind": "type",
+        "target": {
+          "role": "textbox",
+          "name": "Operator ID",
+          "nameMatch": "exact",
+          "framePath": []
+        },
+        "secretRef": "MERIDIAN_OPERATOR_ID",
+        "clearFirst": true
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "nodeExists",
+        "target": {
+          "role": "textbox",
+          "name": "Password",
+          "nameMatch": "exact",
+          "framePath": []
+        }
+      },
+      "optional": false,
+      "timeoutMs": 15000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 600
+      }
+    },
+    {
+      "id": "s02",
+      "intent": "Enter the operator password on the sign-on screen",
+      "action": {
+        "kind": "type",
+        "target": {
+          "role": "textbox",
+          "name": "Password",
+          "nameMatch": "exact",
+          "framePath": []
+        },
+        "secretRef": "MERIDIAN_OPERATOR_PASSWORD",
+        "clearFirst": true
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "nodeExists",
+        "target": {
+          "role": "button",
+          "name": "Sign On",
+          "nameMatch": "exact",
+          "framePath": []
+        }
+      },
+      "optional": false,
+      "timeoutMs": 15000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 600
+      }
+    },
+    {
+      "id": "s03",
+      "intent": "Submit the sign-on form",
+      "action": {
+        "kind": "click",
+        "target": {
+          "role": "button",
+          "name": "Sign On",
+          "nameMatch": "exact",
+          "framePath": []
+        }
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "urlMatches",
+        "value": {
+          "mode": "contains",
+          "value": "/desk",
+          "caseSensitive": false
+        }
+      },
+      "optional": false,
+      "timeoutMs": 15000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 600
+      }
+    }
+  ],
+  "checkpoint": {
+    "type": "textMatches",
+    "value": {
+      "mode": "contains",
+      "value": "MEMBER INQUIRY",
+      "caseSensitive": false
+    }
+  },
+  "outcomes": [
+    {
+      "code": "SIGNON_REJECTED",
+      "description": "The operator ID or password was rejected.",
+      "when": {
+        "type": "textMatches",
+        "value": {
+          "mode": "contains",
+          "value": "Invalid operator ID or password",
+          "caseSensitive": false
+        }
+      },
+      "classification": "business",
+      "afterSteps": [],
+      "terminal": true,
+      "outputs": []
+    }
+  ],
+  "interstitials": [],
+  "policy": {
+    "allowedOrigins": [
+      "http://127.0.0.1:4311"
+    ],
+    "maxSteps": 20,
+    "confirmAtRisk": "irreversible"
+  },
+  "fingerprints": {
+    "s01": "c8f2709e",
+    "s02": "c8f2709e",
+    "s03": "c8f2709e"
+  },
+  "provenance": {
+    "recordedAt": "2026-09-11T17:03:55.726Z",
+    "recordedBy": "llm",
+    "model": "scripted",
+    "discoveryRunId": "discover-20260911-170353-4ks9",
+    "goal": "Sign on to MERIDIAN Core as the operator and reach the Member Inquiry screen."
+  }
+}

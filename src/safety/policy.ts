@@ -1,0 +1,123 @@
+/**
+ * Guardrails.
+ *
+ * Two layers, and it matters which is which:
+ *
+ *  - **The allowlist is the hard boundary.** Origin and path prefixes are
+ *    checked on every navigation and every action, during discovery and
+ *    during replay. Nothing the model says can widen it.
+ *
+ *  - **Risk classification is a heuristic floor, not a guarantee.** During
+ *    discovery we have to guess whether "Post Account" is irreversible from
+ *    its label, and label heuristics are defeatable. So the guess is only
+ *    used to decide *when to stop and ask a human*, never to authorise. The
+ *    durable control is that every step in a recorded artifact carries an
+ *    explicit reviewed risk label, and unattended replay requires the
+ *    artifact to be `approved`.
+ *
+ * The choice to *escalate* rather than *block* irreversible actions is
+ * deliberate. In back-office banking the irreversible step is usually the
+ * entire point of the task; a system that refuses to post anything is not
+ * safe, it is useless, and it gets routed around. Escalation keeps a human
+ * accountable for the consequential decision while leaving the other
+ * nineteen steps automated.
+ */
+import type { Risk } from '../artifact/schema.js';
+
+export interface PolicyConfig {
+  /** Origins the agent may touch, e.g. "http://127.0.0.1:4311". */
+  allowedOrigins: string[];
+  /** Optional path prefixes; empty means any path on an allowed origin. */
+  allowedPathPrefixes: string[];
+  /** Paths that are never permitted even on an allowed origin. */
+  deniedPathPrefixes: string[];
+  allowedActions: Array<'navigate' | 'click' | 'type' | 'select' | 'press' | 'wait' | 'run_capability'>;
+  /** Steps at or above this risk need a human decision. */
+  confirmAtRisk: Risk;
+  maxSteps: number;
+  /** Wall-clock ceiling for a single run. */
+  runTimeoutMs: number;
+}
+
+export const DEFAULT_POLICY: PolicyConfig = {
+  allowedOrigins: [],
+  allowedPathPrefixes: [],
+  deniedPathPrefixes: [],
+  allowedActions: ['navigate', 'click', 'type', 'select', 'press', 'wait', 'run_capability'],
+  confirmAtRisk: 'irreversible',
+  maxSteps: 40,
+  runTimeoutMs: 5 * 60_000,
+};
+
+export type Decision =
+  | { decision: 'allow' }
+  | { decision: 'confirm'; reason: string }
+  | { decision: 'deny'; reason: string };
+
+const RANK: Record<Risk, number> = { safe: 0, mutating: 1, irreversible: 2 };
+
+/** Label patterns that suggest an action commits something. */
+const IRREVERSIBLE_LABEL =
+  /\b(post|commit|transfer|wire|disburse|delete|remove|void|purge|charge|release|approve|deny|send|close\s+account|write.?off|reverse)\b/i;
+const MUTATING_LABEL =
+  /\b(save|update|create|add|apply|submit|change|set|open\b)\b/i;
+
+export class Policy {
+  constructor(readonly config: PolicyConfig) {}
+
+  static from(partial: Partial<PolicyConfig>): Policy {
+    return new Policy({ ...DEFAULT_POLICY, ...partial });
+  }
+
+  /** Hard boundary. Applies to discovery and replay identically. */
+  checkUrl(rawUrl: string): Decision {
+    let u: URL;
+    try {
+      u = new URL(rawUrl);
+    } catch {
+      return { decision: 'deny', reason: `not a valid URL: ${rawUrl}` };
+    }
+    if (!['http:', 'https:'].includes(u.protocol)) {
+      return { decision: 'deny', reason: `protocol ${u.protocol} is not permitted` };
+    }
+    if (!this.config.allowedOrigins.includes(u.origin)) {
+      return { decision: 'deny', reason: `origin ${u.origin} is not on the allowlist` };
+    }
+    for (const denied of this.config.deniedPathPrefixes) {
+      if (u.pathname.startsWith(denied)) {
+        return { decision: 'deny', reason: `path ${u.pathname} is explicitly denied` };
+      }
+    }
+    const prefixes = this.config.allowedPathPrefixes;
+    if (prefixes.length > 0 && !prefixes.some((p) => u.pathname.startsWith(p))) {
+      return { decision: 'deny', reason: `path ${u.pathname} is outside the allowed prefixes` };
+    }
+    return { decision: 'allow' };
+  }
+
+  checkActionKind(kind: string): Decision {
+    return (this.config.allowedActions as string[]).includes(kind)
+      ? { decision: 'allow' }
+      : { decision: 'deny', reason: `action kind "${kind}" is not permitted by policy` };
+  }
+
+  /** Gate on declared step risk. */
+  checkRisk(risk: Risk, what: string): Decision {
+    if (RANK[risk] >= RANK[this.config.confirmAtRisk]) {
+      return { decision: 'confirm', reason: `${what} is classified ${risk}` };
+    }
+    return { decision: 'allow' };
+  }
+
+  /**
+   * Best-effort risk guess for an action the model proposed during discovery,
+   * where no reviewed label exists yet. Intentionally errs toward caution.
+   */
+  static classify(kind: string, controlLabel: string | undefined): Risk {
+    if (kind !== 'click' && kind !== 'press') return 'safe';
+    const label = controlLabel ?? '';
+    if (IRREVERSIBLE_LABEL.test(label)) return 'irreversible';
+    if (MUTATING_LABEL.test(label)) return 'mutating';
+    return 'safe';
+  }
+}

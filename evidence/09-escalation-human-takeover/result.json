@@ -1,0 +1,22 @@
+{
+  "runId": "replay-«card#67db»g96k",
+  "capability": {
+    "id": "meridian.member.open-sub-account",
+    "version": "1.0.0"
+  },
+  "startedAt": "2026-09-11T17:30:42.877Z",
+  "durationMs": 5094,
+  "stepsExecuted": 10,
+  "evidenceDir": "evidence/replay-«card#67db»g96k",
+  "recoveries": [],
+  "drift": {
+    "changedSteps": [],
+    "relaxedTargets": [],
+    "frameMismatches": []
+  },
+  "status": "success",
+  "outputs": {
+    "confirmationNumber": "CNF47847397",
+    "newAccountNumber": "S-1007"
+  }
+}

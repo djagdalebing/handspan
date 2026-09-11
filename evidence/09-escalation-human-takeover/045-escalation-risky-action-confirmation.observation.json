@@ -1,0 +1,104 @@
+{
+  "url": "http://127.0.0.1:4311/desk",
+  "title": "MERIDIAN Core :: Desk",
+  "at": "2026-09-11T17:30:46.896Z",
+  "text": "MERIDIAN CORE Member Services 7.2.1 OPER: DEMO\n---\nMENU Member Inquiry Account Services Teller Ops Reports\n---\nCONFIRM SUB-ACCOUNT — «memberId#9b56» Review the details below. Posting this request opens the account immediately and cannot be undone from this screen. Member: «memberId#9b56» — OKONKWO, PAT R Account Type: HOLIDAY CLUB Opening Deposit: $75.00",
+  "nodes": [
+    {
+      "ref": "n2_0",
+      "role": "link",
+      "name": "Member Inquiry",
+      "framePath": [
+        "nav"
+      ],
+      "group": "MENU",
+      "domHint": "a href=/app/home",
+      "bounds": {
+        "x": 6,
+        "y": 68,
+        "w": 80,
+        "h": 12
+      }
+    },
+    {
+      "ref": "n2_1",
+      "role": "link",
+      "name": "Account Services",
+      "framePath": [
+        "nav"
+      ],
+      "group": "MENU",
+      "domHint": "a href=/app/home",
+      "bounds": {
+        "x": 6,
+        "y": 86,
+        "w": 86,
+        "h": 12
+      }
+    },
+    {
+      "ref": "n3_0",
+      "role": "button",
+      "name": "Post Account",
+      "framePath": [
+        "main"
+      ],
+      "group": "HOLIDAY CLUB",
+      "domHint": "input type=submit",
+      "bounds": {
+        "x": 159,
+        "y": 174,
+        "w": 85,
+        "h": 19
+      }
+    },
+    {
+      "ref": "n3_1",
+      "role": "readout",
+      "name": "Member",
+      "value": "«memberId#9b56» — OKONKWO, PAT R",
+      "framePath": [
+        "main"
+      ],
+      "group": "CONFIRM SUB-ACCOUNT — «memberId#9b56»",
+      "bounds": {
+        "x": 159,
+        "y": 101,
+        "w": 251,
+        "h": 18
+      }
+    },
+    {
+      "ref": "n3_2",
+      "role": "readout",
+      "name": "Account Type",
+      "value": "HOLIDAY CLUB",
+      "framePath": [
+        "main"
+      ],
+      "group": "CONFIRM SUB-ACCOUNT — «memberId#9b56»",
+      "bounds": {
+        "x": 159,
+        "y": 119,
+        "w": 251,
+        "h": 18
+      }
+    },
+    {
+      "ref": "n3_3",
+      "role": "readout",
+      "name": "Opening Deposit",
+      "value": "$75.00",
+      "framePath": [
+        "main"
+      ],
+      "group": "HOLIDAY CLUB",
+      "bounds": {
+        "x": 159,
+        "y": 137,
+        "w": 251,
+        "h": 18
+      }
+    }
+  ]
+}

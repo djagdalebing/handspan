@@ -1,0 +1,598 @@
+{
+  "schema": "capability/v1",
+  "id": "meridian.member.open-sub-account",
+  "version": "1.0.0",
+  "name": "Open a member sub-account",
+  "description": "Open a new sub-account of a given type for a member with an opening deposit, and return the confirmation number. This capability posts an irreversible transaction.",
+  "app": {
+    "vendor": "Meridian Systems",
+    "product": "MERIDIAN Core Member Services",
+    "productVersion": "7.2.1",
+    "surface": "web"
+  },
+  "approval": "approved",
+  "risk": "irreversible",
+  "inputs": [
+    {
+      "name": "memberId",
+      "type": "string",
+      "required": true,
+      "description": "The member number.",
+      "sensitivity": "pii",
+      "pattern": "^[0-9]{5}$",
+      "example": "12345"
+    },
+    {
+      "name": "accountType",
+      "type": "enum",
+      "enum": [
+        "SHARE SAVINGS",
+        "VACATION CLUB",
+        "HOLIDAY CLUB"
+      ],
+      "required": true,
+      "description": "The sub-account product to open.",
+      "sensitivity": "internal",
+      "example": "VACATION CLUB"
+    },
+    {
+      "name": "openingDeposit",
+      "type": "string",
+      "required": true,
+      "description": "Opening deposit amount in dollars. Minimum 25.",
+      "sensitivity": "internal",
+      "pattern": "^[0-9]+(\\.[0-9]{2})?$",
+      "example": "50.00"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "confirmationNumber",
+      "type": "string",
+      "description": "Core confirmation number for the posting.",
+      "source": {
+        "from": "readout",
+        "label": {
+          "mode": "contains",
+          "value": "Confirmation Number",
+          "caseSensitive": false
+        }
+      },
+      "transform": "trim",
+      "required": true,
+      "sensitivity": "internal"
+    },
+    {
+      "name": "newAccountNumber",
+      "type": "string",
+      "description": "The account number assigned to the new sub-account.",
+      "source": {
+        "from": "readout",
+        "label": {
+          "mode": "contains",
+          "value": "New Account Number",
+          "caseSensitive": false
+        }
+      },
+      "transform": "trim",
+      "required": true,
+      "sensitivity": "internal"
+    }
+  ],
+  "preconditions": [],
+  "steps": [
+    {
+      "id": "s00",
+      "intent": "Open MERIDIAN Core Member Services at its entry point",
+      "action": {
+        "kind": "navigate",
+        "url": "http://127.0.0.1:4311/"
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "nodeExists",
+        "target": {
+          "role": "textbox",
+          "name": "Operator ID",
+          "nameMatch": "exact",
+          "framePath": []
+        }
+      },
+      "optional": false,
+      "timeoutMs": 20000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 800
+      }
+    },
+    {
+      "id": "s01",
+      "intent": "Enter the operator ID on the sign-on screen",
+      "action": {
+        "kind": "type",
+        "target": {
+          "role": "textbox",
+          "name": "Operator ID",
+          "nameMatch": "exact",
+          "framePath": []
+        },
+        "secretRef": "MERIDIAN_OPERATOR_ID",
+        "clearFirst": true
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "nodeExists",
+        "target": {
+          "role": "textbox",
+          "name": "Password",
+          "nameMatch": "exact",
+          "framePath": []
+        }
+      },
+      "optional": false,
+      "timeoutMs": 15000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 600
+      }
+    },
+    {
+      "id": "s02",
+      "intent": "Enter the operator password on the sign-on screen",
+      "action": {
+        "kind": "type",
+        "target": {
+          "role": "textbox",
+          "name": "Password",
+          "nameMatch": "exact",
+          "framePath": []
+        },
+        "secretRef": "MERIDIAN_OPERATOR_PASSWORD",
+        "clearFirst": true
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "nodeExists",
+        "target": {
+          "role": "button",
+          "name": "Sign On",
+          "nameMatch": "exact",
+          "framePath": []
+        }
+      },
+      "optional": false,
+      "timeoutMs": 15000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 600
+      }
+    },
+    {
+      "id": "s03",
+      "intent": "Submit the sign-on form",
+      "action": {
+        "kind": "click",
+        "target": {
+          "role": "button",
+          "name": "Sign On",
+          "nameMatch": "exact",
+          "framePath": []
+        }
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "nodeExists",
+        "target": {
+          "role": "textbox",
+          "name": "Member Number",
+          "nameMatch": "exact",
+          "framePath": [
+            "main"
+          ]
+        }
+      },
+      "optional": false,
+      "timeoutMs": 15000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 600
+      }
+    },
+    {
+      "id": "s04",
+      "intent": "Enter the member number into the inquiry form",
+      "action": {
+        "kind": "type",
+        "target": {
+          "role": "textbox",
+          "name": "Member Number",
+          "nameMatch": "exact",
+          "framePath": [
+            "main"
+          ]
+        },
+        "text": "{{memberId}}",
+        "clearFirst": true
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "nodeExists",
+        "target": {
+          "role": "button",
+          "name": "Search",
+          "nameMatch": "exact",
+          "framePath": [
+            "main"
+          ]
+        }
+      },
+      "optional": false,
+      "timeoutMs": 15000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 600
+      }
+    },
+    {
+      "id": "s05",
+      "intent": "Run the member search",
+      "action": {
+        "kind": "click",
+        "target": {
+          "role": "button",
+          "name": "Search",
+          "nameMatch": "exact",
+          "framePath": [
+            "main"
+          ]
+        }
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "nodeExists",
+        "target": {
+          "role": "link",
+          "name": "Open Sub-Account",
+          "nameMatch": "exact",
+          "framePath": [
+            "main"
+          ]
+        }
+      },
+      "optional": false,
+      "timeoutMs": 15000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 600
+      }
+    },
+    {
+      "id": "s06",
+      "intent": "Start the sub-account opening flow",
+      "action": {
+        "kind": "click",
+        "target": {
+          "role": "link",
+          "name": "Open Sub-Account",
+          "nameMatch": "exact",
+          "framePath": [
+            "main"
+          ]
+        }
+      },
+      "risk": "mutating",
+      "waitFor": {
+        "type": "nodeExists",
+        "target": {
+          "role": "combobox",
+          "name": "Account Type",
+          "nameMatch": "exact",
+          "framePath": [
+            "main"
+          ]
+        }
+      },
+      "optional": false,
+      "timeoutMs": 15000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 600
+      }
+    },
+    {
+      "id": "s07",
+      "intent": "Select the sub-account product type",
+      "action": {
+        "kind": "select",
+        "target": {
+          "role": "combobox",
+          "name": "Account Type",
+          "nameMatch": "exact",
+          "framePath": [
+            "main"
+          ]
+        },
+        "option": "{{accountType}}"
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "nodeExists",
+        "target": {
+          "role": "textbox",
+          "name": "Opening Deposit",
+          "nameMatch": "exact",
+          "framePath": [
+            "main"
+          ]
+        }
+      },
+      "optional": false,
+      "timeoutMs": 15000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 600
+      }
+    },
+    {
+      "id": "s08",
+      "intent": "Enter the opening deposit amount",
+      "action": {
+        "kind": "type",
+        "target": {
+          "role": "textbox",
+          "name": "Opening Deposit",
+          "nameMatch": "exact",
+          "framePath": [
+            "main"
+          ]
+        },
+        "text": "{{openingDeposit}}",
+        "clearFirst": true
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "nodeExists",
+        "target": {
+          "role": "button",
+          "name": "Continue",
+          "nameMatch": "exact",
+          "framePath": [
+            "main"
+          ]
+        }
+      },
+      "optional": false,
+      "timeoutMs": 15000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 600
+      }
+    },
+    {
+      "id": "s09",
+      "intent": "Continue to the confirmation screen",
+      "action": {
+        "kind": "click",
+        "target": {
+          "role": "button",
+          "name": "Continue",
+          "nameMatch": "exact",
+          "framePath": [
+            "main"
+          ]
+        }
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "nodeExists",
+        "target": {
+          "role": "button",
+          "name": "Post Account",
+          "nameMatch": "exact",
+          "framePath": [
+            "main"
+          ]
+        }
+      },
+      "optional": false,
+      "timeoutMs": 15000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 600
+      }
+    },
+    {
+      "id": "s10",
+      "intent": "Post the new sub-account (irreversible)",
+      "action": {
+        "kind": "click",
+        "target": {
+          "role": "button",
+          "name": "Post Account",
+          "nameMatch": "exact",
+          "framePath": [
+            "main"
+          ]
+        }
+      },
+      "risk": "irreversible",
+      "waitFor": {
+        "type": "all",
+        "of": [
+          {
+            "type": "textMatches",
+            "value": {
+              "mode": "contains",
+              "value": "SUB-ACCOUNT OPENED",
+              "caseSensitive": false
+            }
+          },
+          {
+            "type": "readoutMatches",
+            "label": {
+              "mode": "contains",
+              "value": "Confirmation Number",
+              "caseSensitive": false
+            },
+            "value": {
+              "mode": "regex",
+              "value": ".",
+              "caseSensitive": false
+            }
+          }
+        ]
+      },
+      "optional": false,
+      "timeoutMs": 15000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 600
+      }
+    }
+  ],
+  "checkpoint": {
+    "type": "all",
+    "of": [
+      {
+        "type": "textMatches",
+        "value": {
+          "mode": "contains",
+          "value": "SUB-ACCOUNT OPENED",
+          "caseSensitive": false
+        }
+      },
+      {
+        "type": "readoutMatches",
+        "label": {
+          "mode": "contains",
+          "value": "Confirmation Number",
+          "caseSensitive": false
+        },
+        "value": {
+          "mode": "regex",
+          "value": ".",
+          "caseSensitive": false
+        }
+      }
+    ]
+  },
+  "outcomes": [
+    {
+      "code": "MINIMUM_DEPOSIT_NOT_MET",
+      "description": "The opening deposit was below the product minimum, so nothing was opened.",
+      "when": {
+        "type": "textMatches",
+        "value": {
+          "mode": "contains",
+          "value": "Minimum opening deposit",
+          "caseSensitive": false
+        }
+      },
+      "classification": "business",
+      "afterSteps": [],
+      "terminal": true,
+      "outputs": []
+    },
+    {
+      "code": "ACCOUNT_TYPE_REQUIRED",
+      "description": "No account type was selected.",
+      "when": {
+        "type": "textMatches",
+        "value": {
+          "mode": "contains",
+          "value": "Account type is required",
+          "caseSensitive": false
+        }
+      },
+      "classification": "business",
+      "afterSteps": [],
+      "terminal": true,
+      "outputs": []
+    },
+    {
+      "code": "INVALID_DEPOSIT_AMOUNT",
+      "description": "The opening deposit was not a valid amount.",
+      "when": {
+        "type": "textMatches",
+        "value": {
+          "mode": "contains",
+          "value": "Opening deposit must be a valid amount",
+          "caseSensitive": false
+        }
+      },
+      "classification": "business",
+      "afterSteps": [],
+      "terminal": true,
+      "outputs": []
+    },
+    {
+      "code": "MEMBER_NOT_FOUND",
+      "description": "No member record exists for the number supplied.",
+      "when": {
+        "type": "textMatches",
+        "value": {
+          "mode": "contains",
+          "value": "No member record found",
+          "caseSensitive": false
+        }
+      },
+      "classification": "business",
+      "afterSteps": [],
+      "terminal": true,
+      "outputs": []
+    }
+  ],
+  "interstitials": [
+    {
+      "code": "COMPLIANCE_ACK",
+      "description": "A compliance review notice the operator must acknowledge before the record displays.",
+      "when": {
+        "type": "textMatches",
+        "value": {
+          "mode": "contains",
+          "value": "ACKNOWLEDGEMENT REQUIRED",
+          "caseSensitive": false
+        }
+      },
+      "do": [
+        {
+          "kind": "click",
+          "target": {
+            "role": "button",
+            "name": "Acknowledge",
+            "nameMatch": "exact"
+          }
+        }
+      ],
+      "maxOccurrences": 2,
+      "restartFlow": false,
+      "escalateOnFailure": true
+    }
+  ],
+  "policy": {
+    "allowedOrigins": [
+      "http://127.0.0.1:4311"
+    ],
+    "maxSteps": 20,
+    "confirmAtRisk": "irreversible"
+  },
+  "fingerprints": {
+    "s01": "c8f2709e",
+    "s02": "c8f2709e",
+    "s03": "c8f2709e",
+    "s04": "92140295",
+    "s05": "92140295",
+    "s06": "d0fee8db",
+    "s07": "c10e012a",
+    "s08": "c10e012a",
+    "s09": "c10e012a",
+    "s10": "b8b77424"
+  },
+  "provenance": {
+    "recordedAt": "2026-09-11T17:07:25.557Z",
+    "recordedBy": "llm",
+    "model": "scripted",
+    "discoveryRunId": "discover-20260911-170721-egm7",
+    "goal": "Sign on as the operator, look up member 12345, open a new sub-account of type VACATION CLUB with an opening deposit of 50.00, and reach the confirmation screen showing the confirmation number."
+  }
+}

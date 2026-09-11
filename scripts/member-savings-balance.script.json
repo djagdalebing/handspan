@@ -1,0 +1,44 @@
+[
+  { "screen": "Operator sign-on", "reasoning": "Need to authenticate before any inquiry is possible.",
+    "action": "type", "intent": "Enter the operator ID on the sign-on screen",
+    "ref": "@textbox:Operator ID", "text": "demo" },
+  { "screen": "Operator sign-on", "reasoning": "Supply the operator password.",
+    "action": "type", "intent": "Enter the operator password on the sign-on screen",
+    "ref": "@textbox:Password", "text": "demo" },
+  { "screen": "Operator sign-on", "reasoning": "Submit the credentials.",
+    "action": "click", "intent": "Submit the sign-on form", "ref": "@button:Sign On" },
+  { "screen": "Member Inquiry", "reasoning": "The inquiry form takes the member number.",
+    "action": "type", "intent": "Enter the member number into the inquiry form",
+    "ref": "@textbox:Member Number", "text": "12345", "parameterName": "memberId" },
+  { "screen": "Member Inquiry", "reasoning": "Run the search to retrieve the member record.",
+    "action": "click", "intent": "Run the member search", "ref": "@button:Search" },
+  { "screen": "Member Detail", "reasoning": "The detail screen shows the share savings balance, which is the goal.",
+    "action": "finish", "intent": "Member detail reached", "message": "Member detail screen shows the share savings balance." },
+  {
+    "successMarker": "MEMBER DETAIL",
+    "successReadoutLabel": "Member Name",
+    "outputs": [
+      { "name": "memberName", "type": "string", "description": "The member's name as held on the core.",
+        "sourceKind": "readout", "readoutLabel": "Member Name", "transform": "trim" },
+      { "name": "accountStatus", "type": "string", "description": "Membership status.",
+        "sourceKind": "readout", "readoutLabel": "Status", "transform": "upper" },
+      { "name": "savingsBalance", "type": "number", "description": "Current balance of the share savings account in dollars.",
+        "sourceKind": "table", "tableWhereColumn": "ACCOUNT TYPE", "tableWhereEquals": "SHARE SAVINGS",
+        "tableSelectColumn": "CURRENT BALANCE", "transform": "money" }
+    ],
+    "proposedOutcomes": [
+      { "code": "MEMBER_NOT_FOUND", "description": "No member record exists for the number supplied.",
+        "textMarker": "No member record found" },
+      { "code": "MEMBER_RESTRICTED", "description": "The operator is not authorised to view this member record.",
+        "textMarker": "not authorized to view this member" },
+      { "code": "INVALID_MEMBER_NUMBER", "description": "The member number supplied was not numeric.",
+        "textMarker": "Member number must be numeric" }
+    ],
+    "proposedInterstitials": [
+      { "code": "COMPLIANCE_ACK", "description": "A compliance review notice the operator must acknowledge before the record displays.",
+        "textMarker": "ACKNOWLEDGEMENT REQUIRED", "dismissButtonLabel": "Acknowledge" },
+      { "code": "SESSION_EXPIRED", "description": "The operator session timed out and sign-on is required again.",
+        "textMarker": "session has timed out", "dismissButtonLabel": "Sign On" }
+    ]
+  }
+]

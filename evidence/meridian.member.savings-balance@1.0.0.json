@@ -1,0 +1,413 @@
+{
+  "schema": "capability/v1",
+  "id": "meridian.member.savings-balance",
+  "version": "1.0.0",
+  "name": "Read member savings balance",
+  "description": "Look up a member by number in MERIDIAN Core and return the current balance of their share savings account.",
+  "app": {
+    "vendor": "Meridian Systems",
+    "product": "MERIDIAN Core Member Services",
+    "productVersion": "7.2.1",
+    "surface": "web"
+  },
+  "approval": "draft",
+  "risk": "safe",
+  "inputs": [
+    {
+      "name": "memberId",
+      "type": "string",
+      "required": true,
+      "description": "The member number to look up.",
+      "sensitivity": "pii",
+      "pattern": "^[0-9]{5}$",
+      "example": "12345"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "memberName",
+      "type": "string",
+      "description": "The member's name as held on the core.",
+      "source": {
+        "from": "readout",
+        "label": {
+          "mode": "contains",
+          "value": "Member Name",
+          "caseSensitive": false
+        }
+      },
+      "transform": "trim",
+      "required": true,
+      "sensitivity": "internal"
+    },
+    {
+      "name": "accountStatus",
+      "type": "string",
+      "description": "Membership status.",
+      "source": {
+        "from": "readout",
+        "label": {
+          "mode": "contains",
+          "value": "Status",
+          "caseSensitive": false
+        }
+      },
+      "transform": "upper",
+      "required": true,
+      "sensitivity": "internal"
+    },
+    {
+      "name": "savingsBalance",
+      "type": "number",
+      "description": "Current balance of the share savings account in dollars.",
+      "source": {
+        "from": "table",
+        "whereColumn": "ACCOUNT TYPE",
+        "whereEquals": {
+          "mode": "contains",
+          "value": "SHARE SAVINGS",
+          "caseSensitive": false
+        },
+        "selectColumn": "CURRENT BALANCE"
+      },
+      "transform": "money",
+      "required": true,
+      "sensitivity": "internal"
+    }
+  ],
+  "preconditions": [],
+  "steps": [
+    {
+      "id": "s00",
+      "intent": "Open MERIDIAN Core Member Services at its entry point",
+      "action": {
+        "kind": "navigate",
+        "url": "http://127.0.0.1:4311/"
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "nodeExists",
+        "target": {
+          "role": "textbox",
+          "name": "Operator ID",
+          "nameMatch": "exact",
+          "framePath": []
+        }
+      },
+      "optional": false,
+      "timeoutMs": 20000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 800
+      }
+    },
+    {
+      "id": "s01",
+      "intent": "Enter the operator ID on the sign-on screen",
+      "action": {
+        "kind": "type",
+        "target": {
+          "role": "textbox",
+          "name": "Operator ID",
+          "nameMatch": "exact",
+          "framePath": []
+        },
+        "secretRef": "MERIDIAN_OPERATOR_ID",
+        "clearFirst": true
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "nodeExists",
+        "target": {
+          "role": "textbox",
+          "name": "Password",
+          "nameMatch": "exact",
+          "framePath": []
+        }
+      },
+      "optional": false,
+      "timeoutMs": 15000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 600
+      }
+    },
+    {
+      "id": "s02",
+      "intent": "Enter the operator password on the sign-on screen",
+      "action": {
+        "kind": "type",
+        "target": {
+          "role": "textbox",
+          "name": "Password",
+          "nameMatch": "exact",
+          "framePath": []
+        },
+        "secretRef": "MERIDIAN_OPERATOR_PASSWORD",
+        "clearFirst": true
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "nodeExists",
+        "target": {
+          "role": "button",
+          "name": "Sign On",
+          "nameMatch": "exact",
+          "framePath": []
+        }
+      },
+      "optional": false,
+      "timeoutMs": 15000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 600
+      }
+    },
+    {
+      "id": "s03",
+      "intent": "Submit the sign-on form",
+      "action": {
+        "kind": "click",
+        "target": {
+          "role": "button",
+          "name": "Sign On",
+          "nameMatch": "exact",
+          "framePath": []
+        }
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "nodeExists",
+        "target": {
+          "role": "textbox",
+          "name": "Member Number",
+          "nameMatch": "exact",
+          "framePath": [
+            "main"
+          ]
+        }
+      },
+      "optional": false,
+      "timeoutMs": 15000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 600
+      }
+    },
+    {
+      "id": "s04",
+      "intent": "Enter the member number into the inquiry form",
+      "action": {
+        "kind": "type",
+        "target": {
+          "role": "textbox",
+          "name": "Member Number",
+          "nameMatch": "exact",
+          "framePath": [
+            "main"
+          ]
+        },
+        "text": "{{memberId}}",
+        "clearFirst": true
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "nodeExists",
+        "target": {
+          "role": "button",
+          "name": "Search",
+          "nameMatch": "exact",
+          "framePath": [
+            "main"
+          ]
+        }
+      },
+      "optional": false,
+      "timeoutMs": 15000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 600
+      }
+    },
+    {
+      "id": "s05",
+      "intent": "Run the member search",
+      "action": {
+        "kind": "click",
+        "target": {
+          "role": "button",
+          "name": "Search",
+          "nameMatch": "exact",
+          "framePath": [
+            "main"
+          ]
+        }
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "textMatches",
+        "value": {
+          "mode": "contains",
+          "value": "MEMBER DETAIL — {{memberId}}",
+          "caseSensitive": false
+        }
+      },
+      "optional": false,
+      "timeoutMs": 15000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 600
+      }
+    }
+  ],
+  "checkpoint": {
+    "type": "all",
+    "of": [
+      {
+        "type": "textMatches",
+        "value": {
+          "mode": "contains",
+          "value": "MEMBER DETAIL",
+          "caseSensitive": false
+        }
+      },
+      {
+        "type": "readoutMatches",
+        "label": {
+          "mode": "contains",
+          "value": "Member Name",
+          "caseSensitive": false
+        },
+        "value": {
+          "mode": "regex",
+          "value": ".",
+          "caseSensitive": false
+        }
+      }
+    ]
+  },
+  "outcomes": [
+    {
+      "code": "MEMBER_NOT_FOUND",
+      "description": "No member record exists for the number supplied.",
+      "when": {
+        "type": "textMatches",
+        "value": {
+          "mode": "contains",
+          "value": "No member record found",
+          "caseSensitive": false
+        }
+      },
+      "classification": "business",
+      "afterSteps": [],
+      "terminal": true,
+      "outputs": []
+    },
+    {
+      "code": "MEMBER_RESTRICTED",
+      "description": "The operator is not authorised to view this member record.",
+      "when": {
+        "type": "textMatches",
+        "value": {
+          "mode": "contains",
+          "value": "not authorized to view this member",
+          "caseSensitive": false
+        }
+      },
+      "classification": "business",
+      "afterSteps": [],
+      "terminal": true,
+      "outputs": []
+    },
+    {
+      "code": "INVALID_MEMBER_NUMBER",
+      "description": "The member number supplied was not numeric.",
+      "when": {
+        "type": "textMatches",
+        "value": {
+          "mode": "contains",
+          "value": "Member number must be numeric",
+          "caseSensitive": false
+        }
+      },
+      "classification": "business",
+      "afterSteps": [],
+      "terminal": true,
+      "outputs": []
+    }
+  ],
+  "interstitials": [
+    {
+      "code": "COMPLIANCE_ACK",
+      "description": "A compliance review notice the operator must acknowledge before the record displays.",
+      "when": {
+        "type": "textMatches",
+        "value": {
+          "mode": "contains",
+          "value": "ACKNOWLEDGEMENT REQUIRED",
+          "caseSensitive": false
+        }
+      },
+      "do": [
+        {
+          "kind": "click",
+          "target": {
+            "role": "button",
+            "name": "Acknowledge",
+            "nameMatch": "exact"
+          }
+        }
+      ],
+      "maxOccurrences": 2,
+      "restartFlow": false,
+      "escalateOnFailure": true
+    },
+    {
+      "code": "SESSION_EXPIRED",
+      "description": "The operator session timed out and sign-on is required again.",
+      "when": {
+        "type": "textMatches",
+        "value": {
+          "mode": "contains",
+          "value": "session has timed out",
+          "caseSensitive": false
+        }
+      },
+      "do": [
+        {
+          "kind": "click",
+          "target": {
+            "role": "button",
+            "name": "Sign On",
+            "nameMatch": "exact"
+          }
+        }
+      ],
+      "maxOccurrences": 2,
+      "restartFlow": false,
+      "escalateOnFailure": true
+    }
+  ],
+  "policy": {
+    "allowedOrigins": [
+      "http://127.0.0.1:4311",
+      "http://127.0.0.1:4321"
+    ],
+    "maxSteps": 20,
+    "confirmAtRisk": "irreversible"
+  },
+  "fingerprints": {
+    "s01": "c8f2709e",
+    "s02": "c8f2709e",
+    "s03": "c8f2709e",
+    "s04": "92140295",
+    "s05": "92140295"
+  },
+  "provenance": {
+    "recordedAt": "2026-09-11T17:29:59.836Z",
+    "recordedBy": "llm",
+    "model": "scripted",
+    "discoveryRunId": "discover-20260911-172956-j9gj",
+    "goal": "Sign on as the operator, look up member 12345 in Member Inquiry, and reach the member detail screen showing their share savings balance."
+  }
+}

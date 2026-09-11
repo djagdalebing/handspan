@@ -1,0 +1,21 @@
+{
+  "runId": "replay-«card#8130»b1a0",
+  "capability": {
+    "id": "meridian.member.savings-balance",
+    "version": "1.1.0"
+  },
+  "startedAt": "2026-09-11T17:30:08.404Z",
+  "durationMs": 2552,
+  "stepsExecuted": 6,
+  "evidenceDir": "evidence/replay-«card#8130»b1a0",
+  "recoveries": [],
+  "drift": {
+    "changedSteps": [],
+    "relaxedTargets": [],
+    "frameMismatches": []
+  },
+  "status": "business_outcome",
+  "code": "MEMBER_NOT_FOUND",
+  "message": "No member record exists for the number supplied.",
+  "outputs": {}
+}
