@@ -99,6 +99,10 @@
         "type": "string",
         "description": "Membership status."
       },
+      "ssnLast4": {
+        "type": "string",
+        "description": "Last four digits of the member's SSN."
+      },
       "savingsBalance": {
         "type": "number",
         "description": "Current balance of the share savings account in dollars."
@@ -110,12 +114,12 @@
         "description": "No member record exists for the number supplied."
       },
       {
-        "code": "MEMBER_RESTRICTED",
-        "description": "The operator is not authorised to view this member record."
-      },
-      {
         "code": "INVALID_MEMBER_NUMBER",
         "description": "The member number supplied was not numeric."
+      },
+      {
+        "code": "MEMBER_RESTRICTED",
+        "description": "The operator is not authorised to view this member record."
       }
     ]
   },
@@ -162,12 +166,12 @@
         "description": "No member record exists for the number supplied."
       },
       {
-        "code": "MEMBER_RESTRICTED",
-        "description": "The operator is not authorised to view this member record."
-      },
-      {
         "code": "INVALID_MEMBER_NUMBER",
         "description": "The member number supplied was not numeric."
+      },
+      {
+        "code": "MEMBER_RESTRICTED",
+        "description": "The operator is not authorised to view this member record."
       },
       {
         "code": "SYSTEM_ERROR",

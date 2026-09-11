@@ -23,6 +23,14 @@
 import { createHash } from 'node:crypto';
 import type { Sensitivity } from '../artifact/schema.js';
 
+/**
+ * Field labels whose values are regulated. Used in three places that must
+ * agree: masking screenshots before they are stored, and classifying the
+ * sensitivity of a recorded output or parameter when nobody declared one.
+ */
+export const SENSITIVE_LABEL =
+  /\bssn\b|social security|tax\s*id\b|\bein\b|date of birth|\bdob\b|password|passcode|\bpin\b|card number|routing|account number|driver.?s licen[cs]e|passport/i;
+
 const PATTERNS: Array<{ name: string; re: RegExp }> = [
   { name: 'ssn', re: /\b\d{3}-\d{2}-\d{4}\b/g },
   { name: 'card', re: /\b(?:\d[ -]?){13,19}\b/g },

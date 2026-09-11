@@ -98,7 +98,7 @@ describe('agent-facing catalog', () => {
     cap.outcomes = [{
       code: 'MEMBER_NOT_FOUND', description: 'No such member.', classification: 'business',
       when: { type: 'textMatches', value: { mode: 'contains', value: 'not found', caseSensitive: false } },
-      afterSteps: [], terminal: true, outputs: [],
+      afterSteps: [], terminal: true, outputs: [], verified: true,
     }];
     const e = toCatalogEntry(cap);
     expect(e.inputSchema.required).toEqual(['memberId']);

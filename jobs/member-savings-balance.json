@@ -5,7 +5,11 @@
   "description": "Look up a member by number in MERIDIAN Core and return the current balance of their share savings account.",
   "goal": "Sign on as the operator, look up member {{memberId}} in Member Inquiry, and reach the member detail screen showing their share savings balance.",
   "entry": "http://127.0.0.1:4311/",
-  "app": { "vendor": "Meridian Systems", "product": "MERIDIAN Core Member Services", "productVersion": "7.2.1" },
+  "app": {
+    "vendor": "Meridian Systems",
+    "product": "MERIDIAN Core Member Services",
+    "productVersion": "7.2.1"
+  },
   "inputs": [
     {
       "name": "memberId",
@@ -17,9 +21,43 @@
       "required": true
     }
   ],
-  "values": { "memberId": "12345" },
+  "values": {
+    "memberId": "12345"
+  },
   "secretFields": [
-    { "nameMatches": "operator id", "secretRef": "MERIDIAN_OPERATOR_ID" },
-    { "nameMatches": "password", "secretRef": "MERIDIAN_OPERATOR_PASSWORD" }
+    {
+      "nameMatches": "operator id",
+      "secretRef": "MERIDIAN_OPERATOR_ID"
+    },
+    {
+      "nameMatches": "password",
+      "secretRef": "MERIDIAN_OPERATOR_PASSWORD"
+    }
+  ],
+  "probes": [
+    {
+      "code": "MEMBER_NOT_FOUND",
+      "description": "No member record exists for the number supplied.",
+      "inputs": {
+        "memberId": "99999"
+      },
+      "expect": "business_outcome"
+    },
+    {
+      "code": "MEMBER_RESTRICTED",
+      "description": "The operator is not authorised to view this member record.",
+      "inputs": {
+        "memberId": "77777"
+      },
+      "expect": "business_outcome"
+    },
+    {
+      "code": "COMPLIANCE_ACK",
+      "description": "A compliance notice the operator must acknowledge before the record displays.",
+      "inputs": {
+        "memberId": "88888"
+      },
+      "expect": "success"
+    }
   ]
 }

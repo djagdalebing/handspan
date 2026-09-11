@@ -491,7 +491,8 @@
       "classification": "business",
       "afterSteps": [],
       "terminal": true,
-      "outputs": []
+      "outputs": [],
+      "verified": false
     },
     {
       "code": "ACCOUNT_TYPE_REQUIRED",
@@ -507,7 +508,8 @@
       "classification": "business",
       "afterSteps": [],
       "terminal": true,
-      "outputs": []
+      "outputs": [],
+      "verified": false
     },
     {
       "code": "INVALID_DEPOSIT_AMOUNT",
@@ -523,7 +525,8 @@
       "classification": "business",
       "afterSteps": [],
       "terminal": true,
-      "outputs": []
+      "outputs": [],
+      "verified": false
     },
     {
       "code": "MEMBER_NOT_FOUND",
@@ -539,7 +542,8 @@
       "classification": "business",
       "afterSteps": [],
       "terminal": true,
-      "outputs": []
+      "outputs": [],
+      "verified": false
     }
   ],
   "interstitials": [
@@ -566,7 +570,8 @@
       ],
       "maxOccurrences": 2,
       "restartFlow": false,
-      "escalateOnFailure": true
+      "escalateOnFailure": true,
+      "verified": false
     }
   ],
   "policy": {

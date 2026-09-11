@@ -167,11 +167,12 @@ export async function runDiscovery(o: DiscoveryOptions): Promise<DiscoveryOutcom
         system: SYSTEM_PROMPT, parts, schema: DECISION_SCHEMA, purpose: 'decide', temperature: 0,
       });
       decision = res.value as Decision;
-      o.log.event('model.response', {
-        step, action: decision.action, intent: decision.intent,
-        screen: decision.screen, reasoning: decision.reasoning,
-        ref: decision.ref, usage: res.usage,
-      });
+      // The whole decision, not a subset. A run log that drops `text` and
+      // `parameterName` cannot answer "why did it type that", and cannot be
+      // replayed to reproduce a recording. The redactor handles anything
+      // sensitive on the way out — which is why the credential values are
+      // registered with it before the loop starts.
+      o.log.event('model.response', { step, ...decision, usage: res.usage });
     } catch (e) {
       return { ok: false, reason: `model call failed: ${String(e)}`, recorded, finalObs: obs };
     }

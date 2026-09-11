@@ -32,6 +32,16 @@ export const MEMBERS: Record<string, Member> = {
     ssnLast4: '0000',
     accounts: [{ kind: 'SHARE SAVINGS', number: 'S-0044', balance: 19.20 }],
   },
+  // Carries a compliance review flag: reaching this record requires
+  // acknowledging an interstitial first. See SPECIAL.INTERSTITIAL.
+  '88888': {
+    id: '88888',
+    name: 'VOSS, ALEX T',
+    status: 'ACTIVE',
+    branch: 'NORTHFIELD 011',
+    ssnLast4: '0000',
+    accounts: [{ kind: 'SHARE SAVINGS', number: 'S-0777', balance: 250.00 }],
+  },
   '34567': {
     id: '34567',
     name: 'BLANCHARD, LEE',

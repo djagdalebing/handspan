@@ -5,15 +5,79 @@
   "description": "Open a new sub-account of a given type for a member with an opening deposit, and return the confirmation number. This capability posts an irreversible transaction.",
   "goal": "Sign on as the operator, look up member {{memberId}}, open a new sub-account of type {{accountType}} with an opening deposit of {{openingDeposit}}, and reach the confirmation screen showing the confirmation number.",
   "entry": "http://127.0.0.1:4311/",
-  "app": { "vendor": "Meridian Systems", "product": "MERIDIAN Core Member Services", "productVersion": "7.2.1" },
+  "app": {
+    "vendor": "Meridian Systems",
+    "product": "MERIDIAN Core Member Services",
+    "productVersion": "7.2.1"
+  },
   "inputs": [
-    { "name": "memberId", "type": "string", "description": "The member number.", "sensitivity": "pii", "pattern": "^[0-9]{5}$", "example": "12345", "required": true },
-    { "name": "accountType", "type": "enum", "enum": ["SHARE SAVINGS", "VACATION CLUB", "HOLIDAY CLUB"], "description": "The sub-account product to open.", "sensitivity": "internal", "example": "VACATION CLUB", "required": true },
-    { "name": "openingDeposit", "type": "string", "description": "Opening deposit amount in dollars. Minimum 25.", "sensitivity": "internal", "pattern": "^[0-9]+(\\.[0-9]{2})?$", "example": "50.00", "required": true }
+    {
+      "name": "memberId",
+      "type": "string",
+      "description": "The member number.",
+      "sensitivity": "pii",
+      "pattern": "^[0-9]{5}$",
+      "example": "12345",
+      "required": true
+    },
+    {
+      "name": "accountType",
+      "type": "enum",
+      "enum": [
+        "SHARE SAVINGS",
+        "VACATION CLUB",
+        "HOLIDAY CLUB"
+      ],
+      "description": "The sub-account product to open.",
+      "sensitivity": "internal",
+      "example": "VACATION CLUB",
+      "required": true
+    },
+    {
+      "name": "openingDeposit",
+      "type": "string",
+      "description": "Opening deposit amount in dollars. Minimum 25.",
+      "sensitivity": "internal",
+      "pattern": "^[0-9]+(\\.[0-9]{2})?$",
+      "example": "50.00",
+      "required": true
+    }
   ],
-  "values": { "memberId": "12345", "accountType": "VACATION CLUB", "openingDeposit": "50.00" },
+  "values": {
+    "memberId": "12345",
+    "accountType": "VACATION CLUB",
+    "openingDeposit": "50.00"
+  },
   "secretFields": [
-    { "nameMatches": "operator id", "secretRef": "MERIDIAN_OPERATOR_ID" },
-    { "nameMatches": "password", "secretRef": "MERIDIAN_OPERATOR_PASSWORD" }
+    {
+      "nameMatches": "operator id",
+      "secretRef": "MERIDIAN_OPERATOR_ID"
+    },
+    {
+      "nameMatches": "password",
+      "secretRef": "MERIDIAN_OPERATOR_PASSWORD"
+    }
+  ],
+  "probes": [
+    {
+      "code": "MINIMUM_DEPOSIT_NOT_MET",
+      "description": "The opening deposit was below the product minimum, so nothing was opened.",
+      "inputs": {
+        "memberId": "12345",
+        "accountType": "VACATION CLUB",
+        "openingDeposit": "10.00"
+      },
+      "expect": "business_outcome"
+    },
+    {
+      "code": "MEMBER_NOT_FOUND",
+      "description": "No member record exists for the number supplied.",
+      "inputs": {
+        "memberId": "99999",
+        "accountType": "VACATION CLUB",
+        "openingDeposit": "50.00"
+      },
+      "expect": "business_outcome"
+    }
   ]
 }

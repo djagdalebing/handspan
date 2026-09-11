@@ -28,6 +28,22 @@ export function matches(subject: string, m: Matcher, bindings: Bindings): boolea
   return m.mode === 'contains' ? na.includes(nb) : na === nb;
 }
 
+/**
+ * Compares a field label the way a human reads it.
+ *
+ * Perception strips the trailing colon from "Member Number:" because that
+ * punctuation is presentation, not identity. But anything authored against the
+ * *rendered* screen — a model proposing an output, a human writing an artifact
+ * by hand — naturally writes the colon back in, and then a `contains` match
+ * silently fails: "member number" does not contain "member number:". Both
+ * sides get normalised so the two halves of the system agree.
+ */
+export function labelMatches(subject: string, m: Matcher, bindings: Bindings): boolean {
+  const strip = (v: string) => v.replace(/\u00a0/g, ' ').replace(/[\s:：*]+$/, '').trim();
+  if (m.mode === 'regex') return matches(subject, m, bindings);
+  return matches(strip(subject), { ...m, value: strip(interpolateDeep(m.value, bindings)) }, bindings);
+}
+
 export interface ConditionTrace {
   type: string;
   result: boolean;
@@ -60,7 +76,7 @@ export function evaluate(
 
     case 'readoutMatches': {
       const candidates = obs.nodes.filter(
-        (n) => n.role === 'readout' && matches(n.name, cond.label, bindings)
+        (n) => n.role === 'readout' && labelMatches(n.name, cond.label, bindings)
       );
       if (candidates.length === 0) {
         return push(false, `no readout labelled "${cond.label.value}"`);

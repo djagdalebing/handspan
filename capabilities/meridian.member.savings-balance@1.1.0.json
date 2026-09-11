@@ -32,7 +32,7 @@
         "from": "readout",
         "label": {
           "mode": "contains",
-          "value": "Member Name",
+          "value": "Member Name:",
           "caseSensitive": false
         }
       },
@@ -48,7 +48,7 @@
         "from": "readout",
         "label": {
           "mode": "contains",
-          "value": "Status",
+          "value": "Status:",
           "caseSensitive": false
         }
       },
@@ -294,30 +294,15 @@
         "type": "textMatches",
         "value": {
           "mode": "contains",
-          "value": "No member record found",
+          "value": "MCS-0404",
           "caseSensitive": false
         }
       },
       "classification": "business",
       "afterSteps": [],
       "terminal": true,
-      "outputs": []
-    },
-    {
-      "code": "MEMBER_RESTRICTED",
-      "description": "The operator is not authorised to view this member record.",
-      "when": {
-        "type": "textMatches",
-        "value": {
-          "mode": "contains",
-          "value": "not authorized to view this member",
-          "caseSensitive": false
-        }
-      },
-      "classification": "business",
-      "afterSteps": [],
-      "terminal": true,
-      "outputs": []
+      "outputs": [],
+      "verified": true
     },
     {
       "code": "INVALID_MEMBER_NUMBER",
@@ -333,7 +318,25 @@
       "classification": "business",
       "afterSteps": [],
       "terminal": true,
-      "outputs": []
+      "outputs": [],
+      "verified": false
+    },
+    {
+      "code": "MEMBER_RESTRICTED",
+      "description": "The operator is not authorised to view this member record.",
+      "when": {
+        "type": "textMatches",
+        "value": {
+          "mode": "contains",
+          "value": "MCS-0403",
+          "caseSensitive": false
+        }
+      },
+      "classification": "business",
+      "afterSteps": [],
+      "terminal": true,
+      "outputs": [],
+      "verified": true
     },
     {
       "code": "SYSTEM_ERROR",
@@ -349,38 +352,14 @@
       "classification": "failure",
       "afterSteps": [],
       "terminal": true,
-      "outputs": []
+      "outputs": [],
+      "verified": false
     }
   ],
   "interstitials": [
     {
-      "code": "COMPLIANCE_ACK",
-      "description": "A compliance review notice the operator must acknowledge before the record displays.",
-      "when": {
-        "type": "textMatches",
-        "value": {
-          "mode": "contains",
-          "value": "ACKNOWLEDGEMENT REQUIRED",
-          "caseSensitive": false
-        }
-      },
-      "do": [
-        {
-          "kind": "click",
-          "target": {
-            "role": "button",
-            "name": "Acknowledge",
-            "nameMatch": "exact"
-          }
-        }
-      ],
-      "maxOccurrences": 2,
-      "restartFlow": false,
-      "escalateOnFailure": true
-    },
-    {
       "code": "SESSION_EXPIRED",
-      "description": "The operator session timed out. Re-authenticate via the signon capability and restart the flow; this capability is read-only so a restart cannot duplicate anything.",
+      "description": "The operator session timed out. Re-authenticate through the sign-on capability and restart the flow; this capability is read-only, so a restart cannot duplicate anything.",
       "when": {
         "type": "textMatches",
         "value": {
@@ -398,12 +377,43 @@
       ],
       "maxOccurrences": 2,
       "restartFlow": true,
-      "escalateOnFailure": true
+      "escalateOnFailure": true,
+      "verified": false
+    },
+    {
+      "code": "COMPLIANCE_ACK",
+      "description": "A compliance notice the operator must acknowledge before the record displays.",
+      "when": {
+        "type": "textMatches",
+        "value": {
+          "mode": "contains",
+          "value": "This member record carries a compliance review flag. You mus",
+          "caseSensitive": false
+        }
+      },
+      "do": [
+        {
+          "kind": "click",
+          "target": {
+            "role": "button",
+            "name": "Acknowledge",
+            "nameMatch": "exact",
+            "framePath": [
+              "main"
+            ]
+          }
+        }
+      ],
+      "maxOccurrences": 2,
+      "restartFlow": false,
+      "escalateOnFailure": true,
+      "verified": true
     }
   ],
   "policy": {
     "allowedOrigins": [
-      "http://127.0.0.1:4311"
+      "http://127.0.0.1:4311",
+      "http://127.0.0.1:4321"
     ],
     "maxSteps": 20,
     "confirmAtRisk": "irreversible"
@@ -416,14 +426,15 @@
     "s05": "92140295"
   },
   "provenance": {
-    "recordedAt": "2026-09-11T16:58:45.664Z",
+    "recordedAt": "2026-09-11T18:35:44.746Z",
     "recordedBy": "llm",
     "model": "scripted",
-    "discoveryRunId": "discover-20260911-165842-4wxw",
+    "discoveryRunId": "discover-20260911-183541-x6qt",
     "goal": "Sign on as the operator, look up member 12345 in Member Inquiry, and reach the member detail screen showing their share savings balance.",
     "derivedFrom": {
       "id": "meridian.member.savings-balance",
       "version": "1.0.0"
-    }
+    },
+    "reviewNote": "replaced the proposed SESSION_EXPIRED recovery with a call to the sign-on capability; added SYSTEM_ERROR as a recognised application failure so a 500 page reports as APP_ERROR; dropped 1 PII output(s) the caller does not need"
   }
 }

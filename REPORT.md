@@ -26,27 +26,25 @@ what makes the model plausible beyond a browser.
 
 Concretely that meant *not* using Playwright locators as the identity
 mechanism: a CSS selector cannot cross the seam, an accessible name can. The web
-driver injects its own perception pass that derives a name from whatever the
-page offers, falling back — and this is the case that matters — to *the text in
-the table cell to the left of the field*. On the simulated app, which has no
-`id`, no `label` and no ARIA anywhere, that one heuristic is what makes "the
-textbox labelled Member Number" a resolvable thing to say.
+driver injects its own perception pass deriving a name from whatever the page
+offers, falling back — the case that matters — to *the text in the table cell to
+the left of the field*. On the simulated app, which has no `id`, no `label` and
+no ARIA anywhere, that one heuristic is what makes "the textbox labelled Member
+Number" a resolvable thing to say.
 
 Acting uses real element handles: perception parks live element references on
-`window` and returns indices. That gives trusted input events without stamping
-synthetic attributes into a bank's DOM and without anything selector-shaped
-reaching an artifact. Bounds are still translated to main-frame coordinates,
-which keeps the operator console and a future coordinate-only driver honest.
+`window` and returns indices, giving trusted input events without stamping
+synthetic attributes into a bank's DOM or letting anything selector-shaped reach
+an artifact. Bounds are still translated to main-frame coordinates, which keeps
+the operator console and a future coordinate-only driver honest.
 
-Discovery and replay share everything except the decision-maker. The model picks
-from the same normalized control list the replay engine resolves against,
-addressing controls by an ephemeral `ref`; it never writes a selector. That is
-what makes a run *recordable* rather than something to reverse-engineer from a
-transcript afterwards.
-
-Trade-off accepted: one process means the console reaches the session by
-reference rather than RPC. The control model is written as "ask the lease, then
-act", so the wire can get longer without the design changing.
+Discovery and replay share everything except the decision-maker: the model picks
+from the same normalized control list the engine resolves against, by ephemeral
+`ref`, and never writes a selector. That is what makes a run *recordable* rather
+than something to reverse-engineer from a transcript. The cost of one process is
+that the console reaches the session by reference rather than RPC — but the
+control model is written as "ask the lease, then act", so the wire can get
+longer without the design changing.
 
 ## 2. Artifact schema
 
@@ -127,6 +125,24 @@ expires (18s → 3s), and a recognised outcome aborts the wait immediately
 (17s → 2s). Recovery that only runs after a timeout still works, but in
 production reads as a hang rather than as the handled condition it is.
 
+**Detectors are verified against real screens, not trusted.** This closes the
+most dangerous gap in the whole approach, and I only found it by running a real
+model. A model that has seen one successful run proposes business outcomes by
+guessing the wording: Gemini offered a `MEMBER_NOT_FOUND` detector matching
+*"No matching member found"*, which this application never prints. That
+detector never fires, so a legitimate outcome surfaces as a step timeout — the
+exact distinction the result contract rests on, broken silently. So discovery
+now probes. A job declares one cheap piece of human knowledge ("member 99999
+does not exist"), and the recorded flow is replayed against it to see what the
+application *actually* says; the detector is rebuilt from that, preferring the
+app's own error code (`MCS-0404`) over prose. Candidate markers are rejected if
+they also fire on the success screen or on another probe's screen. Where a
+recovery is missing entirely, it is read off the screen the flow stalled on —
+the message, and the single button that clears it — and then a *second* probe
+proves the proposal works. Probes cost no model calls, and run with
+irreversible steps blocked so probing a posting flow cannot post. What no probe
+covers ships flagged `verified: false`.
+
 Session expiry gets specific treatment because it cannot be resumed from:
 re-authenticating leaves you at the home screen, not where you were. The
 reviewed artifact recovers by running a *separate sign-on capability* — so
@@ -150,23 +166,22 @@ frameset with no test IDs rather than a React demo.
 
 **Cross-tenant reuse.** A tenant gets not a copy but a short list of typed
 patches against a **pinned base version**, so the base improves once and is
-inherited everywhere while each institution's delta stays reviewable. Two rules
-keep it safe: the version pin means a base change cannot silently re-target a
-patch at a step that moved, and a patch whose path does not resolve is *rejected
-and reported*, never created.
+inherited everywhere while each institution's delta stays reviewable. The
+version pin means a base change cannot silently re-target a patch at a step that
+moved, and a patch whose path does not resolve is *rejected and reported*, never
+created.
 
-Building it surfaced a real weakness in path-patches: renaming one button needs
+Building it surfaced a weakness in path-patches: renaming one button needs
 patching two places — the step that clicks it and the condition that waits for
 it — and I missed the second, producing a flow that clicked the right button and
 then timed out waiting for the old one. The fix was a `rename` patch that
 rewrites a label everywhere it is referenced and reports the site count, so zero
 is visible rather than silent. `evidence/11` runs the same capability against a
-second institution with four patches, one touching two sites.
-
-Drift detection is the other half: per-step fingerprints recorded at discovery
-are recompared on every replay, so a diverged tenant reports it on runs that
-still succeed — which is when you want to know. In that run, the relabelled
+second institution with four patches, one touching two sites; the relabelled
 `Member No.` field resolves automatically and reports `relaxed match at [s04]`.
+That drift signal is the other half: per-step fingerprints recorded at discovery
+are recompared on every replay, so a diverged tenant reports it on runs that
+still succeed — which is when you want to know.
 
 ## 5. Escalation & handoff
 
@@ -228,7 +243,13 @@ steps stay automated. The override (`--risky proceed`) writes an explicit note
 into the run log.
 
 Data handling: secrets are referenced by name, resolved at run time, registered
-with the redactor and never written anywhere. PII is declared and becomes a
+with the redactor and never written anywhere. Discovery is the one phase where
+that is not sufficient on its own — the model reads the sign-on hint off the
+screen and types the password as a literal, then writes it into its own prose
+("Enter the password 'demo'…"). The real run did exactly this. So discovery
+registers the configured credential values with the redactor before the loop
+starts, and the recorder scrubs the literal out of the step description as well
+as the action. PII is declared and becomes a
 stable pseudonym — `«memberId#7f3a»` keeps a run debuggable without the log
 holding the identifier. A pattern sweep backstops sensitive data the
 *application* put on screen that we were never told about. Screenshots are
@@ -252,25 +273,39 @@ registry, queue, scheduler or persistence beyond JSON on disk — git is a good
 store for artifacts that are reviewed, versioned and diffed by humans. No auth on
 the operator console. No confidence scoring or flakiness signal.
 
-**The honest gap.** No unhappy path is *discovered*. The model proposes
-candidate outcomes from the one run it saw and those proposals are validated,
-but the taxonomy in the shipped `@1.1.0` was corrected by hand — the diff against
-`@1.0.0` is the review step, and the model's own proposal for session recovery
-("click Sign On") was wrong in a way `evidence/10` shows getting a run stuck. I
-think that shape is right rather than a shortcut: you cannot learn the unhappy
-paths from a happy-path run. But it means a new capability is not
-production-ready straight out of discovery.
+**What probing closed, and what it did not.** The earlier version of this
+system could not discover any unhappy path: the model proposed outcomes from
+the one run it saw, and those proposals were validated only against the success
+screen. Running a real model showed how bad that was — every detector it
+proposed was a guess at wording, and none of them matched. Probing fixes the
+paths a job declares an input for, and proves proposed recoveries by re-running
+them. It does not fix what no probe covers: an application error page, a
+downstream outage banner, a condition that needs a second operator to set up.
+Those still ship `verified: false` and are what review is for — `@1.0.0` versus
+`@1.1.0`, with the review decisions recorded in `scripts/apply-review.ts`.
 
-**Not verified.** The shipped discovery evidence was produced with the scripted
-driver, because no model key was available at capture time. The loop, prompts,
-schemas, validation and recorder are the same code on both paths — the driver
-substitutes for the model's nondeterminism, not for the pipeline — but a live
-Gemini run is one flag (`--model gemini`), and until it runs I would claim only
-that the plumbing is right, not that the prompts are well-tuned.
+**Verified against a live model, with two caveats.** `gemini-2.5-flash-lite`
+drove the real application end to end; the run and the artifact it produced are
+in `evidence/00-discovery-gemini-live`. Two things about it are disclosed
+rather than tidied away. Its log leaked the operator password into the model's
+own prose and was scrubbed retroactively with the product's own redactor — the
+leak is the finding, and the fix is in §6. And three of its outputs were
+dropped because the model wrote readout labels with trailing colons that
+perception strips; that mismatch between two halves of my own system is fixed
+and tested, but that artifact predates the fix. The shipped demo path uses the
+scripted driver so the evidence regenerates without a key, and its script
+reproduces what Gemini actually returned — wrong marker and SSN output included
+— rather than an idealised version.
 
-**Next, in order.** (1) A discovery mode that deliberately probes unhappy paths —
-run the flow with a bad parameter and record what the app says — the biggest
-lever on how much review each capability needs. (2) Replay-stability scoring:
+**A practical note.** The Gemini free tier is 20 requests per day *per model*
+and a discovery run costs about seven, so the provider distinguishes three
+cases: per-minute limits wait out the delay the API supplies, transient 503s
+back off exponentially, and a daily quota fails immediately rather than retrying
+for seven minutes to arrive in the same place.
+
+**Next, in order.** (1) Extend probing past declared inputs — fault injection
+against a staging instance would cover the conditions no input can produce.
+(2) Replay-stability scoring:
 run N times, score, and gate unattended execution on the score as well as
 approval. (3) A bounded, policy-checked single-step LLM recovery on replay
 failure, recorded as evidence and offered to a reviewer as a proposed patch —

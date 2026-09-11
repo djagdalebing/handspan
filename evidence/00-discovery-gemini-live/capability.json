@@ -1,0 +1,315 @@
+{
+  "schema": "capability/v1",
+  "id": "meridian.member.savings-balance",
+  "version": "1.0.0",
+  "name": "Read member savings balance",
+  "description": "Look up a member by number in MERIDIAN Core and return the current balance of their share savings account.",
+  "app": {
+    "vendor": "Meridian Systems",
+    "product": "MERIDIAN Core Member Services",
+    "productVersion": "7.2.1",
+    "surface": "web"
+  },
+  "approval": "draft",
+  "risk": "safe",
+  "inputs": [
+    {
+      "name": "memberId",
+      "type": "string",
+      "required": true,
+      "description": "The member number to look up.",
+      "sensitivity": "pii",
+      "pattern": "^[0-9]{5}$",
+      "example": "«memberId#5994»"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "shareSavingsBalance",
+      "type": "string",
+      "description": "The current balance of the member's share savings account.",
+      "source": {
+        "from": "table",
+        "whereColumn": "ACCOUNT TYPE",
+        "whereEquals": {
+          "mode": "contains",
+          "value": "SHARE SAVINGS",
+          "caseSensitive": false
+        },
+        "selectColumn": "CURRENT BALANCE"
+      },
+      "transform": "money",
+      "required": true,
+      "sensitivity": "internal"
+    }
+  ],
+  "preconditions": [],
+  "steps": [
+    {
+      "id": "s00",
+      "intent": "Open MERIDIAN Core Member Services at its entry point",
+      "action": {
+        "kind": "navigate",
+        "url": "http://127.0.0.1:4311/"
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "nodeExists",
+        "target": {
+          "role": "textbox",
+          "name": "Operator ID",
+          "nameMatch": "exact",
+          "framePath": []
+        }
+      },
+      "optional": false,
+      "timeoutMs": 20000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 800
+      }
+    },
+    {
+      "id": "s01",
+      "intent": "Enter the operator ID '«MERIDIAN_OPERATOR_ID»' into the Operator ID field.",
+      "action": {
+        "kind": "type",
+        "target": {
+          "role": "textbox",
+          "name": "Operator ID",
+          "nameMatch": "exact",
+          "framePath": []
+        },
+        "secretRef": "«redacted»",
+        "clearFirst": true
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "nodeExists",
+        "target": {
+          "role": "textbox",
+          "name": "Password",
+          "nameMatch": "exact",
+          "framePath": []
+        }
+      },
+      "optional": false,
+      "timeoutMs": 15000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 600
+      }
+    },
+    {
+      "id": "s02",
+      "intent": "Enter the password '«MERIDIAN_OPERATOR_PASSWORD»' into the Password field.",
+      "action": {
+        "kind": "type",
+        "target": {
+          "role": "textbox",
+          "name": "Password",
+          "nameMatch": "exact",
+          "framePath": []
+        },
+        "secretRef": "«redacted»",
+        "clearFirst": true
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "nodeExists",
+        "target": {
+          "role": "button",
+          "name": "Sign On",
+          "nameMatch": "exact",
+          "framePath": []
+        }
+      },
+      "optional": false,
+      "timeoutMs": 15000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 600
+      }
+    },
+    {
+      "id": "s03",
+      "intent": "Click the Sign On button to log in as the operator.",
+      "action": {
+        "kind": "click",
+        "target": {
+          "role": "button",
+          "name": "Sign On",
+          "nameMatch": "exact",
+          "framePath": []
+        }
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "nodeExists",
+        "target": {
+          "role": "textbox",
+          "name": "Member Number",
+          "nameMatch": "exact",
+          "framePath": [
+            "main"
+          ]
+        }
+      },
+      "optional": false,
+      "timeoutMs": 15000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 600
+      }
+    },
+    {
+      "id": "s04",
+      "intent": "Enter the member number «memberId#5994» into the Member Number field.",
+      "action": {
+        "kind": "type",
+        "target": {
+          "role": "textbox",
+          "name": "Member Number",
+          "nameMatch": "exact",
+          "framePath": [
+            "main"
+          ]
+        },
+        "text": "{{memberId}}",
+        "clearFirst": true
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "nodeExists",
+        "target": {
+          "role": "button",
+          "name": "Search",
+          "nameMatch": "exact",
+          "framePath": [
+            "main"
+          ]
+        }
+      },
+      "optional": false,
+      "timeoutMs": 15000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 600
+      }
+    },
+    {
+      "id": "s05",
+      "intent": "Click the Search button to look up the member.",
+      "action": {
+        "kind": "click",
+        "target": {
+          "role": "button",
+          "name": "Search",
+          "nameMatch": "exact",
+          "framePath": [
+            "main"
+          ]
+        }
+      },
+      "risk": "safe",
+      "waitFor": {
+        "type": "textMatches",
+        "value": {
+          "mode": "contains",
+          "value": "MEMBER DETAIL — {{memberId}}",
+          "caseSensitive": false
+        }
+      },
+      "optional": false,
+      "timeoutMs": 15000,
+      "retry": {
+        "attempts": 2,
+        "backoffMs": 600
+      }
+    }
+  ],
+  "checkpoint": {
+    "type": "textMatches",
+    "value": {
+      "mode": "contains",
+      "value": "MEMBER DETAIL — {{memberId}}",
+      "caseSensitive": false
+    }
+  },
+  "outcomes": [
+    {
+      "code": "MEMBER_NOT_FOUND",
+      "description": "The member number entered does not exist in the system.",
+      "when": {
+        "type": "textMatches",
+        "value": {
+          "mode": "contains",
+          "value": "MCS-0404",
+          "caseSensitive": false
+        }
+      },
+      "classification": "business",
+      "afterSteps": [],
+      "terminal": true,
+      "outputs": [],
+      "verified": true
+    },
+    {
+      "code": "INSUFFICIENT_PERMISSIONS",
+      "description": "The operator does not have permission to view this member's details.",
+      "when": {
+        "type": "textMatches",
+        "value": {
+          "mode": "contains",
+          "value": "Access Denied",
+          "caseSensitive": false
+        }
+      },
+      "classification": "business",
+      "afterSteps": [],
+      "terminal": true,
+      "outputs": [],
+      "verified": false
+    },
+    {
+      "code": "MEMBER_RESTRICTED",
+      "description": "The operator is not authorised to view this member record.",
+      "when": {
+        "type": "textMatches",
+        "value": {
+          "mode": "contains",
+          "value": "MCS-0403",
+          "caseSensitive": false
+        }
+      },
+      "classification": "business",
+      "afterSteps": [],
+      "terminal": true,
+      "outputs": [],
+      "verified": true
+    }
+  ],
+  "interstitials": [],
+  "policy": {
+    "allowedOrigins": [
+      "http://127.0.0.1:4311",
+      "http://127.0.0.1:4321"
+    ],
+    "maxSteps": 20,
+    "confirmAtRisk": "irreversible"
+  },
+  "fingerprints": {
+    "s01": "c8f2709e",
+    "s02": "c8f2709e",
+    "s03": "c8f2709e",
+    "s04": "92140295",
+    "s05": "92140295"
+  },
+  "provenance": {
+    "recordedAt": "2026-09-11T18:13:13.175Z",
+    "recordedBy": "llm",
+    "model": "gemini:gemini-2.5-flash-lite",
+    "discoveryRunId": "discover-«card#78c1»mh3c",
+    "goal": "Sign on as the operator, look up member «memberId#5994» in Member Inquiry, and reach the member detail screen showing their share savings balance."
+  }
+}

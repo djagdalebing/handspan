@@ -1,13 +1,13 @@
 {
-  "runId": "replay-«card#7f02»x4ug",
+  "runId": "replay-«card#54a4»rvfp",
   "capability": {
     "id": "meridian.member.savings-balance",
     "version": "1.1.0"
   },
-  "startedAt": "2026-09-11T17:30:26.447Z",
-  "durationMs": 2533,
+  "startedAt": "2026-09-11T18:37:10.027Z",
+  "durationMs": 2585,
   "stepsExecuted": 6,
-  "evidenceDir": "evidence/replay-«card#7f02»x4ug",
+  "evidenceDir": "evidence/replay-«card#54a4»rvfp",
   "recoveries": [],
   "drift": {
     "changedSteps": [],

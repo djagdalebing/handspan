@@ -1,13 +1,13 @@
 {
-  "runId": "replay-«card#67db»g96k",
+  "runId": "replay-«card#8077»wm2h",
   "capability": {
     "id": "meridian.member.open-sub-account",
     "version": "1.0.0"
   },
-  "startedAt": "2026-09-11T17:30:42.877Z",
-  "durationMs": 5094,
+  "startedAt": "2026-09-11T18:37:27.239Z",
+  "durationMs": 5005,
   "stepsExecuted": 10,
-  "evidenceDir": "evidence/replay-«card#67db»g96k",
+  "evidenceDir": "evidence/replay-«card#8077»wm2h",
   "recoveries": [],
   "drift": {
     "changedSteps": [],
@@ -16,7 +16,7 @@
   },
   "status": "success",
   "outputs": {
-    "confirmationNumber": "CNF47847397",
+    "confirmationNumber": "CNF51851668",
     "newAccountNumber": "S-1007"
   }
 }

@@ -65,6 +65,12 @@ export class ReplayEngine {
   private interstitialCounts = new Map<string, number>();
   private startedAt = new Date().toISOString();
   private t0 = Date.now();
+  private _lastObservation: Observation | null = null;
+
+  /** The most recent screen this run perceived. Used by discovery probes. */
+  get lastObservation(): Observation | null {
+    return this._lastObservation;
+  }
 
   constructor(private o: ReplayOptions) {}
 
@@ -692,6 +698,7 @@ export class ReplayEngine {
 
   private async observe(): Promise<Observation> {
     const obs = await this.o.surface.observe();
+    this._lastObservation = obs;
     this.o.log.event('observe', { url: obs.url, title: obs.title, nodes: obs.nodes.length });
     return obs;
   }
@@ -717,6 +724,7 @@ export class ReplayEngine {
     let trace: ConditionTrace[] = [];
     for (;;) {
       trace = [];
+      this._lastObservation = obs;
       if (evaluate(cond, obs, bindings, trace)) return { ok: true, obs, trace };
       const verdict = onBlocked ? await onBlocked(obs) : 'unchanged';
       // A screen we recognise — a declared outcome — is an answer. Waiting out

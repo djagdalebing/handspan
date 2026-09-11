@@ -34,12 +34,20 @@ export HS_SECRET_MERIDIAN_OPERATOR_ID=demo
 export HS_SECRET_MERIDIAN_OPERATOR_PASSWORD=demo
 ```
 
-For a live discovery run you also need a model key. Everything else runs
-without one:
+For a live discovery run you also need a model key. Everything else — replay,
+probes, escalation, the tests — runs without one:
 
 ```bash
-export GEMINI_API_KEY=...      # only needed for `discover --model gemini`
+export GEMINI_API_KEY=...
+export HS_GEMINI_MODEL=gemini-2.5-flash-lite   # optional; this is the default
 ```
+
+A note from actually running this: the Gemini free tier is **20 requests per
+day, per model**, and a discovery run costs about seven. The quota is scoped
+per model, so if one is exhausted, pointing `HS_GEMINI_MODEL` at another gives
+you a fresh budget. The provider retries per-minute rate limits and transient
+503s with backoff, and fails immediately on a daily quota rather than retrying
+for seven minutes to reach the same place.
 
 ## The target application
 
@@ -77,9 +85,24 @@ npx tsx src/cli.ts discover --job jobs/member-savings-balance.json \
   --model scripted --script scripts/member-savings-balance.script.json
 ```
 
+Discovery does not stop at the happy path. After recording, it replays the flow
+it just captured against inputs the job declares as known-bad — "member 99999
+does not exist" — and rebuilds the outcome detectors from what the application
+actually says. This matters: on a real run, the model proposed detecting a
+missing member by the text *"No matching member found"*, which this application
+never prints. Left alone, that detector never fires and a legitimate outcome is
+reported as a timeout. The probe replaced it with `MCS-0404`, the app's own
+error code. Probes cost no model calls — they replay the recorded artifact —
+and run with irreversible steps blocked, so probing a flow that posts a
+transaction cannot post one. Skip them with `--no-probe`.
+
 ```bash
-# 2. Review, then approve. Discovery always emits `draft`; unattended replay
-#    requires `approved`.
+# 2. Review. Discovery always emits `draft`; unattended replay requires
+#    `approved`. Review is a human reading the draft and fixing what one run
+#    plus a handful of probes cannot establish — the decisions taken on this
+#    capability are recorded in scripts/apply-review.ts so the evidence
+#    regenerates, and produce @1.1.0.
+npx tsx scripts/apply-review.ts
 npx tsx src/cli.ts capability approve meridian.member.savings-balance@1.1.0
 
 # 3. Replay deterministically, with parameters. No model involved.
@@ -138,7 +161,7 @@ npx tsx src/cli.ts invoke meridian.member.savings-balance@1.1.0 --input memberId
 
 ```bash
 ./scripts/capture-evidence.sh    # regenerates /evidence from scratch
-npm test                         # 59 tests, including end-to-end against the real app
+npm test                         # 70 tests, including end-to-end against the real app
 npm run typecheck
 ```
 
@@ -156,7 +179,8 @@ src/safety/             allowlist + risk policy, credential provider, redaction
 src/escalation/         control-transfer state machine, intervention broker, operator console
 src/observability/      structured run log and evidence capture
 target-app/             the simulated legacy application (two tenant variants)
-jobs/ scripts/          discovery job definitions and scripted model runs
+src/discovery/probe.ts  replays the recorded flow against known-bad inputs to verify detectors
+jobs/ scripts/          discovery jobs (incl. probe cases), scripted runs, review decisions
 capabilities/           recorded artifacts and tenant overlays
 evidence/               captured runs — see evidence/README.md
 ```

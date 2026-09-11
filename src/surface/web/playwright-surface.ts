@@ -15,6 +15,7 @@
 import { chromium, type Browser, type BrowserContext, type Page, type Frame, type ElementHandle } from 'playwright';
 import type { Action, ActionResult, Observation, Surface, UiNode } from '../types.js';
 import { collectInFrame, type FramePerception } from './perceive.js';
+import { SENSITIVE_LABEL } from '../../safety/redact.js';
 
 /** Raw input against the live session, used only during human handoff. */
 export interface LiveControl {
@@ -38,7 +39,7 @@ interface RefEntry {
   node: UiNode;
 }
 
-const DEFAULT_SENSITIVE = /ssn|social security|tax id|password|passcode|pin\b|card number|account number|routing/i;
+const DEFAULT_SENSITIVE = SENSITIVE_LABEL;
 
 export class WebSurface implements Surface, LiveControl {
   readonly id: string;

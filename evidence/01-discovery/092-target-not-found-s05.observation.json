@@ -1,0 +1,55 @@
+{
+  "url": "http://127.0.0.1:4311/desk",
+  "title": "MERIDIAN Core :: Desk",
+  "at": "2026-09-11T18:36:20.178Z",
+  "text": "MERIDIAN CORE Member Services 7.2.1 OPER: DEMO\n---\nMENU Member Inquiry Account Services Teller Ops Reports\n---\nMEMBER INQUIRY MCS-0403 — You are not authorized to view this member record. Contact your supervisor.",
+  "nodes": [
+    {
+      "ref": "n2_0",
+      "role": "link",
+      "name": "Member Inquiry",
+      "framePath": [
+        "nav"
+      ],
+      "group": "MENU",
+      "domHint": "a href=/app/home",
+      "bounds": {
+        "x": 6,
+        "y": 68,
+        "w": 80,
+        "h": 12
+      }
+    },
+    {
+      "ref": "n2_1",
+      "role": "link",
+      "name": "Account Services",
+      "framePath": [
+        "nav"
+      ],
+      "group": "MENU",
+      "domHint": "a href=/app/home",
+      "bounds": {
+        "x": 6,
+        "y": 86,
+        "w": 86,
+        "h": 12
+      }
+    },
+    {
+      "ref": "n3_0",
+      "role": "alert",
+      "name": "MCS-0403 — You are not authorized to view this member record. Contact your supervisor.",
+      "framePath": [
+        "main"
+      ],
+      "domHint": "div",
+      "bounds": {
+        "x": 159,
+        "y": 70,
+        "w": 1013,
+        "h": 28
+      }
+    }
+  ]
+}

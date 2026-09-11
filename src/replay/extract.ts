@@ -11,7 +11,7 @@
  */
 import type { Output } from '../artifact/schema.js';
 import type { Observation } from '../surface/types.js';
-import { matches } from './conditions.js';
+import { labelMatches, matches } from './conditions.js';
 import { resolveTarget } from './locator.js';
 import { interpolateDeep, type Bindings } from './template.js';
 
@@ -53,7 +53,7 @@ function readOne(out: Output, obs: Observation, bindings: Bindings, notes: strin
   const src = out.source;
   switch (src.from) {
     case 'readout': {
-      const hit = obs.nodes.find((n) => n.role === 'readout' && matches(n.name, src.label, bindings));
+      const hit = obs.nodes.find((n) => n.role === 'readout' && labelMatches(n.name, src.label, bindings));
       if (!hit) notes.push(`output "${out.name}": no readout labelled "${src.label.value}"`);
       return hit?.value;
     }

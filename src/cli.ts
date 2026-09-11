@@ -25,6 +25,7 @@ import { broker } from './escalation/broker.js';
 import { WebSurface } from './surface/web/playwright-surface.js';
 import { runDiscovery } from './discovery/agent.js';
 import { recordCapability } from './discovery/recorder.js';
+import { probeAndVerify, type ProbeCase } from './discovery/probe.js';
 import { GeminiProvider } from './llm/gemini.js';
 import { ScriptedProvider } from './llm/scripted.js';
 import type { ModelProvider } from './llm/provider.js';
@@ -149,6 +150,8 @@ interface Job {
   inputs: unknown[];
   values: Record<string, string>;
   secretFields?: Array<{ nameMatches: string; secretRef: string }>;
+  /** Inputs known to produce an unhappy path, used to verify detectors. */
+  probes?: ProbeCase[];
 }
 
 async function cmdDiscover(args: Args): Promise<number> {
@@ -162,6 +165,17 @@ async function cmdDiscover(args: Args): Promise<number> {
   // The goal itself may reference parameters; bind them for readability.
   const goal = job.goal.replace(/\{\{(\w+)\}\}/g, (_m, k: string) => values[k] ?? `{{${k}}}`);
   for (const p of inputs) rt.redactor.register(values[p.name], p.sensitivity, p.name);
+
+  // Discovery is the one phase where a credential can reach the log without
+  // passing through the credential provider: the model reads the sign-on hint
+  // off the screen and types it as a literal. Registering the configured
+  // values up front means that literal is scrubbed wherever it surfaces — the
+  // model's decision, the page text, an error message.
+  for (const f of job.secretFields ?? []) {
+    if (rt.credentials.has(f.secretRef)) {
+      rt.redactor.registerSecret(rt.credentials.resolve(f.secretRef), f.secretRef);
+    }
+  }
 
   process.stderr.write(`\n  discovery run ${rt.runId}\n  goal: ${goal}\n  model: ${provider.name}\n`);
   process.stderr.write(`  operator console: http://127.0.0.1:${process.env.HS_OPERATOR_PORT ?? 4312}/\n\n`);
@@ -193,7 +207,7 @@ async function cmdDiscover(args: Args): Promise<number> {
       return 1;
     }
 
-    const { capability, warnings } = recordCapability(outcome, {
+    const { capability: draft, warnings } = recordCapability(outcome, {
       id: job.id,
       version: job.version,
       name: job.name,
@@ -211,6 +225,27 @@ async function cmdDiscover(args: Args): Promise<number> {
         secretRef: s.secretRef,
       })),
     });
+
+    // The model proposed outcome detectors from a single successful run, which
+    // means it guessed at wording it has never seen. Replay the flow we just
+    // recorded against inputs known to fail, and rebuild those detectors from
+    // what the application actually says.
+    let capability = draft;
+    const probes = bool(args, 'no-probe') ? [] : (job.probes ?? []);
+    if (probes.length > 0) {
+      process.stderr.write(`\n  probing ${probes.length} unhappy path(s) to verify the proposed detectors...\n`);
+      const verified = await probeAndVerify(draft, probes, outcome.finalObs, values, {
+        surface: rt.surface, policy: rt.policy, credentials: rt.credentials,
+        log: rt.log, redactor: rt.redactor, runId: rt.runId,
+      });
+      for (const r of verified.results) {
+        process.stderr.write(`    ${r.case.code}: ${r.status}${r.alert ? ` — "${r.alert.slice(0, 70)}"` : ''}\n`);
+      }
+      capability = verified.capability;
+      warnings.push(...verified.warnings);
+      for (const n of verified.notes) process.stdout.write(`    · ${n}\n`);
+      rt.log.event('note', { message: 'probe verification complete', notes: verified.notes, warnings: verified.warnings });
+    }
 
     const path = saveCapability(capability, str(args, 'out', 'capabilities'));
     rt.log.writeJson('capability.json', capability);

@@ -32,6 +32,7 @@ import type { Observation, UiNode } from '../surface/types.js';
 import { evaluate } from '../replay/conditions.js';
 import { extractOutputs } from '../replay/extract.js';
 import { fingerprintObservation, resolveTarget } from '../replay/locator.js';
+import { SENSITIVE_LABEL } from '../safety/redact.js';
 import type { Bindings } from '../replay/template.js';
 import type { DiscoveryOutcome, RecordedAction } from './agent.js';
 import type { SummaryResponse } from './prompt.js';
@@ -77,9 +78,22 @@ export function recordCapability(outcome: DiscoveryOutcome, args: RecordArgs): R
 
     const waitFor = deriveWaitFor(rec, next, outcome.finalObs, canon, bindings);
 
+    // The action for a credential field is stored as a `secretRef`, but the
+    // model writes its own prose for `intent` and will happily say "enter the
+    // password 'demo'". The artifact is committed to a repository, so the
+    // literal has to come out of the description too, not just the action.
+    let intent = rec.intent;
+    if (action.kind === 'type' && action.secretRef) {
+      const literal = rec.decision.text ?? '';
+      if (literal.length >= 2 && intent.includes(literal)) {
+        intent = intent.split(literal).join(`«${action.secretRef}»`);
+        warnings.push(`step ${stepId}: removed a credential literal from the step description`);
+      }
+    }
+
     steps.push({
       id: stepId,
-      intent: rec.intent,
+      intent,
       action,
       risk: rec.risk,
       waitFor,
@@ -139,7 +153,7 @@ export function recordCapability(outcome: DiscoveryOutcome, args: RecordArgs): R
   // ----------------------------------------------------------- outputs ---
   const outputs: Output[] = [];
   for (const o of summary?.outputs ?? []) {
-    const spec = buildOutput(o, canon);
+    const spec = buildOutput(o, canon, warnings);
     if (!spec) {
       warnings.push(`output "${o.name}" proposed an unusable source and was dropped`);
       continue;
@@ -171,6 +185,7 @@ export function recordCapability(outcome: DiscoveryOutcome, args: RecordArgs): R
       afterSteps: [],
       terminal: true,
       outputs: [],
+      verified: false,
     });
   }
 
@@ -189,6 +204,7 @@ export function recordCapability(outcome: DiscoveryOutcome, args: RecordArgs): R
       maxOccurrences: 2,
       restartFlow: false,
       escalateOnFailure: true,
+      verified: false,
     });
   }
 
@@ -420,16 +436,34 @@ function fallbackCheckpoint(obs: Observation, canon: Canon): Condition {
   }
 }
 
-function buildOutput(o: SummaryResponse['outputs'][number], canon: Canon): Output | null {
+function buildOutput(
+  o: SummaryResponse['outputs'][number],
+  canon: Canon,
+  warnings: string[]
+): Output | null {
+  // The model proposes outputs by usefulness, not by sensitivity, and it will
+  // cheerfully offer to return an SSN field because it is on the screen.
+  // Defaulting every output to `internal` would mean that value flows into
+  // results and logs unredacted. Classify by label instead and err high: a
+  // reviewer can downgrade a false positive, but nobody reviews a leak that
+  // already happened.
+  const labelish = `${o.name} ${o.readoutLabel ?? ''} ${o.description}`;
+  const sensitive = SENSITIVE_LABEL.test(labelish);
   const common = {
     name: o.name.replace(/[^a-zA-Z0-9_]/g, '_').replace(/^[^a-zA-Z]+/, ''),
     type: o.type,
     description: o.description,
     transform: o.transform ?? 'none',
     required: true,
-    sensitivity: 'internal' as const,
+    sensitivity: (sensitive ? 'pii' : 'internal') as 'pii' | 'internal',
   };
   if (!common.name) return null;
+  if (sensitive) {
+    warnings.push(
+      `output "${common.name}" reads a regulated field and was classified PII (redacted in logs); ` +
+      `confirm the caller actually needs it before approving`
+    );
+  }
 
   if (o.sourceKind === 'readout' && o.readoutLabel) {
     return { ...common, source: { from: 'readout', label: m(o.readoutLabel) } };

@@ -32,7 +32,7 @@
         "from": "readout",
         "label": {
           "mode": "contains",
-          "value": "Member Name",
+          "value": "Member Name:",
           "caseSensitive": false
         }
       },
@@ -48,13 +48,29 @@
         "from": "readout",
         "label": {
           "mode": "contains",
-          "value": "Status",
+          "value": "Status:",
           "caseSensitive": false
         }
       },
       "transform": "upper",
       "required": true,
       "sensitivity": "internal"
+    },
+    {
+      "name": "ssnLast4",
+      "type": "string",
+      "description": "Last four digits of the member's SSN.",
+      "source": {
+        "from": "readout",
+        "label": {
+          "mode": "contains",
+          "value": "SSN (last 4):",
+          "caseSensitive": false
+        }
+      },
+      "transform": "trim",
+      "required": true,
+      "sensitivity": "pii"
     },
     {
       "name": "savingsBalance",
@@ -294,30 +310,15 @@
         "type": "textMatches",
         "value": {
           "mode": "contains",
-          "value": "No member record found",
+          "value": "MCS-0404",
           "caseSensitive": false
         }
       },
       "classification": "business",
       "afterSteps": [],
       "terminal": true,
-      "outputs": []
-    },
-    {
-      "code": "MEMBER_RESTRICTED",
-      "description": "The operator is not authorised to view this member record.",
-      "when": {
-        "type": "textMatches",
-        "value": {
-          "mode": "contains",
-          "value": "not authorized to view this member",
-          "caseSensitive": false
-        }
-      },
-      "classification": "business",
-      "afterSteps": [],
-      "terminal": true,
-      "outputs": []
+      "outputs": [],
+      "verified": true
     },
     {
       "code": "INVALID_MEMBER_NUMBER",
@@ -333,35 +334,28 @@
       "classification": "business",
       "afterSteps": [],
       "terminal": true,
-      "outputs": []
-    }
-  ],
-  "interstitials": [
+      "outputs": [],
+      "verified": false
+    },
     {
-      "code": "COMPLIANCE_ACK",
-      "description": "A compliance review notice the operator must acknowledge before the record displays.",
+      "code": "MEMBER_RESTRICTED",
+      "description": "The operator is not authorised to view this member record.",
       "when": {
         "type": "textMatches",
         "value": {
           "mode": "contains",
-          "value": "ACKNOWLEDGEMENT REQUIRED",
+          "value": "MCS-0403",
           "caseSensitive": false
         }
       },
-      "do": [
-        {
-          "kind": "click",
-          "target": {
-            "role": "button",
-            "name": "Acknowledge",
-            "nameMatch": "exact"
-          }
-        }
-      ],
-      "maxOccurrences": 2,
-      "restartFlow": false,
-      "escalateOnFailure": true
-    },
+      "classification": "business",
+      "afterSteps": [],
+      "terminal": true,
+      "outputs": [],
+      "verified": true
+    }
+  ],
+  "interstitials": [
     {
       "code": "SESSION_EXPIRED",
       "description": "The operator session timed out and sign-on is required again.",
@@ -385,7 +379,37 @@
       ],
       "maxOccurrences": 2,
       "restartFlow": false,
-      "escalateOnFailure": true
+      "escalateOnFailure": true,
+      "verified": false
+    },
+    {
+      "code": "COMPLIANCE_ACK",
+      "description": "A compliance notice the operator must acknowledge before the record displays.",
+      "when": {
+        "type": "textMatches",
+        "value": {
+          "mode": "contains",
+          "value": "This member record carries a compliance review flag. You mus",
+          "caseSensitive": false
+        }
+      },
+      "do": [
+        {
+          "kind": "click",
+          "target": {
+            "role": "button",
+            "name": "Acknowledge",
+            "nameMatch": "exact",
+            "framePath": [
+              "main"
+            ]
+          }
+        }
+      ],
+      "maxOccurrences": 2,
+      "restartFlow": false,
+      "escalateOnFailure": true,
+      "verified": true
     }
   ],
   "policy": {
@@ -404,10 +428,10 @@
     "s05": "92140295"
   },
   "provenance": {
-    "recordedAt": "2026-09-11T17:29:59.836Z",
+    "recordedAt": "2026-09-11T18:35:44.746Z",
     "recordedBy": "llm",
     "model": "scripted",
-    "discoveryRunId": "discover-«card#4811»j9gj",
+    "discoveryRunId": "discover-«card#d738»x6qt",
     "goal": "Sign on as the operator, look up member «memberId#5994» in Member Inquiry, and reach the member detail screen showing their share savings balance."
   }
 }

@@ -4,3 +4,4 @@ node_modules/
 evidence/**/*.tmp
 .scratch/
 evidence/.test/
+.scratch/

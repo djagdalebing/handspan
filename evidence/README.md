@@ -14,7 +14,9 @@ contain `result.json`, the exact structured result the caller received.
 
 | Run | What it shows | Result |
 |---|---|---|
-| `01-discovery` | The model drives the app; a draft capability falls out. `capability.json` is the artifact it produced. | recorded, `approval=draft` |
+| `00-discovery-gemini-live` | **A genuine Gemini-driven run.** `gemini-2.5-flash-lite` drove the live app, and probing repaired its guessed outcome detector. See the note below. | recorded, `approval=draft` |
+| `01-discovery` | The model drives the app; probes verify its proposed detectors; a draft capability falls out. | recorded, `approval=draft` |
+| `01-discovery` (review) | `scripts/apply-review.ts` promotes the draft to `@1.1.0`, fixing what discovery cannot know. | approved |
 | `02-replay-success` | Deterministic replay, no model in the loop. | `success` + 3 typed outputs |
 | `03-replay-business-outcome` | Member 99999 does not exist. | `business_outcome` / `MEMBER_NOT_FOUND` |
 | `04-replay-recovered-interstitial` | An acknowledgement screen appears mid-flow and is cleared. | `success`, `COMPLIANCE_ACK×1` |
@@ -30,6 +32,33 @@ contain `result.json`, the exact structured result the caller received.
 `catalog.json` is the agent-facing capability catalog. The `*.json` capability
 artifacts at the top level are copies of what is in `/capabilities`.
 
+## What probing found
+
+Discovery does not stop once the goal is reached. It replays the flow it just
+recorded against inputs the job declares as known-bad, and rebuilds the outcome
+detectors from what the application actually prints. In `01-discovery` that
+produced four results worth reading in the log:
+
+- **A guessed detector was repaired.** The model proposed detecting a missing
+  member by the text *"No matching member found"*. This application never
+  prints that. Left alone, `MEMBER_NOT_FOUND` would never fire and a legitimate
+  business outcome would surface as a step timeout — the exact distinction the
+  result contract is built on, silently broken. The probe replaced it with
+  `MCS-0404`, the application's own error code.
+- **A detector was added.** `MEMBER_RESTRICTED` (`MCS-0403`) was not proposed at
+  all; the probe for member 77777 discovered it.
+- **A recovery was proposed and then proven.** The model offered no way to clear
+  the compliance acknowledgement screen. The probe stalled on it, read the
+  recovery off that screen ("Acknowledge"), and a second probe confirmed the
+  proposed recovery actually clears it and the flow completes.
+- **Two detectors were flagged unverified**, because no probe covers them.
+  `SESSION_EXPIRED` is then fixed in review; `INVALID_MEMBER_NUMBER` ships
+  labelled.
+
+Probes cost no model calls — they replay the artifact that was just recorded —
+and they run with irreversible steps blocked, so probing a flow that posts a
+transaction cannot post one.
+
 ## Things worth opening
 
 - `01-discovery/capability.json` — the artifact, including `{{memberId}}`
@@ -43,15 +72,41 @@ artifacts at the top level are copies of what is in `/capabilities`.
 - `09-escalation-human-takeover/result.json` — outputs extracted from a screen
   a human produced.
 
-## Note on the discovery run
+## Note on the two discovery runs
 
-The shipped `01-discovery` was produced with the scripted model driver, because
-no Gemini key was available when this was captured. The loop, prompts,
-validation and recording paths are identical either way — the driver substitutes
-for the model's nondeterminism, not for the pipeline. To regenerate it against
-the live model:
+`00-discovery-gemini-live` is a real run: `gemini-2.5-flash-lite` chose every
+action against the live application. It is kept separately because it cannot be
+regenerated on demand — the Gemini free tier allows 20 requests per day per
+model, and a discovery run costs about seven.
+
+Two disclosures about it:
+
+- **Its event log was scrubbed after the fact.** The model wrote the operator
+  password into its own prose ("Enter the password 'demo'…"), and that run
+  predates the fix which registers configured credential values with the
+  redactor before discovery starts. The log was re-run through the product's
+  own `Redactor`, producing what the fixed code now writes at capture time. The
+  leak is the finding; the scrub is the remedy applied retroactively to one
+  file.
+- **Three of its outputs were dropped.** The model proposed readout labels with
+  trailing colons ("Member Name:"), which perception strips — so the `contains`
+  match failed and the outputs did not survive validation. That mismatch
+  between two halves of the system is fixed (`labelMatches` in
+  `src/replay/conditions.ts`) and covered by tests, but this artifact was
+  recorded before the fix.
+
+`01-discovery` is the run the demo path uses. It is produced by the scripted
+driver so the whole evidence set regenerates without a key or a quota — but the
+script is not a convenient fiction: its proposed outputs and detectors are
+copied from what Gemini actually returned on the live run, *including the wrong
+"No matching member found" marker and the SSN output*, so the scripted path
+exercises the same weaknesses the real model has. The loop, prompts, probes,
+validation and recorder are the same code on both paths.
+
+To regenerate against the live model (needs a key with daily quota left):
 
 ```bash
 export GEMINI_API_KEY=...
+export HS_GEMINI_MODEL=gemini-2.5-flash-lite
 MODEL_ARGS="--model gemini" ./scripts/capture-evidence.sh
 ```

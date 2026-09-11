@@ -240,6 +240,15 @@ export const zOutcome = z.object({
   terminal: z.boolean().default(true),
   /** Outputs still extractable in this outcome, e.g. an error code. */
   outputs: z.array(zOutput).default([]),
+  /**
+   * Whether this detector has been confirmed to fire against a real screen.
+   *
+   * A model proposing outcomes from a single happy-path run is guessing at
+   * wording it has never seen, and a guess that never matches is worse than
+   * no detector at all: the run fails with a timeout instead of reporting the
+   * outcome. Unverified detectors ship, but they ship labelled.
+   */
+  verified: z.boolean().default(false),
 });
 export type Outcome = z.infer<typeof zOutcome>;
 
@@ -270,6 +279,8 @@ export const zInterstitial = z.object({
   restartFlow: z.boolean().default(false),
   /** If recovery fails, hand to a human rather than failing outright. */
   escalateOnFailure: z.boolean().default(true),
+  /** Confirmed by a probe run that actually hit this screen and recovered. */
+  verified: z.boolean().default(false),
 });
 export type Interstitial = z.infer<typeof zInterstitial>;
 
@@ -338,6 +349,8 @@ export const zCapability = z.object({
     goal: z.string().optional(),
     /** Set when this capability was derived from another. */
     derivedFrom: z.object({ id: z.string(), version: z.string() }).optional(),
+    /** What a human changed when promoting a draft. */
+    reviewNote: z.string().optional(),
   }),
 });
 export type Capability = z.infer<typeof zCapability>;
