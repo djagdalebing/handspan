@@ -3,8 +3,8 @@
 ## 1. Architecture
 
 One TypeScript process, five hard boundaries. Not distributed, deliberately:
-nothing here is throughput-bound, and a queue would add operational surface
-without answering any question the brief asks.
+nothing here is throughput-bound, and a queue adds operational surface without
+answering any question the brief asks.
 
 ```
       discovery (LLM in the loop)            replay (no LLM, ever)
@@ -28,19 +28,18 @@ That meant *not* using Playwright locators as identity: a CSS selector cannot
 cross the seam, an accessible name can. The web driver derives a name from
 whatever the page offers, falling back — the case that matters — to *the text in
 the table cell to the left of the field*. On an app with no `id`, no `label` and
-no ARIA, that one heuristic is what makes "the textbox labelled Member Number" a
-resolvable thing to say. Acting uses real element handles (perception parks live
-references on `window` and returns indices), giving trusted input events without
-stamping synthetic attributes into a bank's DOM or letting anything
-selector-shaped reach an artifact.
+no ARIA, that one heuristic is what makes "the textbox labelled Member Number"
+resolvable. Acting uses real element handles (perception parks live references
+on `window` and returns indices), giving trusted input events without stamping
+synthetic attributes into a bank's DOM.
 
 Discovery and replay share everything except the decision-maker: the model picks
 from the same control list the engine resolves against, by ephemeral `ref`, and
 never writes a selector. That is what makes a run *recordable* rather than
-something to reverse-engineer from a transcript. The cost of one process is that
-the console reaches the session by reference rather than RPC — but the control
-model is written as "ask the lease, then act", so the wire can get longer
-without the design changing.
+reverse-engineered from a transcript. The cost of one process is that the
+console reaches the session by reference rather than RPC — but the control model
+is "ask the lease, then act", so the wire can lengthen without the design
+changing.
 
 ## 2. Artifact schema
 
@@ -51,16 +50,15 @@ model available. Four decisions did the work:
 
 - **Targets are semantic, never selectors.** A step says *"the button named
   'Search' in the `main` frame"*. Each field of a `Target` is an independent
-  signal, not a query. It is the only identity a reviewer can check and the only
-  one that survives a change of surface technology.
+  signal, not a query — the only identity a reviewer can check, and the only one
+  that survives a change of surface technology.
 - **The error taxonomy lives in the artifact.** Which screens are business
-  outcomes (`MEMBER_NOT_FOUND`), recoverable interstitials (`COMPLIANCE_ACK`) or
-  application failures (`SYSTEM_ERROR`) is knowledge about *the application*,
-  discovered once and reviewed. In engine code, every new app would need an
-  engine change — which does not scale to thousands of app instances.
+  outcomes, recoverable interstitials or application failures is knowledge about
+  *the application*, discovered once and reviewed. In engine code, every new app
+  would need an engine change — which does not scale to thousands of instances.
 - **One condition language, three uses.** Checkpoints, outcome detection and
-  interstitial detection are all `Condition`s. One grammar to learn, one
-  evaluator, and `describe()` renders any of them as English.
+  interstitial detection are all `Condition`s: one grammar, one evaluator, and
+  `describe()` renders any of them as English.
 - **Risk is per step.** A real flow is nine navigational steps and one that
   posts a journal entry. Guardrails act on the step.
 
@@ -98,12 +96,10 @@ reported as drift, so it never quietly becomes the new normal.
 what actually happened next — usually "the control the next step needs is now
 present". Waiting is condition-based, not time-based, which is also how
 transient slowness is absorbed: the injected 6.5-second load needs no special
-handling.
-
-**Waiting is frame-aware.** A real bug worth naming: on a frameset, when a link
-inside `main` navigates, the *top* document never reloads, so
-`page.waitForLoadState` returns immediately and you observe a blank frame.
-Settling polls every frame's `readyState`. Before that fix, discovery recorded a
+handling. It is also frame-aware, which is a real bug worth naming: on a
+frameset, a link inside `main` navigating does not reload the *top* document, so
+`page.waitForLoadState` returns instantly and you observe a blank frame.
+Settling polls every frame's `readyState`; before that fix, discovery recorded a
 flow with a missing step.
 
 **The result contract separates whose problem it is** — `success` /
@@ -149,12 +145,13 @@ and frame moves come back on every result.
 ## 4. Heterogeneity & multi-tenant
 
 **Other surfaces.** A desktop driver supplies role, name, window path and bounds
-from UIA/AX and implements six verbs. Nothing in the schema, locator, condition
-language, engine or escalation model changes — `framePath` becomes a window
-path, and `domHint` goes unused, which is why it is declared the weakest signal
-and never sufficient alone. Legacy web is not a different surface at all; it is
-the case the web driver was written for, which is why the target app is a
-frameset with no test IDs rather than a React demo.
+from UIA/AX and implements six verbs. The schema, locator, condition language,
+engine and escalation model are unchanged — `framePath` becomes a window path,
+`domHint` goes unused (which is why it is declared the weakest signal and never
+sufficient alone). The URL-shaped parts of the policy have no desktop analogue
+and would need a window/process equivalent. Legacy web is not a different
+surface at all; it is the case the web driver was written for, which is why the
+target app is a frameset with no test IDs rather than a React demo.
 
 **Cross-tenant reuse.** A tenant gets not a copy but a short list of typed
 patches against a **pinned base version**, so the base improves once and is
