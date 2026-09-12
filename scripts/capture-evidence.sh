@@ -9,6 +9,11 @@ cd "$(dirname "$0")/.."
 
 export HS_SECRET_MERIDIAN_OPERATOR_ID=demo
 export HS_SECRET_MERIDIAN_OPERATOR_PASSWORD=demo
+# The operator console requires a token. A deployment sets this; without it the
+# broker generates one and prints it with the console URL.
+export HS_OPERATOR_TOKEN=evidence-capture-token
+# Evidence files travel; redact what the CLI prints on its way into them.
+export HS_REDACT_STDOUT=1
 MODEL_ARGS="${MODEL_ARGS:---model scripted --script scripts/member-savings-balance.script.json}"
 
 SCRATCH="$(mktemp -d)"; export SCRATCH
@@ -134,9 +139,13 @@ say "13. guardrails — two hostile overlays, both refused"
 } | tee evidence/13-hostile-overlays.txt
 keep replay 13-guardrails-hostile-overlay
 
-say "14. surface seam — the same capability on a 3270-style green screen"
+say "14. surface seam — discovery and replay on a 3270-style green screen"
 TERM_OVERLAY=capabilities/meridian.member.savings-balance@1.1.0.terminal.overlay.json
 {
+  echo "### discovery on the second surface: a capability recorded from characters"
+  npx tsx src/cli.ts discover --job jobs/terminal-member-balance.json \
+    --model scripted --script scripts/terminal-member-balance.script.json --no-escalation 2>&1 || true
+  echo
   echo "### the web-recorded capability, replayed over a socket against characters"
   npx tsx src/cli.ts replay meridian.member.savings-balance@1.1.0 --overlay "$TERM_OVERLAY" \
     --input memberId=12345 --no-escalation 2>&1 || true

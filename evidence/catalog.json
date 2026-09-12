@@ -208,5 +208,55 @@
         "verified": false
       }
     ]
+  },
+  {
+    "name": "meridian.terminal.member-savings-balance",
+    "version": "1.0.0",
+    "description": "Look up a member on the MERIDIAN green-screen terminal and return the current balance of their share savings account.",
+    "risk": "safe",
+    "approval": "draft",
+    "app": {
+      "vendor": "Meridian Systems",
+      "product": "MERIDIAN Core Member Services"
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "memberId": {
+          "type": "string",
+          "description": "The member number to look up. (PII — redacted in logs)",
+          "pattern": "^[0-9]{5}$"
+        }
+      },
+      "required": [
+        "memberId"
+      ]
+    },
+    "returns": {
+      "memberName": {
+        "type": "string",
+        "description": "The member's name as held on the core."
+      },
+      "accountStatus": {
+        "type": "string",
+        "description": "Membership status."
+      },
+      "savingsBalance": {
+        "type": "number",
+        "description": "Current balance of the share savings account in dollars."
+      }
+    },
+    "outcomes": [
+      {
+        "code": "MEMBER_NOT_FOUND",
+        "description": "No member record exists for the number supplied.",
+        "verified": true
+      },
+      {
+        "code": "MEMBER_RESTRICTED",
+        "description": "The operator is not authorised to view this member record.",
+        "verified": true
+      }
+    ]
   }
 ]

@@ -1,10 +1,10 @@
 {
-  "runId": "replay-20260912-025156-qoab",
+  "runId": "replay-20260912-033551-ctmp",
   "capability": {
     "id": "meridian.member.savings-balance",
     "version": "1.1.0"
   },
-  "startedAt": "2026-09-12T02:51:56.312Z",
+  "startedAt": "2026-09-12T03:35:51.817Z",
   "durationMs": 1,
   "stepsExecuted": 0,
   "evidenceDir": "evidence/07-replay-invalid-input",

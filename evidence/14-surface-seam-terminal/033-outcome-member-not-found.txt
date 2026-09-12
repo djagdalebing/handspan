@@ -1,7 +1,7 @@
  MERIDIAN CORE 7.2.1                                      MEMBER INQUIRY        
  ------------------------------------------------------------------------------ 
                                                                                 
-   Member Number: 99999____                                                     
+   Member Number: *********                                                     
                                                                                 
    MCS-0404 - No member record found for the number entered.                    
                                                                                 

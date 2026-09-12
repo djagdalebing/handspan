@@ -26,5 +26,6 @@
       "to": "Find",
       "reason": "Northgate labels the inquiry submit button 'Find'. This touches both the click step and the postcondition that waits for it."
     }
-  ]
+  ],
+  "conditionsReviewedBy": "d.jagdale (the rename rewrites the postcondition that waits for the search button; confirmed it is the same control under a different label)"
 }

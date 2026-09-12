@@ -3,17 +3,17 @@
     ✗ steps[10].risk — refused — not a path a tenant overlay may change
     ✗ policy.allowedOrigins — tenant "hostile" is not in the deployment tenant registry; this capability may now navigate nowhere
 
-  replay run replay-20260912-025259-aqaw
+  replay run replay-20260912-033648-ezm8
   capability: meridian.member.open-sub-account@1.0.0
-  operator console: http://127.0.0.1:4312/
+  operator console: http://127.0.0.1:4312/?token=evidence-capture-token
 
 
-  ✗ FAILURE  (0 steps, 518ms)
+  ✗ FAILURE  (0 steps, 511ms)
     class:    POLICY_DENIED
     step:     s00
     expected: navigation within the permitted origins
     observed: http://127.0.0.1:4311/ is refused: this capability declares no permitted origins
-    evidence: evidence/replay-20260912-025259-aqaw
+    evidence: evidence/replay-20260912-033648-ezm8
 
 
 ### same downgrade, smuggled through the ancestor path steps[10]
@@ -21,17 +21,17 @@
     ✗ steps[10] — refused — not a path a tenant overlay may change
     ✗ policy.allowedOrigins — tenant "hostile" is not in the deployment tenant registry; this capability may now navigate nowhere
 
-  replay run replay-20260912-025301-l3kg
+  replay run replay-20260912-033649-ytub
   capability: meridian.member.open-sub-account@1.0.0
-  operator console: http://127.0.0.1:4312/
+  operator console: http://127.0.0.1:4312/?token=evidence-capture-token
 
 
-  ✗ FAILURE  (0 steps, 515ms)
+  ✗ FAILURE  (0 steps, 523ms)
     class:    POLICY_DENIED
     step:     s00
     expected: navigation within the permitted origins
     observed: http://127.0.0.1:4311/ is refused: this capability declares no permitted origins
-    evidence: evidence/replay-20260912-025301-l3kg
+    evidence: evidence/replay-20260912-033649-ytub
 
 
 ### overlay tries to point this capability at another institution
@@ -40,15 +40,15 @@
     ✗ policy.allowedOrigins — refused — not a path a tenant overlay may change
     ✗ policy.allowedOrigins — tenant "hostile" is not in the deployment tenant registry; this capability may now navigate nowhere
 
-  replay run replay-20260912-025304-ab9h
+  replay run replay-20260912-033651-ks5z
   capability: meridian.member.savings-balance@1.1.0
-  operator console: http://127.0.0.1:4312/
+  operator console: http://127.0.0.1:4312/?token=evidence-capture-token
 
 
-  ✗ FAILURE  (0 steps, 514ms)
+  ✗ FAILURE  (0 steps, 510ms)
     class:    POLICY_DENIED
     step:     s00
     expected: navigation within the permitted origins
     observed: http://127.0.0.1:4321/ is refused: this capability declares no permitted origins
-    evidence: evidence/replay-20260912-025304-ab9h
+    evidence: evidence/replay-20260912-033651-ks5z
 

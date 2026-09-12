@@ -23,6 +23,8 @@
  */
 const BASE = `http://127.0.0.1:${process.env.HS_OPERATOR_PORT ?? 4312}`;
 const OPERATOR = process.env.HS_OPERATOR_NAME ?? 'operator-1';
+/** The console requires a token; a deployment sets it, as does the demo. */
+const TOKEN = process.env.HS_OPERATOR_TOKEN ?? '';
 
 interface Intervention {
   id: string;
@@ -40,7 +42,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(BASE + path, {
     ...init,
-    headers: { 'content-type': 'application/json', ...(init?.headers ?? {}) },
+    headers: { 'content-type': 'application/json', 'x-operator-token': TOKEN, ...(init?.headers ?? {}) },
   });
   const body = (await res.json().catch(() => ({}))) as T & { error?: string };
   if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status} on ${path}`);

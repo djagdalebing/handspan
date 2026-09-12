@@ -258,3 +258,67 @@ describe('agent-facing catalog', () => {
     expect(json).not.toContain('nameMatch');
   });
 });
+
+/**
+ * The property, not the historical bugs.
+ *
+ * Every guardrail test above commemorates one specific bypass someone found.
+ * That is an enumerated suite for a fix whose whole point was that enumeration
+ * loses — so this asserts the actual invariant: anything outside the
+ * allow-list is refused, whatever it is called.
+ */
+describe('overlay allow-list, as a property', () => {
+  const registry = { northgate: { label: 'N', origins: ['http://b.example'] } };
+
+  const OUTSIDE = [
+    'id', 'version', 'schema', 'risk', 'approval',
+    'app.vendor', 'app.product', 'app.surface',
+    'inputs', 'inputs[0]', 'inputs[0].sensitivity', 'inputs[0].type', 'inputs[0].pattern',
+    'outputs', 'outputs[0]', 'outputs[0].sensitivity', 'outputs[0].type', 'outputs[0].required',
+    'steps', 'steps[0]', 'steps[0].id', 'steps[0].risk', 'steps[0].intent', 'steps[0].action',
+    'steps[0].action.kind', 'steps[1].risk',
+    'outcomes', 'outcomes[0]', 'outcomes[0].code', 'outcomes[0].classification', 'outcomes[0].terminal',
+    'interstitials', 'interstitials[0]', 'interstitials[0].code', 'interstitials[0].do',
+    'interstitials[0].restartFlow',
+    'policy', 'policy.maxSteps', 'policy.confirmAtRisk', 'policy.allowedOrigins',
+    'fingerprints', 'provenance', 'provenance.recordedBy', 'provenance.model',
+    // Prototype traversal: `checkpoint.__proto__` matches the checkpoint entry
+    // by regex, and `in` is true for anything on Object.prototype.
+    'checkpoint.__proto__.toString', 'checkpoint.constructor.prototype.x', '__proto__.polluted',
+  ];
+
+  it.each(OUTSIDE)('refuses a patch to %s', (path) => {
+    let result: ReturnType<typeof applyOverlay> | null = null;
+    try {
+      result = applyOverlay(base(), overlay([{ path, value: 'tampered' }]), registry);
+    } catch {
+      return; // refusing by throwing is also refusing
+    }
+    expect(result.rejected.some((r) => r.path === path)).toBe(true);
+    // `policy.allowedOrigins` is the one path that appears in `applied` after
+    // being refused — the tenant registry sets it, which is the point.
+    if (path !== 'policy.allowedOrigins') {
+      expect(result.applied.some((a) => a.path === path)).toBe(false);
+    } else {
+      expect(result.capability.policy.allowedOrigins).toEqual(['http://b.example']);
+    }
+  });
+
+  it('does not pollute Object.prototype', () => {
+    try {
+      applyOverlay(base(), overlay([{ path: 'checkpoint.__proto__.polluted', value: 'yes' }]), registry);
+    } catch { /* refusing by throwing is fine */ }
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+  });
+
+  // A rename reaches every target descriptor in the document, including the
+  // ones inside conditions — so it must meet the same bar as the equivalent
+  // patch rather than slipping past it.
+  it('holds a rename that rewrites a success condition to the same standard as a patch', () => {
+    const b = base();
+    b.approval = 'approved';
+    const r = applyOverlay(b, overlay([], [{ role: 'button', from: 'Search', to: 'Find' }]), registry);
+    // `Search` appears in this base inside steps[1].waitFor, so re-review applies.
+    expect(r.capability.approval).toBe('draft');
+  });
+});

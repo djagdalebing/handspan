@@ -180,23 +180,29 @@ export function applyOverlay(
   const clone = JSON.parse(JSON.stringify(base)) as Capability;
   const applied: OverlayApplication['applied'] = [];
   const rejected: OverlayApplication['rejected'] = [];
+  let needsReReview = false;
 
   for (const rename of overlay.renames) {
-    const sites = renameTargets(clone as unknown as Record<string, unknown>, rename);
-    if (sites === 0) {
+    const { count, sites } = renameTargets(clone as unknown as Record<string, unknown>, rename);
+    if (count === 0) {
       rejected.push({
         path: `rename ${rename.role ?? 'control'} "${rename.from}"`,
         reason: 'the base capability does not reference a control by that name',
       });
-    } else {
-      applied.push({
-        path: `rename ${rename.role ?? 'control'} "${rename.from}" → "${rename.to}" (${sites} site${sites === 1 ? '' : 's'})`,
-        reason: rename.reason,
-      });
+      continue;
     }
+    // A rename is a patch by another name, and it reaches further: it rewrites
+    // every target descriptor in the document, including the ones inside
+    // `waitFor`, `checkpoint` and outcome detectors. Expressing a
+    // success-condition change this way used to slip past the attestation that
+    // the equivalent patch required — the same enumeration mistake, one layer
+    // out.
+    if (sites.some((site) => REQUIRES_REREVIEW.some((re) => re.test(site)))) needsReReview = true;
+    applied.push({
+      path: `rename ${rename.role ?? 'control'} "${rename.from}" → "${rename.to}" (${count} site${count === 1 ? '' : 's'})`,
+      reason: rename.reason,
+    });
   }
-
-  let needsReReview = false;
 
   for (const patch of overlay.patches) {
     if (!PATCHABLE.some((re) => re.test(patch.path))) {
@@ -279,11 +285,12 @@ export function applyOverlay(
 function renameTargets(
   root: Record<string, unknown>,
   rename: { role?: string; from: string; to: string }
-): number {
+): { count: number; sites: string[] } {
   let count = 0;
-  const walk = (node: unknown): void => {
+  const sites: string[] = [];
+  const walk = (node: unknown, path: string): void => {
     if (Array.isArray(node)) {
-      for (const v of node) walk(v);
+      node.forEach((v, i) => walk(v, `${path}[${i}]`));
       return;
     }
     if (!node || typeof node !== 'object') return;
@@ -293,14 +300,25 @@ function renameTargets(
     if (typeof o.role === 'string' && typeof o.name === 'string' && 'nameMatch' in o) {
       if (o.name === rename.from && (!rename.role || o.role === rename.role)) {
         o.name = rename.to;
+        sites.push(path);
         count++;
       }
     }
-    for (const v of Object.values(o)) walk(v);
+    for (const [k, v] of Object.entries(o)) walk(v, path ? `${path}.${k}` : k);
   };
-  walk(root);
-  return count;
+  walk(root, '');
+  return { count, sites };
 }
+
+/**
+ * Segments that must never be traversed.
+ *
+ * `checkpoint.__proto__.toString` matches the checkpoint allow-list entry, and
+ * `last in cur` is true for anything on `Object.prototype` — so an overlay, the
+ * constrained and reviewable customisation mechanism, could corrupt the process
+ * global prototype and the audit line would report it as *applied*.
+ */
+const FORBIDDEN_SEGMENTS = new Set(['__proto__', 'prototype', 'constructor']);
 
 /** Sets `a.b[0].c` if — and only if — every segment already exists. */
 export function setAtPath(root: Record<string, unknown>, path: string, value: unknown): boolean {
@@ -310,6 +328,8 @@ export function setAtPath(root: Record<string, unknown>, path: string, value: un
     const idx = [...(m[2] ?? '').matchAll(/\[(\d+)\]/g)].map((x) => x[1] as string);
     return [m[1] as string, ...idx];
   });
+
+  if (segments.some((seg) => FORBIDDEN_SEGMENTS.has(seg))) return false;
 
   let cur: unknown = root;
   for (let i = 0; i < segments.length - 1; i++) {

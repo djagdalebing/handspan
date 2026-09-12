@@ -189,7 +189,9 @@ async function cmdDiscover(args: Args): Promise<number> {
   const values = { ...job.values, ...kvPairs(args.repeated.param) };
 
   const provider = makeProvider(args);
-  const rt = await bootstrap('discover', args);
+  // The surface follows the job's entry point, so discovery works on any
+  // surface without the loop, the recorder or the prompts knowing which.
+  const rt = await bootstrap('discover', args, job.entry);
 
   // The goal itself may reference parameters; bind them for readability.
   const goal = job.goal.replace(/\{\{(\w+)\}\}/g, (_m, k: string) => values[k] ?? `{{${k}}}`);
@@ -207,7 +209,7 @@ async function cmdDiscover(args: Args): Promise<number> {
   }
 
   process.stderr.write(`\n  discovery run ${rt.runId}\n  goal: ${goal}\n  model: ${provider.name}\n`);
-  process.stderr.write(`  operator console: http://127.0.0.1:${process.env.HS_OPERATOR_PORT ?? 4312}/\n\n`);
+  process.stderr.write(`  operator console: ${broker.consoleUrl()}\n\n`);
 
   try {
     const outcome = await runDiscovery({
@@ -315,26 +317,35 @@ function makeProvider(args: Args): ModelProvider {
  * never accepts them at all.
  */
 function checkOverrides(args: Args, policy: Policy, mode: 'replay' | 'invoke'): void {
-  const requested = [
+  // Two different questions, and conflating them broke the legitimate case.
+  //
+  // An overlay is how a tenant *runs* — an operator supplying one is normal
+  // operation, not a weakening. But a calling agent supplying one is a
+  // different matter entirely: an overlay can rewrite the checkpoint, so an
+  // agent that may pass `--overlay` can declare its own definition of success.
+  // So `--overlay` is refused for `invoke` and unremarkable for `replay`.
+  const weakening = [
     bool(args, 'risky') || str(args, 'risky') === 'proceed' ? '--risky proceed' : null,
     bool(args, 'allow-draft') ? '--allow-draft' : null,
-    // Redirecting where policy, tenants or capabilities are read from is a
-    // weakening too — arguably the most complete one, since it replaces the
-    // rules rather than bending them.
+    // Redirecting where policy, tenants or capabilities are read from replaces
+    // the rules rather than bending them.
     str(args, 'policy') ? '--policy' : null,
     str(args, 'tenants') ? '--tenants' : null,
     str(args, 'dir') ? '--dir' : null,
   ].filter(Boolean) as string[];
-  if (requested.length === 0) return;
-  if (mode === 'invoke') {
+
+  const agentForbidden = [...weakening, str(args, 'overlay') ? '--overlay' : null]
+    .filter(Boolean) as string[];
+
+  if (mode === 'invoke' && agentForbidden.length > 0) {
     throw new Error(
-      `${requested.join(' and ')} cannot be used with "invoke": a calling agent does not get to ` +
-      `switch off the controls that exist to constrain it. Use "replay" from an operator shell.`
+      `${agentForbidden.join(' and ')} cannot be used with "invoke": a calling agent does not get ` +
+      `to supply the rules it is judged by. Use "replay" from an operator shell.`
     );
   }
-  if (!policy.config.allowCallerOverrides) {
+  if (weakening.length > 0 && !policy.config.allowCallerOverrides) {
     throw new Error(
-      `${requested.join(' and ')} is refused: this deployment sets allowCallerOverrides=false in ` +
+      `${weakening.join(' and ')} is refused: this deployment sets allowCallerOverrides=false in ` +
       `config/policy.json. Change the deployment policy deliberately if an operator really needs it.`
     );
   }
@@ -344,6 +355,11 @@ async function cmdReplay(args: Args, mode: 'replay' | 'invoke'): Promise<number>
   const ref = args._[1] ?? str(args, 'capability');
   if (!ref) throw new Error(`usage: ${mode} <capabilityId[@version]> --input k=v ...`);
   const [id, version] = ref.split('@');
+
+  // Before anything else. An earlier version applied the overlay first and
+  // then asked whether overlays were allowed, which is not a gate, it is a
+  // post-mortem.
+  checkOverrides(args, loadPolicy(hostPolicyPath()), mode);
 
   let capability = findCapability(id!, version, str(args, 'dir', hostCapabilityDir()));
   if (!capability) throw new Error(`no capability "${ref}" found`);
@@ -362,9 +378,6 @@ async function cmdReplay(args: Args, mode: 'replay' | 'invoke'): Promise<number>
   }
 
   const inputs = kvPairs(args.repeated.input);
-  // Deliberately the host's policy: asking the file the caller supplied
-  // whether the caller may supply files is circular.
-  checkOverrides(args, loadPolicy(hostPolicyPath()), mode);
 
   const entryStep = capability.steps.find((x) => x.action.kind === 'navigate');
   const entry = entryStep && entryStep.action.kind === 'navigate' ? entryStep.action.url : 'http://';
@@ -374,7 +387,7 @@ async function cmdReplay(args: Args, mode: 'replay' | 'invoke'): Promise<number>
   if (fault) await injectFault(str(args, 'app-url', 'http://127.0.0.1:4311'), fault);
 
   process.stderr.write(`\n  replay run ${rt.runId}\n  capability: ${capability.id}@${capability.version}\n`);
-  process.stderr.write(`  operator console: http://127.0.0.1:${process.env.HS_OPERATOR_PORT ?? 4312}/\n\n`);
+  process.stderr.write(`  operator console: ${broker.consoleUrl()}\n\n`);
 
   try {
     const engine = new ReplayEngine({
@@ -394,11 +407,17 @@ async function cmdReplay(args: Args, mode: 'replay' | 'invoke'): Promise<number>
     const result = await engine.run(capability, inputs);
     rt.log.writeJson('result.json', result);
 
+    // An operator's terminal should show the real values — that is the point of
+    // running the capability. But stdout gets piped into log aggregators and
+    // evidence files, which outlive the run and travel, so a deployment can ask
+    // for it to be redacted on the way out.
+    const shown = process.env.HS_REDACT_STDOUT ? rt.redactor.value(result) : result;
+
     if (mode === 'invoke') {
       // What an agent gets back: the contract, nothing else.
-      process.stdout.write(JSON.stringify(agentView(result), null, 2) + '\n');
+      process.stdout.write(JSON.stringify(agentView(shown), null, 2) + '\n');
     } else {
-      printResult(result);
+      printResult(shown);
     }
     return result.status === 'success' || result.status === 'business_outcome' ? 0 : 1;
   } finally {

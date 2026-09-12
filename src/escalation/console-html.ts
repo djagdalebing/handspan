@@ -18,7 +18,7 @@
 import type { Intervention } from './broker.js';
 import type { ControlState } from './control.js';
 
-export function renderConsole(i: Intervention, control: ControlState): string {
+export function renderConsole(i: Intervention, control: ControlState, token: string): string {
   const esc = (s: unknown) =>
     String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string);
 
@@ -90,21 +90,22 @@ export function renderConsole(i: Intervention, control: ControlState): string {
     </div>
   </div>
 
-  <div><img id="shot" src="/i/${esc(i.id)}/screenshot" alt="live session"></div>
+  <div><img id="shot" src="/i/${esc(i.id)}/screenshot?token=${esc(token)}" alt="live session"></div>
 </div>
 <script>
 const ID = ${JSON.stringify(i.id)};
 // Every mutating call names the operator; the broker checks that this is who
 // holds the lease before it will act.
 const OPERATOR = ${JSON.stringify(i.operator ?? 'operator-1')};
+const TOKEN = ${JSON.stringify(token)};
 const shot = document.getElementById('shot');
 
-function refresh(){ shot.src = '/i/' + ID + '/screenshot?t=' + Date.now(); }
+function refresh(){ shot.src = '/i/' + ID + '/screenshot?token=' + TOKEN + '&t=' + Date.now(); }
 setInterval(refresh, 1200);
 
 async function post(path, body){
   const r = await fetch('/i/' + ID + path, {
-    method:'POST', headers:{'content-type':'application/json'},
+    method:'POST', headers:{'content-type':'application/json','x-operator-token':TOKEN},
     body: JSON.stringify({ operator: OPERATOR, ...(body||{}) })
   });
   const j = await r.json().catch(()=>({}));
@@ -118,7 +119,7 @@ async function resolve(disposition){
   poll();
 }
 async function poll(){
-  const r = await fetch('/i/' + ID + '/state');
+  const r = await fetch('/i/' + ID + '/state?token=' + TOKEN);
   const j = await r.json();
   document.getElementById('state').textContent = j.control;
   document.getElementById('acts').textContent = j.actions;

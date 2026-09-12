@@ -29,7 +29,7 @@ as a pseudonym rather than its value.
 | `09-escalation-human-takeover` | The operator posts it themselves in the live session, then releases with "complete". | `success`, **10** steps — the engine verified the checkpoint instead of replaying the step the human did |
 | `10-escalation-stuck-recovery` | The *unreviewed* draft's recovery fails, the run gets stuck, and an operator signs the session back on by hand. | `success` after handoff |
 | `11-cross-tenant-overlay` | The same capability run against a second institution via a tenant overlay. | `success`, drift reported |
-| `14-surface-seam-terminal` | The **same capability**, recorded against the frameset web app, replayed against a 3270-style green screen over a socket. Output in `14-green-screen.txt`. | `success` + `business_outcome` |
+| `14-surface-seam-terminal` | Discovery **and** replay on a 3270-style green screen over a socket: a capability recorded from a character grid, then the **web-recorded** capability replayed against the same surface. Output in `14-green-screen.txt`. | recorded + `success` + `business_outcome` |
 | `13-guardrails-hostile-overlay` | Two tenant overlays attempting privilege escalation, both refused. Output in `13-hostile-overlays.txt`. | `POLICY_DENIED` / `NEEDS_HUMAN` |
 | `12-agent-invocation` | What a calling agent gets back. | see `agent-invocation.json` |
 
@@ -91,11 +91,13 @@ a one-off demonstration.
 
 ## The seam, exercised rather than asserted
 
-`14-green-screen.txt` is the one I would read first. The capability in it was
-recorded by a model driving a frameset web app with no ids, labels or ARIA. It
-is replayed there against a completely different surface — an 80x24 grid of
-characters over a TCP socket, no DOM, no URL — and returns the same typed
-outputs, then the same `MEMBER_NOT_FOUND` business outcome for member 99999.
+`14-green-screen.txt` is the one I would read first, and it covers both halves
+of the loop on a surface that is not the web. First it *records* a capability
+from an 80x24 character grid over a TCP socket — probes included, repairing a
+proposed detector that matched text the app never prints into the app's own
+`MCS-0404`, exactly as on the web. Then it replays the capability a model
+recorded against the **frameset web app** against that same terminal, returning
+the same typed outputs and the same `MEMBER_NOT_FOUND` for member 99999.
 
 Nothing above `Surface` changed. The steps, the semantic targets, the condition
 language, the checkpoint and the outcome detectors are all inherited; the

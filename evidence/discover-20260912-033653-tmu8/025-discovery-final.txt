@@ -1,11 +1,11 @@
- MERIDIAN CORE 7.2.1                                      MEMBER DETAIL - 12345 
+ MERIDIAN CORE 7.2.1                                      MEMBER DETAIL - ***** 
  ------------------------------------------------------------------------------ 
                                                                                 
-   Member Number: 12345                                                         
-   Member Name:   RIVERA, DANA Q                                                
+   Member Number: *****                                                         
+   Member Name:   **************                                                
    Status:        ACTIVE                                                        
    Home Branch:   EASTGATE 004                                                  
-   SSN (last 4):  ***-**-0000                                                   
+   SSN (last 4):  ***********                                                   
                                                                                 
    ACCOUNT TYPE        ACCOUNT NO    CURRENT BALANCE                            
    SHARE SAVINGS       S-0001        $4,812.55                                  

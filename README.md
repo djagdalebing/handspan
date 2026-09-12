@@ -50,7 +50,13 @@ rules rather than bent them:
 export HS_POLICY_FILE=config/policy.json       # allowlist, risk gate, timeouts
 export HS_TENANTS_FILE=config/tenants.json     # tenant → permitted origins
 export HS_CAPABILITY_DIR=capabilities
+export HS_OPERATOR_TOKEN=...                   # shared secret for the console
 ```
+
+The operator console requires `HS_OPERATOR_TOKEN` on every endpoint, reads
+included. If you do not set one the broker generates a random token at startup
+and prints it as part of the console URL, so the control is on by default rather
+than off by default — which is how it shipped once, undocumented.
 
 A note from actually running this: the Gemini free tier is **20 requests per
 day, per model**, and a discovery run costs about seven. The quota is scoped
@@ -156,6 +162,16 @@ npx tsx scripts/operator-demo.ts --disposition resume &     # approve and hand b
 npx tsx scripts/operator-demo.ts --takeover &               # post it manually, then hand back
 ```
 
+### Discovery and replay on a completely different surface
+
+Recording a capability from an 80x24 character grid, probes and all:
+
+```bash
+npm run green    # in another shell
+npx tsx src/cli.ts discover --job jobs/terminal-member-balance.json \
+  --model scripted --script scripts/terminal-member-balance.script.json
+```
+
 ### The same capability on a completely different surface
 
 The capability recorded against the frameset web app, replayed against the green
@@ -190,7 +206,7 @@ npx tsx src/cli.ts invoke meridian.member.savings-balance@1.1.0 --input memberId
 
 ```bash
 ./scripts/capture-evidence.sh    # regenerates /evidence from scratch
-npm test                         # 114 tests, incl. end-to-end against both surfaces
+npm test                         # 165 tests, incl. end-to-end against both surfaces
 npm run typecheck
 ```
 

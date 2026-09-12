@@ -92,7 +92,7 @@ const RANK: Record<Risk, number> = { safe: 0, mutating: 1, irreversible: 2 };
  * as special, which quietly matches nothing — so a non-web surface would have
  * been denied for the wrong reason, or worse, compared "null" to "null".
  */
-function originOf(u: URL): string {
+export function originOf(u: URL): string {
   const scheme = u.protocol.replace(/:$/, '');
   if (u.origin && u.origin !== 'null') return u.origin;
   return `${scheme}://${u.host}`;

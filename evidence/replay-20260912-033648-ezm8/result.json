@@ -1,13 +1,13 @@
 {
-  "runId": "replay-20260912-025301-l3kg",
+  "runId": "replay-20260912-033648-ezm8",
   "capability": {
     "id": "meridian.member.open-sub-account",
     "version": "1.0.0"
   },
-  "startedAt": "2026-09-12T02:53:02.102Z",
-  "durationMs": 515,
+  "startedAt": "2026-09-12T03:36:48.353Z",
+  "durationMs": 511,
   "stepsExecuted": 0,
-  "evidenceDir": "evidence/replay-20260912-025301-l3kg",
+  "evidenceDir": "evidence/replay-20260912-033648-ezm8",
   "recoveries": [],
   "drift": {
     "changedSteps": [],

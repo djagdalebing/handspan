@@ -18,6 +18,7 @@
  */
 import express, { type Express, type Request, type Response } from 'express';
 import type { Server } from 'node:http';
+import { randomBytes } from 'node:crypto';
 import type { Observation, Surface } from '../surface/types.js';
 import type { LiveControl } from '../surface/web/playwright-surface.js';
 import type { RunLog } from '../observability/run-log.js';
@@ -75,11 +76,25 @@ interface Registration {
  * is the real control; this is defence in depth for a broker reachable beyond
  * localhost, and is enforced whenever the variable is set.
  */
-const OPERATOR_TOKEN = process.env.HS_OPERATOR_TOKEN ?? '';
+/**
+ * Shared secret for the console, generated if the deployment does not set one.
+ *
+ * It used to default to the empty string, which made `tokenOk()` return true
+ * unconditionally — so the endpoint that authorises an irreversible posting was
+ * open to anything that could reach the port, and the audit line recorded
+ * whatever name the caller asserted. Worse, the variable was documented
+ * nowhere, so "we have a token" was true only for someone who read the source.
+ *
+ * Defaulting to a generated value means the control is on out of the box; the
+ * token is printed with the console URL so an operator can use it.
+ */
+const OPERATOR_TOKEN = process.env.HS_OPERATOR_TOKEN || randomBytes(16).toString('hex');
 
 function tokenOk(req: Request): boolean {
-  if (!OPERATOR_TOKEN) return true;
-  const supplied = req.get('x-operator-token') ?? String((req.body ?? {}).token ?? '');
+  const supplied =
+    req.get('x-operator-token') ||
+    String((req.query ?? {}).token ?? '') ||
+    String((req.body ?? {}).token ?? '');
   return supplied === OPERATOR_TOKEN;
 }
 
@@ -194,8 +209,17 @@ export class EscalationBroker {
 
   private port = Number(process.env.HS_OPERATOR_PORT ?? 4312);
 
+  /** The token belongs in the link, so the operator has it without hunting. */
   urlFor(id: string): string {
-    return `http://127.0.0.1:${this.port}/i/${id}`;
+    return `http://127.0.0.1:${this.port}/i/${id}?token=${OPERATOR_TOKEN}`;
+  }
+
+  get operatorToken(): string {
+    return OPERATOR_TOKEN;
+  }
+
+  consoleUrl(): string {
+    return `http://127.0.0.1:${this.port}/?token=${OPERATOR_TOKEN}`;
   }
 
   async start(): Promise<void> {
@@ -203,9 +227,10 @@ export class EscalationBroker {
     const app: Express = express();
     app.use(express.json());
 
-    app.get('/', (_req, res) => {
+    app.get('/', (req, res) => {
+      if (!tokenOk(req)) return res.status(403).send('operator token required');
       const rows = this.list().map((i) =>
-        `<tr><td><a href="/i/${i.id}">${i.id}</a></td><td>${i.state}</td>` +
+        `<tr><td><a href="/i/${i.id}?token=${OPERATOR_TOKEN}">${i.id}</a></td><td>${i.state}</td>` +
         `<td>${i.reason}</td><td>${esc(i.summary)}</td><td>${i.raisedAt}</td></tr>`
       ).join('');
       res.send(`<html><body style="font:13px system-ui;padding:20px">
@@ -213,7 +238,7 @@ export class EscalationBroker {
         <table border=1 cellpadding=6 cellspacing=0>
         <tr><th>id</th><th>state</th><th>reason</th><th>summary</th><th>raised</th></tr>
         ${rows || '<tr><td colspan=5><i>none</i></td></tr>'}</table>
-        <p><a href="/">refresh</a></p></body></html>`);
+        <p><a href="/?token=${OPERATOR_TOKEN}">refresh</a></p></body></html>`);
     });
 
     // Machine-readable view of the queue. The HTML console is one client of
@@ -224,18 +249,21 @@ export class EscalationBroker {
     });
 
     app.get('/api/i/:id', (req, res) => {
+      if (!tokenOk(req)) return res.status(403).json({ error: 'operator token required' });
       const i = this.interventions.get(req.params.id!);
       if (!i) return res.status(404).json({ error: 'unknown intervention' });
       res.json({ ...i, evidenceDir: this.sessions.get(i.runId)?.log.dir });
     });
 
     app.get('/i/:id', (req, res) => {
+      if (!tokenOk(req)) return res.status(403).send('operator token required');
       const i = this.interventions.get(req.params.id!);
       if (!i) return res.status(404).send('unknown intervention');
-      res.send(renderConsole(i, this.sessions.get(i.runId)?.control.current ?? 'RELINQUISHED'));
+      res.send(renderConsole(i, this.sessions.get(i.runId)?.control.current ?? 'RELINQUISHED', OPERATOR_TOKEN));
     });
 
     app.get('/i/:id/state', (req, res) => {
+      if (!tokenOk(req)) return res.status(403).json({ error: 'operator token required' });
       const i = this.interventions.get(req.params.id!);
       if (!i) return res.status(404).json({ error: 'unknown intervention' });
       const reg = this.sessions.get(i.runId);

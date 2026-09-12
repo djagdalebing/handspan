@@ -1,7 +1,7 @@
 {
   "url": "http://127.0.0.1:4311/signon",
   "title": "MERIDIAN CORE :: Sign On",
-  "at": "2026-09-12T02:52:48.207Z",
+  "at": "2026-09-12T03:36:39.231Z",
   "text": "MERIDIAN CORE — OPERATOR SIGN ON Invalid operator ID or password. Operator ID: «secretish#914f21» system. Training data only. Use operator «secret:MERIDIAN_OPERATOR_PASSWORD» / password «secret:MERIDIAN_OPERATOR_PASSWORD».",
   "nodes": [
     {

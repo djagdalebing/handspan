@@ -17,11 +17,12 @@
  * asking a human to approve a risky click on a screen that has already told
  * us the member does not exist.
  */
-import type { Capability, Interstitial, Outcome, Risk, Step, StepAction, Target } from '../artifact/schema.js';
+import type { Capability, Interstitial, Outcome, Output, Risk, Sensitivity, Step, StepAction, Target } from '../artifact/schema.js';
 import type { Action, Observation, Surface, UiNode } from '../surface/types.js';
 import type { LiveControl } from '../surface/web/playwright-surface.js';
 import type { CredentialProvider } from '../safety/credentials.js';
 import type { Redactor } from '../safety/redact.js';
+import { looksSensitive } from '../safety/redact.js';
 import type { RunLog } from '../observability/run-log.js';
 import { Policy } from '../safety/policy.js';
 
@@ -245,7 +246,7 @@ export class ReplayEngine {
       // -- outputs --------------------------------------------------------
       const extraction = extractOutputs(cap.outputs, finalObs, bindings);
       for (const out of cap.outputs) {
-        this.o.redactor.register(String(extraction.values[out.name] ?? ''), out.sensitivity, out.name);
+        this.o.redactor.register(String(extraction.values[out.name] ?? ''), effectiveSensitivity(out), out.name);
       }
       if (extraction.missing.length > 0) {
         const dump = this.o.log.dumpObservation(finalObs, 'output-missing');
@@ -996,6 +997,30 @@ export class ReplayEngine {
       failure: { class: cls, stepId, expected, observed, evidence },
     } as ReplayResult;
   }
+}
+
+/**
+ * Sensitivity is declared, but only ever revised *upward* at run time.
+ *
+ * An overlay may legitimately repoint an output's `source` — a tenant's
+ * balance column is called something else — while `sensitivity` is sealed
+ * against patching. Those two facts combine badly: repoint a source declared
+ * `internal` at a regulated readout and the value flows into the run log and
+ * the returned outputs in clear, reaching the same harm the sealed field
+ * exists to prevent through the other door. So where the source *names* a
+ * regulated field, the value is treated as PII whatever the artifact says.
+ * Declaration can raise the classification; it cannot lower it below what the
+ * label implies.
+ */
+function effectiveSensitivity(out: Output): Sensitivity {
+  if (out.sensitivity === 'secret' || out.sensitivity === 'pii') return out.sensitivity;
+  const src = out.source;
+  const label =
+    src.from === 'readout' ? src.label.value
+    : src.from === 'node' ? src.target.name
+    : src.from === 'table' ? `${src.selectColumn} ${src.whereColumn}`
+    : '';
+  return looksSensitive(`${out.name} ${label}`) ? 'pii' : out.sensitivity;
 }
 
 function sleep(ms: number): Promise<void> {

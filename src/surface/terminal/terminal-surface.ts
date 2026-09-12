@@ -25,6 +25,7 @@
  */
 import { Socket } from 'node:net';
 import type { Action, ActionResult, Observation, Surface, UiNode } from '../types.js';
+import { looksSensitive } from '../../safety/redact.js';
 
 const END = '--END--';
 
@@ -248,9 +249,30 @@ export class TerminalSurface implements Surface {
     }
   }
 
-  /** Text screens carry nothing sensitive we can mask, so evidence is the grid. */
-  async screenshot(): Promise<Buffer> {
-    return Buffer.from(this.screen.join('\n'), 'utf8');
+  /**
+   * Evidence for a text surface is the grid itself — and it is masked, because
+   * `Surface.screenshot` makes masking optional and a driver that quietly
+   * skips it drops a cross-cutting safety obligation the moment someone adds a
+   * surface. This one did exactly that: a member's name, declared PII and
+   * correctly pseudonymised in the event log of the same run, sat in clear in
+   * the stored screen.
+   */
+  async screenshot(opts: { maskSensitive?: boolean; maskValues?: string[] } = {}): Promise<Buffer> {
+    if (opts.maskSensitive === false) return Buffer.from(this.screen.join('\n'), 'utf8');
+
+    const masked = this.screen.map((line) => {
+      // A `Label: value` row whose label names regulated data.
+      const m = line.match(/^(\s+[A-Za-z][A-Za-z0-9 ()]*?:\s+)(\S.*?)(\s*)$/);
+      let out = line;
+      if (m && looksSensitive(m[1]!.replace(/:\s*$/, '').trim())) {
+        out = m[1]! + '*'.repeat(m[2]!.length) + m[3]!;
+      }
+      for (const value of opts.maskValues ?? []) {
+        if (value.length >= 3) out = out.split(value).join('*'.repeat(value.length));
+      }
+      return out;
+    });
+    return Buffer.from(masked.join('\n'), 'utf8');
   }
 
   async location(): Promise<string> {

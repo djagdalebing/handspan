@@ -72,7 +72,11 @@ export class RunLog {
         maskSensitive: true,
         maskValues: this.redactor.piiLiterals(),
       });
-      const name = `${String(this.seq).padStart(3, '0')}-${slug(label)}.png`;
+      // A text surface returns its screen, not an image. Naming that `.png`
+      // makes the evidence unopenable and hid a leak: the file looked binary,
+      // so nobody grepped it.
+      const isPng = buf.length > 8 && buf[0] === 0x89 && buf[1] === 0x50;
+      const name = `${String(this.seq).padStart(3, '0')}-${slug(label)}.${isPng ? 'png' : 'txt'}`;
       writeFileSync(join(this.dir, name), buf);
       this.event('note', { evidence: name, label });
       return name;

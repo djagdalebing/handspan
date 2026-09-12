@@ -32,6 +32,7 @@ import type { Observation, UiNode } from '../surface/types.js';
 import { evaluate } from '../replay/conditions.js';
 import { extractOutputs } from '../replay/extract.js';
 import { fingerprintObservation, resolveTarget } from '../replay/locator.js';
+import { originOf } from '../safety/policy.js';
 import { looksSensitive } from '../safety/redact.js';
 import type { Bindings } from '../replay/template.js';
 import type { DiscoveryOutcome, RecordedAction } from './agent.js';
@@ -259,12 +260,20 @@ export function recordCapability(outcome: DiscoveryOutcome, args: RecordArgs): R
   return { capability, warnings };
 }
 
-/** Distinct origins the recorded flow navigates to. */
+/**
+ * Distinct origins the recorded flow navigates to.
+ *
+ * Uses the same origin derivation as the policy: `URL.origin` is the string
+ * "null" for any scheme the spec does not treat as special, so a green-screen
+ * capability recorded its permitted origin as `null` and then denied its own
+ * entry navigation. Two places computing origins differently is one place too
+ * many.
+ */
 function originsUsed(entryUrl: string, steps: Step[]): string[] {
   const origins = new Set<string>();
   const add = (u: string) => {
     try {
-      origins.add(new URL(u).origin);
+      origins.add(originOf(new URL(u)));
     } catch {
       /* a templated URL with no resolvable origin; the runtime policy still applies */
     }

@@ -14,6 +14,9 @@ import { SessionControl } from '../src/escalation/control.js';
 import type { Observation, Surface } from '../src/surface/types.js';
 
 process.env.HS_OPERATOR_PORT = '4388';
+// Set before the broker module is imported: it reads the token once, and
+// generates a random one when the deployment has not supplied it.
+process.env.HS_OPERATOR_TOKEN = 'test-operator-token';
 const BASE = 'http://127.0.0.1:4388';
 const RUN = 'replay-test-broker';
 
@@ -33,10 +36,15 @@ const surface: Surface = {
 let broker: typeof import('../src/escalation/broker.js')['broker'];
 let control: SessionControl;
 
-const post = (path: string, body: unknown) =>
+const TOKEN = 'test-operator-token';
+
+const post = (path: string, body: unknown, token: string | null = TOKEN) =>
   fetch(BASE + path, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: {
+      'content-type': 'application/json',
+      ...(token ? { 'x-operator-token': token } : {}),
+    },
     body: JSON.stringify(body),
   });
 
@@ -71,6 +79,29 @@ async function raise() {
 }
 
 describe('operator console authorization', () => {
+  /**
+   * The token used to default to the empty string, which made the check pass
+   * unconditionally — so the endpoint that authorises an irreversible posting
+   * was open to anything that could reach the port, and the audit line recorded
+   * whatever name the caller asserted.
+   */
+  it('refuses every mutating endpoint without the token', async () => {
+    const { pending, id } = await raise();
+    expect((await post(`/i/${id}/claim`, { operator: 'eve' }, null)).status).toBe(403);
+    expect((await post(`/i/${id}/input`, { operator: 'eve', kind: 'key', key: 'Enter' }, null)).status).toBe(403);
+    expect((await post(`/i/${id}/resolve`, { operator: 'eve', disposition: 'resume' }, null)).status).toBe(403);
+    await pending;
+  });
+
+  it('refuses reads without the token, including the queue and the live screen', async () => {
+    const { pending, id } = await raise();
+    expect((await fetch(`${BASE}/api/interventions`)).status).toBe(403);
+    expect((await fetch(`${BASE}/api/i/${id}`)).status).toBe(403);
+    expect((await fetch(`${BASE}/i/${id}/screenshot`)).status).toBe(403);
+    expect((await fetch(`${BASE}/i/${id}/controls`)).status).toBe(403);
+    await pending;
+  });
+
   it('refuses to approve an intervention nobody has claimed', async () => {
     const { pending, id } = await raise();
     const res = await post(`/i/${id}/resolve`, { disposition: 'resume', note: 'approved by nobody' });

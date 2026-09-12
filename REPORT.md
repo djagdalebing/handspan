@@ -111,9 +111,11 @@ the way a human recovers one, from the label printed beside it: on the web that
 was the table cell to the left, on the terminal the text before the colon. Same
 idea, completely different mechanism.
 
-Nothing above `Surface` changed to make that work. `evidence/14` replays the
-capability a model recorded against the *frameset web app* against the green
-screen — same steps, same semantic targets, same outputs, same checkpoint, and
+Nothing above `Surface` changed to make that work. Both halves of the loop run
+there: `evidence/14` records a capability *from the character grid* — probes
+included, repairing a hallucinated detector into `MCS-0404` exactly as on the
+web — and then replays the capability a model recorded against the *frameset
+web app* against the green screen — same steps, same semantic targets, same outputs, same checkpoint, and
 the same `MEMBER_NOT_FOUND`/`MEMBER_RESTRICTED` detectors, which fire because
 both surfaces print the same `MCS-` codes. The entire tenant delta is two
 patches: where the session starts, and one heading the terminal renders with a
@@ -218,7 +220,10 @@ salted per process — unsalted, four hex characters over a five-digit member
 number is an encoding, not a pseudonym. Screenshots are masked in-page by label
 *and* value. One asymmetry: the operator's live view is unmasked, because a
 masked screen is useless to the person we asked to finish the task — which is
-also why the console binds loopback only.
+why the console binds loopback only and requires a token on every endpoint,
+reads included, generating one when the deployment does not supply it. It
+defaulted to no authentication at all, undocumented, which made the endpoint
+that authorises a posting open to anything that could reach the port.
 
 **Limits I would not paper over.** Three rounds of adversarial review each found
 guardrails bypassable *after* I had written prose asserting they held, and the

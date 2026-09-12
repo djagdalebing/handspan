@@ -1,9 +1,9 @@
 {
   "schema": "capability/v1",
-  "id": "meridian.member.savings-balance",
+  "id": "meridian.terminal.member-savings-balance",
   "version": "1.0.0",
-  "name": "Read member savings balance",
-  "description": "Look up a member by number in MERIDIAN Core and return the current balance of their share savings account.",
+  "name": "Read member savings balance (green screen)",
+  "description": "Look up a member on the MERIDIAN green-screen terminal and return the current balance of their share savings account.",
   "app": {
     "vendor": "Meridian Systems",
     "product": "MERIDIAN Core Member Services",
@@ -20,7 +20,7 @@
       "description": "The member number to look up.",
       "sensitivity": "pii",
       "pattern": "^[0-9]{5}$",
-      "example": "«memberId#b1e065»"
+      "example": "«memberId#85f872»"
     }
   ],
   "outputs": [
@@ -32,7 +32,7 @@
         "from": "readout",
         "label": {
           "mode": "contains",
-          "value": "Member Name:",
+          "value": "Member Name",
           "caseSensitive": false
         }
       },
@@ -48,29 +48,13 @@
         "from": "readout",
         "label": {
           "mode": "contains",
-          "value": "Status:",
+          "value": "Status",
           "caseSensitive": false
         }
       },
       "transform": "upper",
       "required": true,
       "sensitivity": "internal"
-    },
-    {
-      "name": "ssnLast4",
-      "type": "string",
-      "description": "Last four digits of the member's SSN.",
-      "source": {
-        "from": "readout",
-        "label": {
-          "mode": "contains",
-          "value": "SSN (last 4):",
-          "caseSensitive": false
-        }
-      },
-      "transform": "trim",
-      "required": true,
-      "sensitivity": "pii"
     },
     {
       "name": "savingsBalance",
@@ -98,7 +82,7 @@
       "intent": "Open MERIDIAN Core Member Services at its entry point",
       "action": {
         "kind": "navigate",
-        "url": "http://127.0.0.1:4311/"
+        "url": "tn3270://127.0.0.1:4331/"
       },
       "risk": "safe",
       "waitFor": {
@@ -181,7 +165,7 @@
     },
     {
       "id": "s03",
-      "intent": "Submit the sign-on form",
+      "intent": "Submit the sign-on screen",
       "action": {
         "kind": "click",
         "target": {
@@ -198,9 +182,7 @@
           "role": "textbox",
           "name": "Member Number",
           "nameMatch": "exact",
-          "framePath": [
-            "main"
-          ]
+          "framePath": []
         }
       },
       "optional": false,
@@ -212,16 +194,14 @@
     },
     {
       "id": "s04",
-      "intent": "Enter the member number into the inquiry form",
+      "intent": "Enter the member number into the inquiry field",
       "action": {
         "kind": "type",
         "target": {
           "role": "textbox",
           "name": "Member Number",
           "nameMatch": "exact",
-          "framePath": [
-            "main"
-          ]
+          "framePath": []
         },
         "text": "{{memberId}}",
         "clearFirst": true
@@ -233,9 +213,7 @@
           "role": "button",
           "name": "Search",
           "nameMatch": "exact",
-          "framePath": [
-            "main"
-          ]
+          "framePath": []
         }
       },
       "optional": false,
@@ -254,17 +232,15 @@
           "role": "button",
           "name": "Search",
           "nameMatch": "exact",
-          "framePath": [
-            "main"
-          ]
+          "framePath": []
         }
       },
       "risk": "safe",
       "waitFor": {
-        "type": "textMatches",
+        "type": "urlMatches",
         "value": {
           "mode": "contains",
-          "value": "MEMBER DETAIL — {{memberId}}",
+          "value": "/MEMBER_DETAIL",
           "caseSensitive": false
         }
       },
@@ -321,23 +297,6 @@
       "verified": true
     },
     {
-      "code": "INVALID_MEMBER_NUMBER",
-      "description": "The member number supplied was not numeric.",
-      "when": {
-        "type": "textMatches",
-        "value": {
-          "mode": "contains",
-          "value": "Member number must be numeric",
-          "caseSensitive": false
-        }
-      },
-      "classification": "business",
-      "afterSteps": [],
-      "terminal": true,
-      "outputs": [],
-      "verified": false
-    },
-    {
       "code": "MEMBER_RESTRICTED",
       "description": "The operator is not authorised to view this member record.",
       "when": {
@@ -355,82 +314,26 @@
       "verified": true
     }
   ],
-  "interstitials": [
-    {
-      "code": "SESSION_EXPIRED",
-      "description": "The operator session timed out and sign-on is required again.",
-      "when": {
-        "type": "textMatches",
-        "value": {
-          "mode": "contains",
-          "value": "session has timed out",
-          "caseSensitive": false
-        }
-      },
-      "do": [
-        {
-          "kind": "click",
-          "target": {
-            "role": "button",
-            "name": "Sign On",
-            "nameMatch": "exact"
-          }
-        }
-      ],
-      "maxOccurrences": 2,
-      "restartFlow": false,
-      "escalateOnFailure": true,
-      "verified": false
-    },
-    {
-      "code": "COMPLIANCE_ACK",
-      "description": "A compliance notice the operator must acknowledge before the record displays.",
-      "when": {
-        "type": "textMatches",
-        "value": {
-          "mode": "contains",
-          "value": "This member record carries a compliance review flag. You mus",
-          "caseSensitive": false
-        }
-      },
-      "do": [
-        {
-          "kind": "click",
-          "target": {
-            "role": "button",
-            "name": "Acknowledge",
-            "nameMatch": "exact",
-            "framePath": [
-              "main"
-            ]
-          }
-        }
-      ],
-      "maxOccurrences": 2,
-      "restartFlow": false,
-      "escalateOnFailure": true,
-      "verified": true
-    }
-  ],
+  "interstitials": [],
   "policy": {
     "allowedOrigins": [
-      "http://127.0.0.1:4311"
+      "tn3270://127.0.0.1:4331"
     ],
     "maxSteps": 20,
     "confirmAtRisk": "irreversible"
   },
   "fingerprints": {
-    "s01": "c8f2709e",
-    "s02": "c8f2709e",
-    "s03": "c8f2709e",
-    "s04": "92140295",
-    "s05": "92140295"
+    "s01": "5d920532",
+    "s02": "5d920532",
+    "s03": "5d920532",
+    "s04": "11da983e",
+    "s05": "11da983e"
   },
   "provenance": {
-    "recordedAt": "2026-09-12T03:34:31.072Z",
+    "recordedAt": "2026-09-12T03:36:53.490Z",
     "recordedBy": "llm",
     "model": "scripted",
-    "discoveryRunId": "discover-«card#d2cd63»e24z",
-    "goal": "Sign on as the operator, look up member «memberId#b1e065» in Member Inquiry, and reach the member detail screen showing their share savings balance."
+    "discoveryRunId": "discover-«card#047c25»tmu8",
+    "goal": "Sign on at the terminal, look up member «memberId#85f872», and reach the member detail screen showing their share savings balance."
   }
 }

@@ -1,0 +1,31 @@
+{
+  "id": "meridian.terminal.member-savings-balance",
+  "version": "1.0.0",
+  "name": "Read member savings balance (green screen)",
+  "description": "Look up a member on the MERIDIAN green-screen terminal and return the current balance of their share savings account.",
+  "goal": "Sign on at the terminal, look up member {{memberId}}, and reach the member detail screen showing their share savings balance.",
+  "entry": "tn3270://127.0.0.1:4331/",
+  "app": { "vendor": "Meridian Systems", "product": "MERIDIAN Core Member Services", "productVersion": "7.2.1" },
+  "inputs": [
+    {
+      "name": "memberId",
+      "type": "string",
+      "description": "The member number to look up.",
+      "sensitivity": "pii",
+      "pattern": "^[0-9]{5}$",
+      "example": "12345",
+      "required": true
+    }
+  ],
+  "values": { "memberId": "12345" },
+  "secretFields": [
+    { "nameMatches": "operator id", "secretRef": "MERIDIAN_OPERATOR_ID" },
+    { "nameMatches": "password", "secretRef": "MERIDIAN_OPERATOR_PASSWORD" }
+  ],
+  "probes": [
+    { "code": "MEMBER_NOT_FOUND", "description": "No member record exists for the number supplied.",
+      "inputs": { "memberId": "99999" }, "expect": "business_outcome" },
+    { "code": "MEMBER_RESTRICTED", "description": "The operator is not authorised to view this member record.",
+      "inputs": { "memberId": "77777" }, "expect": "business_outcome" }
+  ]
+}
