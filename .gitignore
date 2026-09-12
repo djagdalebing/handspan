@@ -6,3 +6,4 @@ evidence/**/*.tmp
 evidence/.test/
 .scratch/
 .scratch/
+.scratch/

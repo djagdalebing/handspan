@@ -29,6 +29,7 @@ as a pseudonym rather than its value.
 | `09-escalation-human-takeover` | The operator posts it themselves in the live session, then releases with "complete". | `success`, **10** steps — the engine verified the checkpoint instead of replaying the step the human did |
 | `10-escalation-stuck-recovery` | The *unreviewed* draft's recovery fails, the run gets stuck, and an operator signs the session back on by hand. | `success` after handoff |
 | `11-cross-tenant-overlay` | The same capability run against a second institution via a tenant overlay. | `success`, drift reported |
+| `14-surface-seam-terminal` | The **same capability**, recorded against the frameset web app, replayed against a 3270-style green screen over a socket. Output in `14-green-screen.txt`. | `success` + `business_outcome` |
 | `13-guardrails-hostile-overlay` | Two tenant overlays attempting privilege escalation, both refused. Output in `13-hostile-overlays.txt`. | `POLICY_DENIED` / `NEEDS_HUMAN` |
 | `12-agent-invocation` | What a calling agent gets back. | see `agent-invocation.json` |
 
@@ -87,6 +88,21 @@ with driving the session as someone else's claim.
 
 The fixtures are in `tests/fixtures/`, so these stay negative tests rather than
 a one-off demonstration.
+
+## The seam, exercised rather than asserted
+
+`14-green-screen.txt` is the one I would read first. The capability in it was
+recorded by a model driving a frameset web app with no ids, labels or ARIA. It
+is replayed there against a completely different surface — an 80x24 grid of
+characters over a TCP socket, no DOM, no URL — and returns the same typed
+outputs, then the same `MEMBER_NOT_FOUND` business outcome for member 99999.
+
+Nothing above `Surface` changed. The steps, the semantic targets, the condition
+language, the checkpoint and the outcome detectors are all inherited; the
+detectors fire because both surfaces print the same `MCS-` codes, and they were
+built by probing the *web* app. The entire tenant delta is two patches: where
+the session starts, and one heading the terminal renders with a hyphen where the
+web app uses an em dash.
 
 ## Things worth opening
 

@@ -1,7 +1,8 @@
 {
   "allowedOrigins": [
     "http://127.0.0.1:4311",
-    "http://127.0.0.1:4321"
+    "http://127.0.0.1:4321",
+    "tn3270://127.0.0.1:4331"
   ],
   "allowedPathPrefixes": [],
   "deniedPathPrefixes": [
@@ -20,5 +21,10 @@
   "maxSteps": 40,
   "runTimeoutMs": 300000,
   "escalationTimeoutMs": 600000,
-  "allowCallerOverrides": false
+  "allowCallerOverrides": false,
+  "allowedSchemes": [
+    "http",
+    "https",
+    "tn3270"
+  ]
 }

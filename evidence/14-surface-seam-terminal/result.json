@@ -1,0 +1,30 @@
+{
+  "runId": "replay-20260912-025309-dnwv",
+  "capability": {
+    "id": "meridian.member.savings-balance",
+    "version": "1.1.0"
+  },
+  "startedAt": "2026-09-12T02:53:09.272Z",
+  "durationMs": 88,
+  "stepsExecuted": 6,
+  "evidenceDir": "evidence/14-surface-seam-terminal",
+  "recoveries": [],
+  "drift": {
+    "changedSteps": [
+      "s01",
+      "s02",
+      "s03",
+      "s04",
+      "s05"
+    ],
+    "relaxedTargets": [],
+    "frameMismatches": [
+      "s04",
+      "s05"
+    ]
+  },
+  "status": "business_outcome",
+  "code": "MEMBER_NOT_FOUND",
+  "message": "No member record exists for the number supplied.",
+  "outputs": {}
+}

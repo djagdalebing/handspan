@@ -32,6 +32,16 @@ export interface PolicyConfig {
   /** Paths that are never permitted even on an allowed origin. */
   deniedPathPrefixes: string[];
   allowedActions: Array<'navigate' | 'click' | 'type' | 'select' | 'press' | 'wait' | 'run_capability'>;
+  /**
+   * Location schemes the deployment permits, e.g. `http`, `https`, `tn3270`.
+   *
+   * The allowlist is about *where you are*, not about the web. A green-screen
+   * session's location is `tn3270://host:port/SCREEN` and a desktop app's
+   * would be something like `app://process/window`; the same origin check
+   * applies to all of them, which is what stops the policy from being a
+   * web-only concept the seam cannot carry.
+   */
+  allowedSchemes: string[];
   /** Steps at or above this risk need a human decision. */
   confirmAtRisk: Risk;
   maxSteps: number;
@@ -60,6 +70,7 @@ export const DEFAULT_POLICY: PolicyConfig = {
   allowedPathPrefixes: [],
   deniedPathPrefixes: [],
   allowedActions: ['navigate', 'click', 'type', 'select', 'press', 'wait', 'run_capability'],
+  allowedSchemes: ['http', 'https'],
   confirmAtRisk: 'irreversible',
   maxSteps: 40,
   runTimeoutMs: 5 * 60_000,
@@ -74,6 +85,19 @@ export type Decision =
 
 const RANK: Record<Risk, number> = { safe: 0, mutating: 1, irreversible: 2 };
 
+/**
+ * Origin of a location, for any scheme.
+ *
+ * `URL.origin` returns the string "null" for schemes the spec does not treat
+ * as special, which quietly matches nothing — so a non-web surface would have
+ * been denied for the wrong reason, or worse, compared "null" to "null".
+ */
+function originOf(u: URL): string {
+  const scheme = u.protocol.replace(/:$/, '');
+  if (u.origin && u.origin !== 'null') return u.origin;
+  return `${scheme}://${u.host}`;
+}
+
 /** Label patterns that suggest an action commits something. */
 const IRREVERSIBLE_LABEL =
   /\b(post|commit|transfer|wire|disburse|delete|remove|void|purge|charge|release|approve|deny|send|close\s+account|write.?off|reverse)\b/i;
@@ -87,19 +111,20 @@ export class Policy {
     return new Policy({ ...DEFAULT_POLICY, ...partial });
   }
 
-  /** Hard boundary. Applies to discovery and replay identically. */
+  /** Hard boundary. Applies to discovery and replay, on any surface. */
   checkUrl(rawUrl: string): Decision {
     let u: URL;
     try {
       u = new URL(rawUrl);
     } catch {
-      return { decision: 'deny', reason: `not a valid URL: ${rawUrl}` };
+      return { decision: 'deny', reason: `not a valid location: ${rawUrl}` };
     }
-    if (!['http:', 'https:'].includes(u.protocol)) {
-      return { decision: 'deny', reason: `protocol ${u.protocol} is not permitted` };
+    const scheme = u.protocol.replace(/:$/, '');
+    if (!this.config.allowedSchemes.includes(scheme)) {
+      return { decision: 'deny', reason: `scheme ${scheme} is not permitted` };
     }
-    if (!this.config.allowedOrigins.includes(u.origin)) {
-      return { decision: 'deny', reason: `origin ${u.origin} is not on the allowlist` };
+    if (!this.config.allowedOrigins.includes(originOf(u))) {
+      return { decision: 'deny', reason: `origin ${originOf(u)} is not on the allowlist` };
     }
     for (const denied of this.config.deniedPathPrefixes) {
       if (u.pathname.startsWith(denied)) {

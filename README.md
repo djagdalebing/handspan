@@ -42,6 +42,16 @@ export GEMINI_API_KEY=...
 export HS_GEMINI_MODEL=gemini-2.5-flash-lite   # optional; this is the default
 ```
 
+Deployment config is read from the environment rather than the command line,
+because a caller who can point `--policy` at their own file has replaced the
+rules rather than bent them:
+
+```bash
+export HS_POLICY_FILE=config/policy.json       # allowlist, risk gate, timeouts
+export HS_TENANTS_FILE=config/tenants.json     # tenant → permitted origins
+export HS_CAPABILITY_DIR=capabilities
+```
+
 A note from actually running this: the Gemini free tier is **20 requests per
 day, per model**, and a discovery run costs about seven. The quota is scoped
 per model, so if one is exhausted, pointing `HS_GEMINI_MODEL` at another gives
@@ -66,7 +76,14 @@ exercise cross-institution reuse.
 ```bash
 npm run app                                   # tenant 1 on :4311
 TENANT=northgate PORT=4321 npm run app        # tenant 2 on :4321
+npm run green                                 # 3270-style green screen on :4331
 ```
+
+The green screen is the second surface. It serves the same member data as an
+80x24 grid of characters over a socket — no DOM, no ids, no accessibility tree,
+no URL — because that is what a large share of credit-union back offices
+actually are, and because a seam nothing else has been built against is a
+diagram rather than an abstraction.
 
 ## Demo path
 
@@ -139,6 +156,18 @@ npx tsx scripts/operator-demo.ts --disposition resume &     # approve and hand b
 npx tsx scripts/operator-demo.ts --takeover &               # post it manually, then hand back
 ```
 
+### The same capability on a completely different surface
+
+The capability recorded against the frameset web app, replayed against the green
+screen. Same steps, same semantic targets, same outputs, same outcome detectors;
+the whole delta is two patches in a tenant overlay.
+
+```bash
+npx tsx src/cli.ts replay meridian.member.savings-balance@1.1.0 \
+  --overlay capabilities/meridian.member.savings-balance@1.1.0.terminal.overlay.json \
+  --input memberId=12345
+```
+
 ### Cross-tenant reuse
 
 The same capability, run against the second institution via an overlay of typed
@@ -161,7 +190,7 @@ npx tsx src/cli.ts invoke meridian.member.savings-balance@1.1.0 --input memberId
 
 ```bash
 ./scripts/capture-evidence.sh    # regenerates /evidence from scratch
-npm test                         # 104 tests, including end-to-end against the real app
+npm test                         # 114 tests, incl. end-to-end against both surfaces
 npm run typecheck
 ```
 
@@ -172,6 +201,7 @@ src/surface/            the seam: normalized perception + action, surface-agnost
   types.ts                Surface, UiNode, Action, TargetDescriptor
   web/perceive.ts         in-page: turns hostile DOM into a normalized control list
   web/playwright-surface.ts  the only file that knows Playwright exists
+  terminal/terminal-surface.ts  the second driver: characters on a 3270-style screen
 src/artifact/           the capability schema, storage, tenant overlays, agent catalog
 src/discovery/          the LLM loop and the recorder that turns a run into an artifact
 src/replay/             deterministic executor, locator, conditions, extraction, results

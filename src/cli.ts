@@ -23,6 +23,7 @@ import { RunLog, newRunId } from './observability/run-log.js';
 import { SessionControl } from './escalation/control.js';
 import { broker } from './escalation/broker.js';
 import { WebSurface } from './surface/web/playwright-surface.js';
+import { TerminalSurface } from './surface/terminal/terminal-surface.js';
 import { runDiscovery } from './discovery/agent.js';
 import { recordCapability } from './discovery/recorder.js';
 import { probeAndVerify, type ProbeCase } from './discovery/probe.js';
@@ -76,7 +77,21 @@ function kvPairs(values: string[] = []): Record<string, string> {
   return out;
 }
 
-function loadPolicy(path = 'config/policy.json'): Policy {
+/**
+ * Config paths are the *host's*, not the caller's.
+ *
+ * `--policy` and `--tenants` were ordinary flags, which made two controls
+ * caller-supplied: point `--tenants` at a one-line file and a capability
+ * recorded against one institution reaches another's instance. Worse, the
+ * override check itself loaded the policy from `--policy`, so it asked the
+ * attacker's own file for permission. These now come from the environment,
+ * where a deployment sets them, and the flags are treated as overrides.
+ */
+const hostPolicyPath = (): string => process.env.HS_POLICY_FILE ?? 'config/policy.json';
+const hostTenantsPath = (): string => process.env.HS_TENANTS_FILE ?? 'config/tenants.json';
+const hostCapabilityDir = (): string => process.env.HS_CAPABILITY_DIR ?? 'capabilities';
+
+function loadPolicy(path = hostPolicyPath()): Policy {
   const raw = JSON.parse(readFileSync(path, 'utf8')) as Partial<PolicyConfig>;
   return Policy.from(raw);
 }
@@ -84,7 +99,7 @@ function loadPolicy(path = 'config/policy.json'): Policy {
 // --------------------------------------------------------------- runtime --
 
 interface Runtime {
-  surface: WebSurface;
+  surface: WebSurface | TerminalSurface;
   log: RunLog;
   redactor: Redactor;
   control: SessionControl;
@@ -94,14 +109,28 @@ interface Runtime {
   dispose: () => Promise<void>;
 }
 
-async function bootstrap(kind: 'discover' | 'replay', args: Args): Promise<Runtime> {
+/**
+ * Picks the driver from the location the flow starts at.
+ *
+ * The scheme is the only thing that decides this, which is the seam working as
+ * intended: nothing else in the system needs to know which surface it is on.
+ */
+async function openSurface(runId: string, entry: string, args: Args): Promise<WebSurface | TerminalSurface> {
+  if (entry.startsWith('tn3270://')) {
+    const u = new URL(entry);
+    return TerminalSurface.connect(runId, { host: u.hostname, port: Number(u.port || 4331) });
+  }
+  return WebSurface.launch(runId, { headless: !bool(args, 'headed') });
+}
+
+async function bootstrap(kind: 'discover' | 'replay', args: Args, entry = 'http://'): Promise<Runtime> {
   const runId = newRunId(kind);
   const redactor = new Redactor();
   const log = new RunLog(runId, redactor);
-  const policy = loadPolicy(str(args, 'policy', 'config/policy.json'));
+  const policy = loadPolicy(str(args, 'policy', hostPolicyPath()));
   const credentials = new EnvCredentialProvider();
   const control = new SessionControl(runId);
-  const surface = await WebSurface.launch(runId, { headless: !bool(args, 'headed') });
+  const surface = await openSurface(runId, entry, args);
 
   await broker.start();
   broker.registerSession(runId, {
@@ -247,7 +276,7 @@ async function cmdDiscover(args: Args): Promise<number> {
       rt.log.event('note', { message: 'probe verification complete', notes: verified.notes, warnings: verified.warnings });
     }
 
-    const path = saveCapability(capability, str(args, 'out', 'capabilities'));
+    const path = saveCapability(capability, str(args, 'out', hostCapabilityDir()));
     rt.log.writeJson('capability.json', capability);
     rt.log.event('artifact.written', { path, id: capability.id, version: capability.version, warnings });
 
@@ -289,6 +318,12 @@ function checkOverrides(args: Args, policy: Policy, mode: 'replay' | 'invoke'): 
   const requested = [
     bool(args, 'risky') || str(args, 'risky') === 'proceed' ? '--risky proceed' : null,
     bool(args, 'allow-draft') ? '--allow-draft' : null,
+    // Redirecting where policy, tenants or capabilities are read from is a
+    // weakening too — arguably the most complete one, since it replaces the
+    // rules rather than bending them.
+    str(args, 'policy') ? '--policy' : null,
+    str(args, 'tenants') ? '--tenants' : null,
+    str(args, 'dir') ? '--dir' : null,
   ].filter(Boolean) as string[];
   if (requested.length === 0) return;
   if (mode === 'invoke') {
@@ -310,13 +345,13 @@ async function cmdReplay(args: Args, mode: 'replay' | 'invoke'): Promise<number>
   if (!ref) throw new Error(`usage: ${mode} <capabilityId[@version]> --input k=v ...`);
   const [id, version] = ref.split('@');
 
-  let capability = findCapability(id!, version, str(args, 'dir', 'capabilities'));
+  let capability = findCapability(id!, version, str(args, 'dir', hostCapabilityDir()));
   if (!capability) throw new Error(`no capability "${ref}" found`);
 
   const overlayPath = str(args, 'overlay');
   if (overlayPath) {
     const overlay = loadOverlay(overlayPath);
-    const applied = applyOverlay(capability, overlay, loadTenantRegistry(str(args, 'tenants', 'config/tenants.json')));
+    const applied = applyOverlay(capability, overlay, loadTenantRegistry(str(args, 'tenants', hostTenantsPath())));
     capability = applied.capability;
     process.stderr.write(
       `  [overlay] tenant ${overlay.tenant}: ${applied.applied.length} patch(es) applied` +
@@ -327,8 +362,13 @@ async function cmdReplay(args: Args, mode: 'replay' | 'invoke'): Promise<number>
   }
 
   const inputs = kvPairs(args.repeated.input);
-  checkOverrides(args, loadPolicy(str(args, 'policy', 'config/policy.json')), mode);
-  const rt = await bootstrap('replay', args);
+  // Deliberately the host's policy: asking the file the caller supplied
+  // whether the caller may supply files is circular.
+  checkOverrides(args, loadPolicy(hostPolicyPath()), mode);
+
+  const entryStep = capability.steps.find((x) => x.action.kind === 'navigate');
+  const entry = entryStep && entryStep.action.kind === 'navigate' ? entryStep.action.url : 'http://';
+  const rt = await bootstrap('replay', args, entry);
 
   const fault = str(args, 'fault');
   if (fault) await injectFault(str(args, 'app-url', 'http://127.0.0.1:4311'), fault);
@@ -348,7 +388,7 @@ async function cmdReplay(args: Args, mode: 'replay' | 'invoke'): Promise<number>
       allowEscalation: !bool(args, 'no-escalation'),
       riskyActions: (str(args, 'risky', 'escalate') as 'escalate' | 'block' | 'proceed'),
       requireApproval: !bool(args, 'allow-draft'),
-      resolveCapability: (cid) => findCapability(cid, undefined, str(args, 'dir', 'capabilities')),
+      resolveCapability: (cid, ver) => findCapability(cid, ver, str(args, 'dir', hostCapabilityDir())),
     });
 
     const result = await engine.run(capability, inputs);
@@ -411,7 +451,7 @@ function printResult(r: Awaited<ReturnType<ReplayEngine['run']>>): void {
 // --------------------------------------------------------------- catalog --
 
 function cmdCatalog(args: Args): number {
-  const caps = listCapabilities(str(args, 'dir', 'capabilities'));
+  const caps = listCapabilities(str(args, 'dir', hostCapabilityDir()));
   if (bool(args, 'json')) {
     process.stdout.write(JSON.stringify(caps.map(toCatalogEntry), null, 2) + '\n');
     return 0;
@@ -442,7 +482,7 @@ function cmdCatalog(args: Args): number {
 
 function cmdCapability(args: Args): number {
   const sub = args._[1];
-  const dir = str(args, 'dir', 'capabilities');
+  const dir = str(args, 'dir', hostCapabilityDir());
   if (sub !== 'approve') throw new Error('usage: capability approve <id@version>');
   const ref = args._[2];
   if (!ref) throw new Error('usage: capability approve <id@version>');

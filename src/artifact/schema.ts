@@ -190,6 +190,17 @@ export const zStepAction = z.union([
   z.object({
     kind: z.literal('run_capability'),
     capability: z.string(),
+    /**
+     * Pin the composed capability.
+     *
+     * Without this, resolution returns whatever the newest file on disk
+     * happens to be, so dropping a new `signon@1.1.0` into the directory
+     * silently changes what an approved, reviewed, fingerprinted artifact
+     * does — with no drift signal, because fingerprints track the perceived
+     * screen and not the composition graph. Optional for readability of
+     * hand-written artifacts; the recorder always writes it.
+     */
+    version: z.string().regex(/^\d+\.\d+\.\d+$/).optional(),
     inputs: z.record(z.string()).default({}),
   }),
 ]);
@@ -394,6 +405,18 @@ export const zOverlay = z.object({
     reason: z.string().default(''),
   })).default([]),
   approval: z.enum(['draft', 'in_review', 'approved']).default('draft'),
+  /**
+   * An explicit attestation that a reviewer read the success-condition changes
+   * in this overlay.
+   *
+   * Patching a checkpoint, a step's postcondition or an outcome detector
+   * changes what *counts* as success — a checkpoint rewritten to something
+   * trivially true turns a failed run into a reported success. Tenants word
+   * these differently, so forbidding the change would force a re-recording per
+   * institution; requiring a separate affirmation means a generic `approval`
+   * flag copied from a sibling file is not enough to wave one through.
+   */
+  conditionsReviewedBy: z.string().optional(),
 });
 export type Overlay = z.infer<typeof zOverlay>;
 

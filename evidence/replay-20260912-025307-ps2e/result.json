@@ -1,0 +1,32 @@
+{
+  "runId": "replay-20260912-025307-ps2e",
+  "capability": {
+    "id": "meridian.member.savings-balance",
+    "version": "1.1.0"
+  },
+  "startedAt": "2026-09-12T02:53:07.296Z",
+  "durationMs": 96,
+  "stepsExecuted": 6,
+  "evidenceDir": "evidence/replay-20260912-025307-ps2e",
+  "recoveries": [],
+  "drift": {
+    "changedSteps": [
+      "s01",
+      "s02",
+      "s03",
+      "s04",
+      "s05"
+    ],
+    "relaxedTargets": [],
+    "frameMismatches": [
+      "s04",
+      "s05"
+    ]
+  },
+  "status": "success",
+  "outputs": {
+    "memberName": "«memberName#70b36b»",
+    "accountStatus": "ACTIVE",
+    "savingsBalance": 4812.55
+  }
+}

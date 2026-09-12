@@ -1,11 +1,11 @@
 {
-  "runId": "replay-20260911-210103-vm1b",
+  "runId": "replay-20260912-025207-jlhq",
   "capability": {
     "id": "meridian.member.open-sub-account",
     "version": "1.0.0"
   },
-  "startedAt": "2026-09-11T21:01:03.906Z",
-  "durationMs": 4548,
+  "startedAt": "2026-09-12T02:52:07.550Z",
+  "durationMs": 5048,
   "stepsExecuted": 10,
   "evidenceDir": "evidence/09-escalation-human-takeover",
   "recoveries": [],
@@ -16,7 +16,7 @@
   },
   "status": "success",
   "outputs": {
-    "confirmationNumber": "CNF60467889",
+    "confirmationNumber": "CNF81532010",
     "newAccountNumber": "S-1007"
   }
 }

@@ -134,9 +134,20 @@ export async function runDiscovery(o: DiscoveryOptions): Promise<DiscoveryOutcom
     }
 
     // --- decide ------------------------------------------------------------
+    // Everything describing the *screen* is redacted before it leaves the
+    // process. Masking the screenshot while shipping the same data as text in
+    // the same request is not a control, it is a costume — and that is exactly
+    // how this shipped: `textbox "Password" value="…"` went to the model
+    // beside a carefully masked image of the same field.
+    //
+    // The parameters block is deliberately *not* redacted. The model has to
+    // type the member number to do the task, so that value is the irreducible
+    // disclosure of this design; the honest production answer is a model
+    // inside the institution's boundary, which is why §6 says so rather than
+    // claiming this is solved.
     const parts: Part[] = [{
       text: [
-        `GOAL: ${o.goal}`,
+        `GOAL: ${o.redactor.string(o.goal)}`,
         '',
         'PARAMETERS AVAILABLE:',
         ...(o.paramDecls.length
@@ -144,10 +155,10 @@ export async function runDiscovery(o: DiscoveryOptions): Promise<DiscoveryOutcom
           : ['  (none)']),
         '',
         'STEPS SO FAR:',
-        renderHistory(history),
+        o.redactor.string(renderHistory(history)),
         '',
         'CURRENT SCREEN:',
-        renderObservation(obs),
+        o.redactor.string(renderObservation(obs)),
       ].join('\n'),
     }];
 
@@ -349,16 +360,16 @@ async function summarize(
 ): Promise<SummaryResponse> {
   const parts: Part[] = [{
     text: [
-      `GOAL: ${o.goal}`,
+      `GOAL: ${o.redactor.string(o.goal)}`,
       '',
       'STEPS TAKEN:',
-      ...recorded.map((r, i) => `${i + 1}. ${r.intent}`),
+      ...recorded.map((r, i) => `${i + 1}. ${o.redactor.string(r.intent)}`),
       '',
       'PARAMETERS THIS RUN USED:',
       ...o.paramDecls.map((p) => `  ${p.name} = ${JSON.stringify(o.params[p.name] ?? '')}`),
       '',
       'FINAL SCREEN:',
-      renderObservation(finalObs),
+      o.redactor.string(renderObservation(finalObs)),
     ].join('\n'),
   }];
 

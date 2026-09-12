@@ -297,7 +297,14 @@ export function collectInFrame(): FramePerception {
     const rt = rowTextOf(el);
     if (rt && rt !== node.name) node.rowText = rt;
 
-    if (role === 'textbox') node.value = (el as HTMLInputElement).value ?? '';
+    if (role === 'textbox') {
+      // A password field's value is never perceived, so it cannot reach a
+      // prompt, a log or an artifact by any route. Whether it is filled is the
+      // only thing anything above this layer needs to know.
+      const isSecret = (el.getAttribute('type') ?? '').toLowerCase() === 'password';
+      const raw = (el as HTMLInputElement).value ?? '';
+      node.value = isSecret ? (raw ? '«set»' : '') : raw;
+    }
     if (role === 'checkbox' || role === 'radio') node.value = (el as HTMLInputElement).checked ? 'true' : 'false';
     if (role === 'combobox') {
       const sel = el as HTMLSelectElement;

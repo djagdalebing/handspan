@@ -39,6 +39,7 @@ sleep 1
 # Disowned so that a later `wait $OP` cannot be confused by them.
 npx tsx target-app/server.ts >/tmp/meridian-a.log 2>&1 & disown
 TENANT=northgate PORT=4321 npx tsx target-app/server.ts >/tmp/meridian-b.log 2>&1 & disown
+npx tsx target-app/green-screen.ts >/tmp/meridian-green.log 2>&1 & disown
 sleep 4
 
 # Clear previous runs, keeping the index and the live-model run (which cannot
@@ -97,9 +98,12 @@ say "11. escalation — the unreviewed draft gets stuck; operator recovers by ha
 npx tsx scripts/operator-demo.ts --disposition resume --note "signed the session back on manually" \
   --actions '[{"kind":"click","role":"textbox","name":"Operator ID"},{"kind":"text","text":"demo"},{"kind":"click","role":"textbox","name":"Password"},{"kind":"text","text":"demo"},{"kind":"click","role":"button","name":"Sign On"}]' & OP=$!
 # --allow-draft weakens a control, so it needs a deployment policy that permits
-# caller overrides. The default config/policy.json refuses them.
+# caller overrides. The policy file is supplied by the *host* through the
+# environment, not as a flag — a caller who can point --policy at their own
+# file has replaced the rules rather than bent them.
+HS_POLICY_FILE=config/policy.operator-shell.json \
 npx tsx src/cli.ts replay meridian.member.savings-balance@1.0.0 --input memberId=12345 \
-  --fault session_expiry --allow-draft --policy config/policy.operator-shell.json
+  --fault session_expiry --allow-draft
 wait $OP || true
 keep replay 10-escalation-stuck-recovery
 
@@ -130,7 +134,20 @@ say "13. guardrails — two hostile overlays, both refused"
 } | tee evidence/13-hostile-overlays.txt
 keep replay 13-guardrails-hostile-overlay
 
-say "14. agent-facing catalog"
+say "14. surface seam — the same capability on a 3270-style green screen"
+TERM_OVERLAY=capabilities/meridian.member.savings-balance@1.1.0.terminal.overlay.json
+{
+  echo "### the web-recorded capability, replayed over a socket against characters"
+  npx tsx src/cli.ts replay meridian.member.savings-balance@1.1.0 --overlay "$TERM_OVERLAY" \
+    --input memberId=12345 --no-escalation 2>&1 || true
+  echo
+  echo "### and the same business outcome, from detectors built against the web app"
+  npx tsx src/cli.ts replay meridian.member.savings-balance@1.1.0 --overlay "$TERM_OVERLAY" \
+    --input memberId=99999 --no-escalation 2>&1 || true
+} | tee evidence/14-green-screen.txt
+keep replay 14-surface-seam-terminal
+
+say "15. agent-facing catalog"
 npx tsx src/cli.ts catalog --json > evidence/catalog.json
 # What a calling agent receives. Redacted on the way into the evidence
 # directory: the caller gets the real values, but evidence files outlive the
@@ -143,4 +160,5 @@ keep replay 12-agent-invocation
 
 cp capabilities/*.json evidence/ 2>/dev/null || true
 pkill -f "tsx target-app/server.ts" 2>/dev/null || true
+pkill -f "tsx target-app/green-screen.ts" 2>/dev/null || true
 say "done — see evidence/"

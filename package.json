@@ -16,7 +16,8 @@
     "operator": "tsx src/cli.ts operator",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "capability": "tsx src/cli.ts capability"
+    "capability": "tsx src/cli.ts capability",
+    "green": "tsx target-app/green-screen.ts"
   },
   "dependencies": {
     "express": "^4.19.2",

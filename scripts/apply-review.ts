@@ -50,7 +50,15 @@ const recovery = {
     type: 'textMatches' as const,
     value: { mode: 'contains' as const, value: 'session has timed out', caseSensitive: false },
   },
-  do: [{ kind: 'run_capability' as const, capability: 'meridian.session.signon', inputs: {} }],
+  // Pinned: an unpinned composition resolves to whatever is newest on disk,
+  // so a new sign-on capability would silently change what this approved
+  // artifact does.
+  do: [{
+    kind: 'run_capability' as const,
+    capability: 'meridian.session.signon',
+    version: '1.0.0',
+    inputs: {},
+  }],
   maxOccurrences: 2,
   restartFlow: true,
   escalateOnFailure: true,

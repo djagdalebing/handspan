@@ -54,8 +54,8 @@ export interface ReplayOptions {
   riskyActions: 'escalate' | 'block' | 'proceed';
   /** Refuse to replay a capability that is not `approved`. */
   requireApproval: boolean;
-  /** Resolves `run_capability` references. */
-  resolveCapability?: (id: string) => Capability | undefined;
+  /** Resolves `run_capability` references, honouring a pinned version. */
+  resolveCapability?: (id: string, version?: string) => Capability | undefined;
 }
 
 const POLL_MS = 350;
@@ -907,10 +907,19 @@ export class ReplayEngine {
       }
       case 'run_capability': {
         if (depth >= 2) return { ok: false, error: 'capability nesting limit reached' };
-        const sub = this.o.resolveCapability?.(action.capability);
-        if (!sub) return { ok: false, error: `capability "${action.capability}" is not in the catalog` };
-        this.o.log.event('note', { message: 'running nested capability', capability: action.capability });
-        const r = await new ReplayEngine({ ...this.o, requireApproval: false })
+        const sub = this.o.resolveCapability?.(action.capability, action.version);
+        if (!sub) {
+          const pin = action.version ? `@${action.version}` : '';
+          return { ok: false, error: `capability "${action.capability}${pin}" is not in the catalog` };
+        }
+        this.o.log.event('note', {
+          message: 'running nested capability',
+          capability: action.capability, version: sub.version, pinned: action.version ?? null,
+        });
+        // A composed capability is held to the same approval bar as the one
+        // that called it; inheriting `false` here would have made composition
+        // a way around the gate.
+        const r = await new ReplayEngine(this.o)
           .run(sub, interpolateDeep(action.inputs, bindings), depth + 1);
         return r.status === 'success'
           ? { ok: true }

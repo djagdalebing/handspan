@@ -87,32 +87,79 @@ export function loadTenantRegistry(path = 'config/tenants.json'): TenantRegistry
 }
 
 /**
- * Invariants an overlay may not change, compared **by value** against the base.
+ * What an overlay is allowed to change, as an allow-list.
  *
- * An earlier version denylisted path *spellings* (`steps[10].risk`), which is
- * the wrong shape of control and was defeated by patching one level up:
- * rewriting the whole of `steps[10]` with `risk: "safe"` wrote the same value
- * through a path the denylist never saw, and posted a real irreversible
- * transaction. Anything that enumerates ways of saying a thing loses to
- * someone who says it differently.
+ * Two earlier versions of this got the shape wrong. The first denylisted
+ * guarded *path spellings* and lost to patching one level up. The second
+ * compared a hand-enumerated set of fields by value afterwards and reverted
+ * what moved — better, but still an enumeration, so it missed `sensitivity`
+ * (a tenant could downgrade it and put a customer's name on disk), missed
+ * `interstitials` and `checkpoint` entirely, and "restored" injected outcome
+ * codes by looking them up in the base, where by definition they were absent.
+ * That last one reported a revert that had not happened, which is worse than
+ * no guardrail: it lied in its own audit trail.
  *
- * So the check is on the resolved artifact, not the patch: apply everything,
- * then compare these fields to the base and revert any that moved. Path
- * spelling becomes irrelevant.
+ * The lesson I kept failing to take is that enumerating what an attacker may
+ * not do loses to anyone who thinks of a thing not on the list. So this is
+ * inverted: a patch is refused unless its path matches something here, and it
+ * is refused *before* being applied, so nothing has to be put back and the
+ * audit line cannot describe a revert that did not occur.
+ *
+ * The list is what tenant specialisation actually needs: relabelled controls,
+ * a different host, a renamed column, differently-worded messages.
  */
-const INVARIANTS: Array<{ name: string; read: (c: Capability) => unknown }> = [
-  { name: 'approval', read: (c) => c.approval },
+const PATCHABLE: RegExp[] = [
+  /^name$/,
+  /^description$/,
+  /^app\.(productVersion|tenant)$/,
+  /^steps\[\d+\]\.action\.(url|option)$/,
+  /^steps\[\d+\]\.action\.target\.(name|nameMatch|group|ordinal|framePath|domHint|inRowContaining)$/,
+  /^steps\[\d+\]\.(timeoutMs|optional)$/,
+  /^steps\[\d+\]\.retry\.(attempts|backoffMs)$/,
+  /^steps\[\d+\]\.waitFor(\..*)?$/,
+  /^outputs\[\d+\]\.source(\..*)?$/,
+  /^outputs\[\d+\]\.transform$/,
+  /^outcomes\[\d+\]\.when(\..*)?$/,
+  /^interstitials\[\d+\]\.when(\..*)?$/,
+  /^interstitials\[\d+\]\.do\[\d+\]\.target\.(name|nameMatch|framePath)$/,
+  /^checkpoint(\..*)?$/,
+];
+
+/**
+ * Patchable, but only with a fresh pair of eyes.
+ *
+ * These paths decide what *counts* as success or as a recognised screen.
+ * Tenants genuinely word them differently, so forbidding the change would
+ * force a re-recording per institution — but a checkpoint rewritten to
+ * something trivially true turns a failed run into a reported success, so an
+ * overlay that touches one lands as `draft` and cannot be replayed unattended
+ * until a human has looked at it.
+ */
+const REQUIRES_REREVIEW: RegExp[] = [
+  /^checkpoint(\..*)?$/,
+  /^steps\[\d+\]\.waitFor(\..*)?$/,
+  /^outcomes\[\d+\]\.when(\..*)?$/,
+  /^interstitials\[\d+\]\.when(\..*)?$/,
+];
+
+/**
+ * A last-line self-audit over things no patch should be able to reach.
+ *
+ * With the allow-list above this should be unreachable, so if it ever fires
+ * the allow-list is wrong and the right response is to fail the run loudly
+ * rather than quietly repair the artifact and carry on.
+ */
+const SEALED: Array<{ name: string; read: (c: Capability) => unknown }> = [
+  // `approval` is deliberately not here: the allow-list already keeps patches
+  // away from it, and this function lowers it on purpose when an overlay
+  // changes what counts as success.
   { name: 'risk', read: (c) => c.risk },
-  { name: 'policy.confirmAtRisk', read: (c) => c.policy.confirmAtRisk },
-  { name: 'policy.maxSteps', read: (c) => c.policy.maxSteps },
-  // The flow's shape and each step's declared risk. A tenant specialises how a
-  // step is carried out; it does not get to add steps, remove them, reorder
-  // them, or decide that posting a transaction is no longer irreversible.
-  { name: 'step sequence', read: (c) => c.steps.map((x) => x.id).join(',') },
-  { name: 'step risk labels', read: (c) => c.steps.map((x) => `${x.id}:${x.risk}`).join(',') },
-  // Whether a recognised screen is an answer or a failure is part of the
-  // caller's contract, not a tenant's presentation detail.
-  { name: 'outcome classifications', read: (c) => c.outcomes.map((o) => `${o.code}:${o.classification}`).join(',') },
+  { name: 'policy', read: (c) => ({ ...c.policy, allowedOrigins: null }) },
+  { name: 'step sequence', read: (c) => c.steps.map((x) => `${x.id}:${x.risk}:${x.action.kind}`).join(',') },
+  { name: 'input sensitivity', read: (c) => c.inputs.map((i) => `${i.name}:${i.sensitivity}`).join(',') },
+  { name: 'output sensitivity', read: (c) => c.outputs.map((o) => `${o.name}:${o.sensitivity}:${o.type}`).join(',') },
+  { name: 'outcome codes', read: (c) => c.outcomes.map((o) => `${o.code}:${o.classification}`).join(',') },
+  { name: 'interstitial codes', read: (c) => c.interstitials.map((i) => `${i.code}:${i.restartFlow}`).join(',') },
 ];
 
 export function applyOverlay(
@@ -149,22 +196,23 @@ export function applyOverlay(
     }
   }
 
-  for (const patch of overlay.patches) {
-    const ok = setAtPath(clone as unknown as Record<string, unknown>, patch.path, patch.value);
-    if (ok) applied.push({ path: patch.path, reason: patch.reason });
-    else rejected.push({ path: patch.path, reason: 'path does not exist on the base capability' });
-  }
+  let needsReReview = false;
 
-  // Revert anything that moved a guarded value, however it was spelled.
-  for (const inv of INVARIANTS) {
-    const before = inv.read(base);
-    const after = inv.read(clone);
-    if (JSON.stringify(before) === JSON.stringify(after)) continue;
-    restoreInvariant(clone, base, inv.name);
-    rejected.push({
-      path: inv.name,
-      reason: `refused — an overlay may not change ${inv.name} (${JSON.stringify(after)} → reverted to ${JSON.stringify(before)})`,
-    });
+  for (const patch of overlay.patches) {
+    if (!PATCHABLE.some((re) => re.test(patch.path))) {
+      rejected.push({
+        path: patch.path,
+        reason: 'refused — not a path a tenant overlay may change',
+      });
+      continue;
+    }
+    const ok = setAtPath(clone as unknown as Record<string, unknown>, patch.path, patch.value);
+    if (!ok) {
+      rejected.push({ path: patch.path, reason: 'path does not exist on the base capability' });
+      continue;
+    }
+    if (REQUIRES_REREVIEW.some((re) => re.test(patch.path))) needsReReview = true;
+    applied.push({ path: patch.path, reason: patch.reason });
   }
 
   // Origins are a deployment fact about the tenant, not something the tenant's
@@ -192,6 +240,28 @@ export function applyOverlay(
     derivedFrom: { id: base.id, version: base.version },
   };
   clone.approval = overlay.approval === 'approved' && base.approval === 'approved' ? 'approved' : 'draft';
+  if (needsReReview && clone.approval === 'approved' && !overlay.conditionsReviewedBy) {
+    clone.approval = 'draft';
+    rejected.push({
+      path: 'approval',
+      reason:
+        'held at draft — this overlay changes what counts as success, so it needs ' +
+        '`conditionsReviewedBy` naming the reviewer who read that change',
+    });
+  } else if (needsReReview && overlay.conditionsReviewedBy) {
+    applied.push({
+      path: 'checkpoint/conditions',
+      reason: `success-condition changes attested by ${overlay.conditionsReviewedBy}`,
+    });
+  }
+
+  for (const sealed of SEALED) {
+    if (JSON.stringify(sealed.read(base)) === JSON.stringify(sealed.read(clone))) continue;
+    throw new Error(
+      `overlay for tenant "${overlay.tenant}" changed ${sealed.name}, which no patch should be able to reach. ` +
+      `This means the patchable allow-list is wrong; refusing the overlay rather than repairing it.`
+    );
+  }
 
   // Re-validate. An overlay writes arbitrary values into a typed document, so
   // the one code path that mutates an artifact is the last place to skip the
@@ -199,28 +269,6 @@ export function applyOverlay(
   // open the gate rather than close it.
   const capability = parseCapability(clone);
   return { capability, applied, rejected };
-}
-
-/** Puts one guarded field back the way the base had it. */
-function restoreInvariant(clone: Capability, base: Capability, name: string): void {
-  switch (name) {
-    case 'approval': clone.approval = base.approval; break;
-    case 'risk': clone.risk = base.risk; break;
-    case 'policy.confirmAtRisk': clone.policy.confirmAtRisk = base.policy.confirmAtRisk; break;
-    case 'policy.maxSteps': clone.policy.maxSteps = base.policy.maxSteps; break;
-    case 'outcome classifications':
-      for (const o of clone.outcomes) {
-        const original = base.outcomes.find((b) => b.code === o.code);
-        if (original) o.classification = original.classification;
-      }
-      break;
-    // A changed sequence or risk label means the step list itself is not
-    // trustworthy, so the whole list goes back.
-    case 'step sequence':
-    case 'step risk labels':
-      clone.steps = JSON.parse(JSON.stringify(base.steps)) as Capability['steps'];
-      break;
-  }
 }
 
 /**

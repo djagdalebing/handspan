@@ -1,0 +1,38 @@
+### the web-recorded capability, replayed over a socket against characters
+  [overlay] tenant meridian-terminal: 4 patch(es) applied
+    ~ steps[0].action.url — A terminal has no address bar; the entry location is the host and port.
+    ~ steps[5].waitFor.value.value — The green screen renders the heading with an ASCII hyphen where the web app uses an em dash.
+    ~ policy.allowedOrigins — from the tenant registry (Meridian green-screen terminal)
+    ~ checkpoint/conditions — success-condition changes attested by d.jagdale (verified the heading differs only in punctuation)
+
+  replay run replay-20260912-025307-ps2e
+  capability: meridian.member.savings-balance@1.1.0
+  operator console: http://127.0.0.1:4312/
+
+
+  ✓ SUCCESS  (6 steps, 96ms)
+    memberName = "RIVERA, DANA Q"
+    accountStatus = "ACTIVE"
+    savingsBalance = 4812.55
+    drift:    screen changed at [s01, s02, s03, s04, s05], relaxed match at [-], frame moved at [s04, s05]
+    evidence: evidence/replay-20260912-025307-ps2e
+
+
+### and the same business outcome, from detectors built against the web app
+  [overlay] tenant meridian-terminal: 4 patch(es) applied
+    ~ steps[0].action.url — A terminal has no address bar; the entry location is the host and port.
+    ~ steps[5].waitFor.value.value — The green screen renders the heading with an ASCII hyphen where the web app uses an em dash.
+    ~ policy.allowedOrigins — from the tenant registry (Meridian green-screen terminal)
+    ~ checkpoint/conditions — success-condition changes attested by d.jagdale (verified the heading differs only in punctuation)
+
+  replay run replay-20260912-025309-dnwv
+  capability: meridian.member.savings-balance@1.1.0
+  operator console: http://127.0.0.1:4312/
+
+
+  • BUSINESS_OUTCOME  (6 steps, 88ms)
+    code: MEMBER_NOT_FOUND
+    No member record exists for the number supplied.
+    drift:    screen changed at [s01, s02, s03, s04, s05], relaxed match at [-], frame moved at [s04, s05]
+    evidence: evidence/replay-20260912-025309-dnwv
+
