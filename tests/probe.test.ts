@@ -41,7 +41,6 @@ describe('probe verification', () => {
       {}
     );
     const fixed = r.capability.outcomes[0]!;
-    expect(fixed.verified).toBe(true);
     expect((fixed.when as { value: { value: string } }).value.value).toBe('MCS-0404');
     expect(r.warnings.join(' ')).toMatch(/never matches this application/);
   });
@@ -61,14 +60,43 @@ describe('probe verification', () => {
       .toContain('You are not permitted');
   });
 
-  it('marks a detector verified when it already matches', () => {
+  it('marks a detector verified when the run actually reported the outcome', () => {
     const r = verifyWithProbes(
       cap([outcome('MEMBER_NOT_FOUND', 'MCS-0404')]),
-      [probe('MEMBER_NOT_FOUND', 'MCS-0404 — No member record found.')],
+      [probe('MEMBER_NOT_FOUND', 'MCS-0404 — No member record found.', 'business_outcome:MEMBER_NOT_FOUND')],
       successObs, {}
     );
     expect(r.capability.outcomes[0]!.verified).toBe(true);
     expect(r.warnings.filter((w) => w.includes('MEMBER_NOT_FOUND'))).toHaveLength(0);
+  });
+
+  /**
+   * `verified` is exported to calling agents as a trust signal, so it has to
+   * mean "this detector produced this outcome on a real run" — not "some text
+   * was scraped off a screen". It used to be stamped from the scrape alone, and
+   * the shipped live-Gemini artifact proved the gap: three probes ended
+   * TARGET_NOT_FOUND and the detector was still marked verified.
+   */
+  it('refuses to verify a detector when the run did not report the outcome', () => {
+    const r = verifyWithProbes(
+      cap([outcome('MEMBER_NOT_FOUND', 'MCS-0404')]),
+      [probe('MEMBER_NOT_FOUND', 'MCS-0404 — No member record found.', 'failure')],
+      successObs, {}
+    );
+    expect(r.capability.outcomes[0]!.verified).toBe(false);
+    expect(r.pending).toContain('MEMBER_NOT_FOUND');
+  });
+
+  it('leaves a repaired detector unproven until a re-probe fires it', () => {
+    const r = verifyWithProbes(
+      cap([outcome('MEMBER_NOT_FOUND', 'No matching member found')]),
+      [probe('MEMBER_NOT_FOUND', 'MCS-0404 — No member record found.')],
+      successObs, {}
+    );
+    const fixed = r.capability.outcomes[0]!;
+    expect((fixed.when as { value: { value: string } }).value.value).toBe('MCS-0404');
+    expect(fixed.verified).toBe(false);
+    expect(r.pending).toContain('MEMBER_NOT_FOUND');
   });
 
   // A marker that fires on two different conditions is worse than none.

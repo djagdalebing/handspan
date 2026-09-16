@@ -1,13 +1,13 @@
 {
-  "runId": "replay-20260912-033649-ytub",
+  "runId": "replay-20260916-222056-dqs6",
   "capability": {
     "id": "meridian.member.open-sub-account",
     "version": "1.0.0"
   },
-  "startedAt": "2026-09-12T03:36:50.123Z",
-  "durationMs": 523,
+  "startedAt": "2026-09-16T22:20:56.297Z",
+  "durationMs": 521,
   "stepsExecuted": 0,
-  "evidenceDir": "evidence/replay-20260912-033649-ytub",
+  "evidenceDir": "evidence/replay-20260916-222056-dqs6",
   "recoveries": [],
   "drift": {
     "changedSteps": [],

@@ -1,4 +1,0 @@
-{"seq":0,"at":"2026-09-12T03:36:50.124Z","runId":"replay-20260912-033649-ytub","type":"run.start","data":{"mode":"replay","capability":"meridian.member.open-sub-account","version":"1.0.0","approval":"approved","inputs":["memberId","accountType","openingDeposit"]}}
-{"seq":1,"at":"2026-09-12T03:36:50.632Z","runId":"replay-20260912-033649-ytub","type":"observe","data":{"url":"about:blank","title":"","nodes":0}}
-{"seq":2,"at":"2026-09-12T03:36:50.637Z","runId":"replay-20260912-033649-ytub","type":"policy.decision","data":{"url":"http://127.0.0.1:4311/","decision":"deny","reason":"http://127.0.0.1:4311/ is refused: this capability declares no permitted origins"}}
-{"seq":3,"at":"2026-09-12T03:36:50.643Z","runId":"replay-20260912-033649-ytub","type":"run.end","data":{"status":"failure","class":"POLICY_DENIED","stepId":"s00","expected":"navigation within the permitted origins","observed":"http://127.0.0.1:4311/ is refused: this capability declares no permitted origins"}}

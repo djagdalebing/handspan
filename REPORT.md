@@ -91,10 +91,12 @@ text this app never prints, so it would never fire and a legitimate outcome woul
 surface as a step timeout. So discovery probes: a job declares one cheap fact
 ("member 99999 does not exist"), the recorded flow is replayed against it, and
 the detector is rebuilt from what the app actually says, preferring its error
-code to prose. Markers that also fire on the success screen or another probe's
-are rejected; a missing recovery is read off the stalled screen and proved by a
-second probe. Probes cost no model calls and run with irreversible steps
-blocked; what no probe covers ships `verified: false`.
+code to prose. Markers that also fire on the success screen or another probe's are rejected.
+A repaired detector is not trusted on the strength of having scraped some text:
+it is re-probed, and `verified` is set only when the run itself reports that
+outcome — which is what a calling agent reads the flag as meaning. Same for a
+recovery read off a stalled screen. Probes cost no model calls and run with
+irreversible steps blocked; what no probe proves ships `verified: false`.
 
 Session expiry cannot be resumed from, so recovery runs a separate sign-on
 capability and restarts — but **only for read-only capabilities**, since for
@@ -115,7 +117,11 @@ Nothing above `Surface` changed to make that work. Both halves of the loop run
 there: `evidence/14` records a capability *from the character grid* — probes
 included, repairing a hallucinated detector into `MCS-0404` exactly as on the
 web — and then replays the capability a model recorded against the *frameset
-web app* against the green screen — same steps, same semantic targets, same outputs, same checkpoint, and
+web app* against the green screen. One limit worth stating plainly: I wrote both
+applications, and they print the same `MCS-` error codes, which is exactly what
+lets the detectors port. A genuine cross-vendor pair would not hand you that,
+and the honest claim is that the *perception and action seam* holds, not that
+detector portability comes free — same steps, same semantic targets, same outputs, same checkpoint, and
 the same `MEMBER_NOT_FOUND`/`MEMBER_RESTRICTED` detectors, which fire because
 both surfaces print the same `MCS-` codes. The entire tenant delta is two
 patches: where the session starts, and one heading the terminal renders with a
@@ -127,13 +133,13 @@ checked exactly as `http://host:port`.
 
 **Cross-tenant reuse.** A tenant gets typed patches against a **pinned base
 version**, so the base improves once and is inherited everywhere while each
-institution's delta stays reviewable. The pin stops a base change silently
+institution's delta stays reviewable, and the pin stops a base change silently
 re-targeting a patch at a step that moved. Renaming one button needs patching
 two places — the step that clicks it and the condition that waits for it — and
 missing the second produced a flow that clicked the right button then timed out
-on the old one; hence a `rename` patch that rewrites a label at every reference
-and reports the count. Per-step fingerprints are the other half, recompared
-every replay, so a diverged tenant reports drift on runs that still succeed.
+on the old one; hence a `rename` that rewrites a label at every reference and
+reports the count. Per-step fingerprints are the other half, recompared every
+replay, so a diverged tenant reports drift on runs that still succeed.
 
 ## 5. Escalation & handoff
 
@@ -166,10 +172,13 @@ Human actions are recorded, typed *content* only as a character count.
 
 ## 6. Safety
 
-**The allowlist is the hard boundary**, enforced at one chokepoint every
-navigation passes through — discovery, replay, recovery handlers, operator
-navigation, and any surface — as the intersection of the deployment's policy and
-the capability's declared origins. For that second half to mean anything, a
+**The allowlist is the hard boundary.** Every navigation the *engine* makes —
+step, recovery handler, nested capability, any surface — goes through one
+chokepoint enforcing the intersection of the deployment's policy and the
+capability's declared origins. Operator navigation from the console is checked
+against the deployment policy only, not that intersection: an operator holding
+the lease can move the session anywhere the deployment permits. That is a gap,
+not a design — it needs the same chokepoint. For that second half to mean anything, a
 capability declares only the origins its recording touched, per-tenant origins
 come from a deployment-owned registry rather than from the overlay asking for
 them, and an empty list denies everything. The files naming those rules come
@@ -189,17 +198,18 @@ That label is itself a floor. An overlay may not relabel a step's risk but may
 legitimately *retarget* one, so the gate resolves the target first and re-derives
 risk from the control it is about to operate, taking whichever is higher.
 
-Overlay integrity took three attempts and only the third has the right shape. A
-denylist of guarded path *spellings* lost to patching one level up. Comparing a
-hand-enumerated set of fields by value afterwards was better, but still an
-enumeration: it missed `sensitivity`, and "restored" injected outcome codes by
+Overlay integrity took three attempts. A denylist of path *spellings* lost to
+patching one level up. Comparing a hand-enumerated set of fields by value
+afterwards still missed `sensitivity`, and "restored" injected outcome codes by
 looking them up in a base where they did not exist — reporting a revert that had
 not happened, which is worse than no guardrail. It is now an **allow-list**: a
 patch is refused unless its path is one tenant specialisation actually needs,
-and refused *before* being applied, so nothing must be put back and the audit
-line cannot lie. Paths that change what *counts* as success stay patchable,
-since tenants word them differently, but need a named reviewer attesting they
-read the change. Recovery actions are risk-gated too, and a composed
+and refused *before* being applied, so the audit line cannot lie. Paths that change what *counts* as success stay patchable, since tenants word
+them differently, but require `conditionsReviewedBy` to be filled in. That is a
+*declaration*, not a control: it is free text in the same file, so it forces the
+question to be answered rather than proving the answer. Making it a control
+means signed overlays, which is a real gap and not something a required string
+papers over. Recovery actions are risk-gated too, and a composed
 `run_capability` is version-pinned.
 
 Irreversible actions **escalate rather than block**: in back-office banking the

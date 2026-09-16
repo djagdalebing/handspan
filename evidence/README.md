@@ -71,10 +71,14 @@ tenant overlay. `13-hostile-overlays.txt` is the regression evidence:
 
 - An overlay patching `steps[10].risk → "safe"` once posted a real irreversible
   transaction with no human in the loop. The first fix denylisted guarded path
-  spellings, and a second review defeated it by patching the ancestor path
-  `steps[10]` instead — same value, a path the denylist never saw, another real
-  transaction posted. Guarded fields are now compared *by value* against the
-  base and reverted, so both fixtures are refused identically.
+  spellings and was defeated by patching the ancestor path `steps[10]` instead.
+  The second compared a hand-enumerated set of fields by value afterwards and
+  reverted what moved — better, but still an enumeration, and it missed
+  `sensitivity` entirely. What ships is neither: an **allow-list** of the paths
+  a tenant specialisation actually needs, refused *before* being applied, so
+  nothing has to be put back and the audit line cannot describe a revert that
+  did not happen. `tests/overlay.test.ts` asserts that as a property over every
+  path outside the list, not one test per historical bug.
 - An overlay repointing a capability at a second institution and granting
   itself that origin once succeeded. It is now refused twice over: origins come
   from the deployment's tenant registry rather than the overlay, and the

@@ -1,6 +1,6 @@
 ### discovery on the second surface: a capability recorded from characters
 
-  discovery run discover-20260912-033653-tmu8
+  discovery run discover-20260916-222103-h7t8
   goal: Sign on at the terminal, look up member 12345, and reach the member detail screen showing their share savings balance.
   model: scripted
   operator console: http://127.0.0.1:4312/?token=evidence-capture-token
@@ -9,12 +9,16 @@
   probing 2 unhappy path(s) to verify the proposed detectors...
     MEMBER_NOT_FOUND: needs_human — "MCS-0404 - No member record found for the number entered."
     MEMBER_RESTRICTED: needs_human — "MCS-0403 - You are not authorized to view this member record."
+    MEMBER_NOT_FOUND: business_outcome:MEMBER_NOT_FOUND — "MCS-0404 - No member record found for the number entered."
+    MEMBER_RESTRICTED: business_outcome:MEMBER_RESTRICTED — "MCS-0403 - You are not authorized to view this member record."
     · outcome MEMBER_NOT_FOUND repaired: "No matching member found" → "MCS-0404" (what the app actually says)
     · outcome MEMBER_RESTRICTED added from a probe: "MCS-0403"
+    · outcome MEMBER_NOT_FOUND verified: the repaired detector produced it on a real run
+    · outcome MEMBER_RESTRICTED verified: the repaired detector produced it on a real run
 
   ✓ recorded meridian.terminal.member-savings-balance@1.0.0 (6 steps, approval=draft)
     artifact: capabilities/meridian.terminal.member-savings-balance@1.0.0.json
-    evidence: evidence/discover-20260912-033653-tmu8
+    evidence: evidence/discover-20260916-222103-h7t8
     success condition: page text contains "MEMBER DETAIL" AND field "Member Name" regex "."
     returns: memberName: string, accountStatus: string, savingsBalance: number
     proposed outcomes (for review): MEMBER_NOT_FOUND, MEMBER_RESTRICTED
@@ -31,17 +35,17 @@
     ~ policy.allowedOrigins — from the tenant registry (Meridian green-screen terminal)
     ~ checkpoint/conditions — success-condition changes attested by d.jagdale (verified the heading differs only in punctuation)
 
-  replay run replay-20260912-033756-hq7e
+  replay run replay-20260916-222207-9xx7
   capability: meridian.member.savings-balance@1.1.0
   operator console: http://127.0.0.1:4312/?token=evidence-capture-token
 
 
-  ✓ SUCCESS  (6 steps, 35ms)
-    memberName = "«memberName#d51b15»"
+  ✓ SUCCESS  (6 steps, 89ms)
+    memberName = "«memberName#4ab020»"
     accountStatus = "ACTIVE"
     savingsBalance = 4812.55
     drift:    screen changed at [s01, s02, s03, s04, s05], relaxed match at [-], frame moved at [s04, s05]
-    evidence: evidence/replay-20260912-033756-hq7e
+    evidence: evidence/replay-20260916-222207-9xx7
 
 
 ### and the same business outcome, from detectors built against the web app
@@ -51,14 +55,14 @@
     ~ policy.allowedOrigins — from the tenant registry (Meridian green-screen terminal)
     ~ checkpoint/conditions — success-condition changes attested by d.jagdale (verified the heading differs only in punctuation)
 
-  replay run replay-20260912-033757-069r
+  replay run replay-20260916-222209-qwkr
   capability: meridian.member.savings-balance@1.1.0
   operator console: http://127.0.0.1:4312/?token=evidence-capture-token
 
 
-  • BUSINESS_OUTCOME  (6 steps, 31ms)
+  • BUSINESS_OUTCOME  (6 steps, 73ms)
     code: MEMBER_NOT_FOUND
     No member record exists for the number supplied.
     drift:    screen changed at [s01, s02, s03, s04, s05], relaxed match at [-], frame moved at [s04, s05]
-    evidence: evidence/replay-20260912-033757-069r
+    evidence: evidence/replay-20260916-222209-qwkr
 

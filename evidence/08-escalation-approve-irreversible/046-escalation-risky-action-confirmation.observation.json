@@ -1,8 +1,8 @@
 {
   "url": "http://127.0.0.1:4311/desk",
   "title": "MERIDIAN Core :: Desk",
-  "at": "2026-09-12T03:35:58.051Z",
-  "text": "MERIDIAN CORE Member Services 7.2.1 OPER: DEMO\n---\nMENU Member Inquiry Account Services Teller Ops Reports\n---\nCONFIRM SUB-ACCOUNT — «memberId#603ccf» Review the details below. Posting this request opens the account immediately and cannot be undone from this screen. Member: «member#0ea96d» Account Type: VACATION CLUB Opening Deposit: $50.00",
+  "at": "2026-09-16T22:20:02.638Z",
+  "text": "MERIDIAN CORE Member Services 7.2.1 OPER: DEMO\n---\nMENU Member Inquiry Account Services Teller Ops Reports\n---\nCONFIRM SUB-ACCOUNT — «memberId#4f3486» Review the details below. Posting this request opens the account immediately and cannot be undone from this screen. Member: «member#6038bf» Account Type: VACATION CLUB Opening Deposit: $50.00",
   "nodes": [
     {
       "ref": "n2_0",
@@ -56,11 +56,11 @@
       "ref": "n3_1",
       "role": "readout",
       "name": "Member",
-      "value": "«member#0ea96d»",
+      "value": "«member#6038bf»",
       "framePath": [
         "main"
       ],
-      "group": "CONFIRM SUB-ACCOUNT — «memberId#603ccf»",
+      "group": "CONFIRM SUB-ACCOUNT — «memberId#4f3486»",
       "bounds": {
         "x": 159,
         "y": 101,
@@ -76,7 +76,7 @@
       "framePath": [
         "main"
       ],
-      "group": "CONFIRM SUB-ACCOUNT — «memberId#603ccf»",
+      "group": "CONFIRM SUB-ACCOUNT — «memberId#4f3486»",
       "bounds": {
         "x": 159,
         "y": 119,

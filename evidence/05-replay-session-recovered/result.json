@@ -1,11 +1,11 @@
 {
-  "runId": "replay-20260912-033541-hm0n",
+  "runId": "replay-20260916-221943-ai7b",
   "capability": {
     "id": "meridian.member.savings-balance",
     "version": "1.1.0"
   },
-  "startedAt": "2026-09-12T03:35:42.045Z",
-  "durationMs": 5188,
+  "startedAt": "2026-09-16T22:19:43.461Z",
+  "durationMs": 5301,
   "stepsExecuted": 10,
   "evidenceDir": "evidence/05-replay-session-recovered",
   "recoveries": [
@@ -22,7 +22,7 @@
   },
   "status": "success",
   "outputs": {
-    "memberName": "«memberName#753a82»",
+    "memberName": "«memberName#c64afa»",
     "accountStatus": "ACTIVE",
     "savingsBalance": 4812.55
   }

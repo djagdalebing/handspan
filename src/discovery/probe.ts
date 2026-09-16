@@ -114,12 +114,21 @@ export function verifyWithProbes(
   probes: ProbeResult[],
   successObs: Observation,
   bindings: Bindings
-): { capability: Capability; warnings: string[]; notes: string[]; synthesised: string[] } {
+): {
+  capability: Capability;
+  warnings: string[];
+  notes: string[];
+  synthesised: string[];
+  /** Detector codes that were built or repaired here and still need proving. */
+  pending: string[];
+} {
   const cap = JSON.parse(JSON.stringify(capability)) as Capability;
   const warnings: string[] = [];
   const notes: string[] = [];
   /** Codes whose recovery was proposed here and still needs re-probing. */
   const synthesised: string[] = [];
+  /** Outcome codes whose detector was built or repaired and is not yet proven. */
+  const pending: string[] = [];
 
   for (const probe of probes) {
     const expect = probe.case.expect ?? 'business_outcome';
@@ -174,8 +183,21 @@ export function verifyWithProbes(
     const matching = cap.outcomes.filter((o) => evaluate(o.when, probe.observation!, bindings, []));
 
     if (matching.length === 1 && matching[0]!.code === probe.case.code) {
-      matching[0]!.verified = true;
-      notes.push(`outcome ${probe.case.code} verified against a real screen`);
+      // Firing on the captured screen is necessary but not sufficient. What
+      // `verified` is supposed to mean — and what a calling agent reads it as —
+      // is that this detector actually produced this outcome on a real run. So
+      // the run's own verdict decides; a detector that matches a screen the
+      // engine nonetheless failed on is not verified, it is a candidate.
+      if (probe.status === `business_outcome:${probe.case.code}`) {
+        matching[0]!.verified = true;
+        notes.push(`outcome ${probe.case.code} verified: the run reported it`);
+      } else {
+        matching[0]!.verified = false;
+        pending.push(probe.case.code);
+        notes.push(
+          `outcome ${probe.case.code} matches the screen but the run returned ${probe.status}; re-probing`
+        );
+      }
       continue;
     }
 
@@ -223,7 +245,8 @@ export function verifyWithProbes(
     if (existing) {
       const was = describeMatcher(existing.when);
       existing.when = condition;
-      existing.verified = true;
+      existing.verified = false;
+      pending.push(probe.case.code);
       notes.push(`outcome ${probe.case.code} repaired: ${was} → "${marker}" (what the app actually says)`);
       warnings.push(
         `outcome ${probe.case.code} was proposed as ${was}, which never matches this application; ` +
@@ -238,14 +261,16 @@ export function verifyWithProbes(
         afterSteps: [],
         terminal: true,
         outputs: [],
-        verified: true,
+        // Proposed, not proven. The re-probe below decides.
+        verified: false,
       } satisfies Outcome);
+      pending.push(probe.case.code);
       notes.push(`outcome ${probe.case.code} added from a probe: "${marker}"`);
     }
   }
 
   warnings.push(...unverifiedWarnings(cap));
-  return { capability: cap, warnings, notes, synthesised };
+  return { capability: cap, warnings, notes, synthesised, pending };
 }
 
 /**
@@ -332,30 +357,52 @@ export async function probeAndVerify(
   const results = await runProbes(capability, cases, deps);
   const first = verifyWithProbes(capability, results, successObs, bindings);
 
-  if (first.synthesised.length === 0) {
+  // Anything proposed or repaired in that pass is unproven by construction: the
+  // detector that would have fired did not exist when the probe ran. Re-run
+  // those cases against the amended capability and let the *run's verdict*
+  // decide, so `verified` means "this produced this outcome on a real run"
+  // rather than "some text was scraped off a screen". Probes cost no model
+  // calls, which is what makes proving it affordable.
+  const retryCodes = [...new Set([...first.synthesised, ...first.pending])];
+  if (retryCodes.length === 0) {
     return { capability: first.capability, warnings: first.warnings, notes: first.notes, results };
   }
 
-  const retryCases = cases.filter((c) => first.synthesised.includes(c.code));
-  deps.log.event('note', { message: 're-probing proposed recoveries', codes: first.synthesised });
+  const retryCases = cases.filter((c) => retryCodes.includes(c.code));
+  deps.log.event('note', { message: 're-probing proposed detectors and recoveries', codes: retryCodes });
   const retryResults = await runProbes(first.capability, retryCases, deps);
 
-  // Drop the first pass's unverified list: some of those are about to be
-  // proven by the re-probe below, and a stale warning is worse than none.
   const warnings = first.warnings.filter((w) => !w.startsWith(UNVERIFIED));
   const notes = [...first.notes];
   const cap = first.capability;
 
   for (const r of retryResults) {
-    const hit = cap.interstitials.find((i) => i.code === r.case.code);
-    if (!hit) continue;
-    if (r.status === 'success') {
-      hit.verified = true;
-      notes.push(`interstitial ${r.case.code} verified: the proposed recovery cleared it and the flow completed`);
+    const expect = r.case.expect ?? 'business_outcome';
+
+    if (expect === 'success') {
+      const hit = cap.interstitials.find((i) => i.code === r.case.code);
+      if (!hit) continue;
+      if (r.status === 'success') {
+        hit.verified = true;
+        notes.push(`interstitial ${r.case.code} verified: the proposed recovery cleared it and the flow completed`);
+      } else {
+        warnings.push(
+          `interstitial ${r.case.code}: the proposed recovery still did not clear it (${r.status}); ` +
+          `a reviewer needs to supply the right steps`
+        );
+      }
+      continue;
+    }
+
+    const outcome = cap.outcomes.find((o) => o.code === r.case.code);
+    if (!outcome) continue;
+    if (r.status === `business_outcome:${r.case.code}`) {
+      outcome.verified = true;
+      notes.push(`outcome ${r.case.code} verified: the repaired detector produced it on a real run`);
     } else {
       warnings.push(
-        `interstitial ${r.case.code}: the proposed recovery still did not clear it (${r.status}); ` +
-        `a reviewer needs to supply the right steps`
+        `outcome ${r.case.code}: the detector was rebuilt from the screen but the run still returned ` +
+        `${r.status}, so it ships unverified — something other than the wording is wrong`
       );
     }
   }
