@@ -154,6 +154,7 @@ TERM_OVERLAY=capabilities/meridian.member.savings-balance@1.1.0.terminal.overlay
   npx tsx src/cli.ts replay meridian.member.savings-balance@1.1.0 --overlay "$TERM_OVERLAY" \
     --input memberId=99999 --no-escalation 2>&1 || true
 } | tee evidence/14-green-screen.txt
+keep discover 14-discovery-terminal
 keep replay 14-surface-seam-terminal
 
 say "15. agent-facing catalog"
@@ -168,6 +169,11 @@ cat evidence/agent-invocation.json
 keep replay 12-agent-invocation
 
 cp capabilities/*.json evidence/ 2>/dev/null || true
+# Any run directory that was not promoted to a numbered scenario is a
+# by-product of a scenario that ran more than once. Leaving them around means
+# unreviewed evidence in the deliverable.
+find evidence -mindepth 1 -maxdepth 1 -type d \( -name 'discover-*' -o -name 'replay-*' \) -exec rm -rf {} +
+
 pkill -f "tsx target-app/server.ts" 2>/dev/null || true
 pkill -f "tsx target-app/green-screen.ts" 2>/dev/null || true
 say "done — see evidence/"

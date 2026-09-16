@@ -22,7 +22,7 @@ import { randomBytes } from 'node:crypto';
 import type { Observation, Surface } from '../surface/types.js';
 import type { LiveControl } from '../surface/web/playwright-surface.js';
 import type { RunLog } from '../observability/run-log.js';
-import type { Policy } from '../safety/policy.js';
+import { denyLocation, type Policy } from '../safety/policy.js';
 import { SessionControl, type ReleaseSignal } from './control.js';
 import { renderConsole } from './console-html.js';
 
@@ -66,6 +66,12 @@ interface Registration {
   log: RunLog;
   policy: Policy;
   observe: () => Promise<Observation>;
+  /**
+   * Origins the capability under this session declares. The operator is bound
+   * by the same intersection the automation is: an authorised operator driving
+   * one institution's capability has no business steering it at another's.
+   */
+  allowedOrigins?: string[];
 }
 
 /**
@@ -107,6 +113,12 @@ export class EscalationBroker {
   /** A run registers its live session so the console can drive it. */
   registerSession(runId: string, reg: Registration): void {
     this.sessions.set(runId, reg);
+  }
+
+  /** Bind the operator to the origins the resolved capability declares. */
+  setSessionOrigins(runId: string, origins: string[]): void {
+    const reg = this.sessions.get(runId);
+    if (reg) reg.allowedOrigins = [...origins];
   }
 
   unregisterSession(runId: string): void {
@@ -367,13 +379,13 @@ export class EscalationBroker {
             break;
           case 'navigate': {
             const url = String(body.url ?? '');
-            const decision = reg.policy.checkUrl(url);
-            if (decision.decision !== 'allow') {
-              // The allowlist binds the operator console too. It is reachable
-              // over HTTP, which makes it a confused-deputy risk if it can
-              // send the session anywhere.
-              reg.log.event('policy.decision', { actor: 'operator', url, ...decision });
-              return res.status(403).json({ error: (decision as { reason: string }).reason });
+            // The same intersection the engine enforces. The console is
+            // reachable over HTTP, which makes it a confused deputy if it can
+            // send the session anywhere the deployment happens to permit.
+            const denial = denyLocation(reg.policy, reg.allowedOrigins ?? [], url);
+            if (denial) {
+              reg.log.event('policy.decision', { actor: 'operator', url, decision: 'deny', reason: denial });
+              return res.status(403).json({ error: denial });
             }
             await surface.rawNavigate?.(url);
             detail = url;

@@ -1,36 +1,36 @@
-{"seq":0,"at":"2026-09-16T23:27:34.892Z","runId":"replay-20260916-232734-uars","type":"run.start","data":{"mode":"replay","capability":"meridian.member.savings-balance","version":"1.1.0","approval":"approved","inputs":["memberId"]}}
-{"seq":1,"at":"2026-09-16T23:27:34.893Z","runId":"replay-20260916-232734-uars","type":"observe","data":{"url":"tn3270://127.0.0.1:4331/SIGN_ON","title":"SIGN ON","nodes":5}}
-{"seq":2,"at":"2026-09-16T23:27:34.895Z","runId":"replay-20260916-232734-uars","type":"policy.decision","data":{"url":"tn3270://127.0.0.1:4331/","decision":"allow"}}
-{"seq":3,"at":"2026-09-16T23:27:34.897Z","runId":"replay-20260916-232734-uars","type":"step.start","data":{"stepId":"s00","intent":"Open MERIDIAN Core Member Services at its entry point","kind":"navigate","risk":"safe","attempt":1}}
-{"seq":4,"at":"2026-09-16T23:27:34.899Z","runId":"replay-20260916-232734-uars","type":"policy.decision","data":{"url":"tn3270://127.0.0.1:4331/","decision":"allow"}}
-{"seq":5,"at":"2026-09-16T23:27:34.901Z","runId":"replay-20260916-232734-uars","type":"observe","data":{"url":"tn3270://127.0.0.1:4331/SIGN_ON","title":"SIGN ON","nodes":5}}
-{"seq":6,"at":"2026-09-16T23:27:34.902Z","runId":"replay-20260916-232734-uars","type":"step.end","data":{"stepId":"s00","ok":true}}
-{"seq":7,"at":"2026-09-16T23:27:34.904Z","runId":"replay-20260916-232734-uars","type":"observe","data":{"url":"tn3270://127.0.0.1:4331/SIGN_ON","title":"SIGN ON","nodes":5}}
-{"seq":8,"at":"2026-09-16T23:27:34.905Z","runId":"replay-20260916-232734-uars","type":"drift.detected","data":{"stepId":"s01","recorded":"c8f2709e","actual":"5d920532","url":"tn3270://127.0.0.1:4331/SIGN_ON"}}
-{"seq":9,"at":"2026-09-16T23:27:34.907Z","runId":"replay-20260916-232734-uars","type":"step.start","data":{"stepId":"s01","intent":"Enter the operator ID on the sign-on screen","kind":"type","risk":"safe","target":"textbox \"Operator ID\"","resolved":"Operator ID","attempt":1}}
-{"seq":10,"at":"2026-09-16T23:27:34.909Z","runId":"replay-20260916-232734-uars","type":"observe","data":{"url":"tn3270://127.0.0.1:4331/SIGN_ON","title":"SIGN ON","nodes":5}}
-{"seq":11,"at":"2026-09-16T23:27:34.911Z","runId":"replay-20260916-232734-uars","type":"step.end","data":{"stepId":"s01","ok":true}}
-{"seq":12,"at":"2026-09-16T23:27:34.912Z","runId":"replay-20260916-232734-uars","type":"observe","data":{"url":"tn3270://127.0.0.1:4331/SIGN_ON","title":"SIGN ON","nodes":5}}
-{"seq":13,"at":"2026-09-16T23:27:34.914Z","runId":"replay-20260916-232734-uars","type":"drift.detected","data":{"stepId":"s02","recorded":"c8f2709e","actual":"5d920532","url":"tn3270://127.0.0.1:4331/SIGN_ON"}}
-{"seq":14,"at":"2026-09-16T23:27:34.915Z","runId":"replay-20260916-232734-uars","type":"step.start","data":{"stepId":"s02","intent":"Enter the operator password on the sign-on screen","kind":"type","risk":"safe","target":"textbox \"Password\"","resolved":"Password","attempt":1}}
-{"seq":15,"at":"2026-09-16T23:27:34.918Z","runId":"replay-20260916-232734-uars","type":"observe","data":{"url":"tn3270://127.0.0.1:4331/SIGN_ON","title":"SIGN ON","nodes":5}}
-{"seq":16,"at":"2026-09-16T23:27:34.919Z","runId":"replay-20260916-232734-uars","type":"step.end","data":{"stepId":"s02","ok":true}}
-{"seq":17,"at":"2026-09-16T23:27:34.921Z","runId":"replay-20260916-232734-uars","type":"observe","data":{"url":"tn3270://127.0.0.1:4331/SIGN_ON","title":"SIGN ON","nodes":5}}
-{"seq":18,"at":"2026-09-16T23:27:34.922Z","runId":"replay-20260916-232734-uars","type":"drift.detected","data":{"stepId":"s03","recorded":"c8f2709e","actual":"5d920532","url":"tn3270://127.0.0.1:4331/SIGN_ON"}}
-{"seq":19,"at":"2026-09-16T23:27:34.925Z","runId":"replay-20260916-232734-uars","type":"step.start","data":{"stepId":"s03","intent":"Submit the sign-on form","kind":"click","risk":"safe","target":"button \"Sign On\"","resolved":"Sign On","attempt":1}}
-{"seq":20,"at":"2026-09-16T23:27:34.927Z","runId":"replay-20260916-232734-uars","type":"observe","data":{"url":"tn3270://127.0.0.1:4331/MEMBER_INQUIRY","title":"MEMBER INQUIRY","nodes":4}}
-{"seq":21,"at":"2026-09-16T23:27:34.929Z","runId":"replay-20260916-232734-uars","type":"step.end","data":{"stepId":"s03","ok":true}}
-{"seq":22,"at":"2026-09-16T23:27:34.931Z","runId":"replay-20260916-232734-uars","type":"observe","data":{"url":"tn3270://127.0.0.1:4331/MEMBER_INQUIRY","title":"MEMBER INQUIRY","nodes":4}}
-{"seq":23,"at":"2026-09-16T23:27:34.933Z","runId":"replay-20260916-232734-uars","type":"drift.detected","data":{"stepId":"s04","recorded":"92140295","actual":"11da983e","url":"tn3270://127.0.0.1:4331/MEMBER_INQUIRY"}}
-{"seq":24,"at":"2026-09-16T23:27:34.934Z","runId":"replay-20260916-232734-uars","type":"drift.detected","data":{"stepId":"s04","degraded":"frame-mismatch","frame":[]}}
-{"seq":25,"at":"2026-09-16T23:27:34.936Z","runId":"replay-20260916-232734-uars","type":"step.start","data":{"stepId":"s04","intent":"Enter the member number into the inquiry form","kind":"type","risk":"safe","target":"textbox \"Member Number\"","resolved":"Member Number","attempt":1}}
-{"seq":26,"at":"2026-09-16T23:27:34.939Z","runId":"replay-20260916-232734-uars","type":"observe","data":{"url":"tn3270://127.0.0.1:4331/MEMBER_INQUIRY","title":"MEMBER INQUIRY","nodes":4}}
-{"seq":27,"at":"2026-09-16T23:27:34.941Z","runId":"replay-20260916-232734-uars","type":"step.end","data":{"stepId":"s04","ok":true}}
-{"seq":28,"at":"2026-09-16T23:27:34.943Z","runId":"replay-20260916-232734-uars","type":"observe","data":{"url":"tn3270://127.0.0.1:4331/MEMBER_INQUIRY","title":"MEMBER INQUIRY","nodes":4}}
-{"seq":29,"at":"2026-09-16T23:27:34.945Z","runId":"replay-20260916-232734-uars","type":"drift.detected","data":{"stepId":"s05","recorded":"92140295","actual":"11da983e","url":"tn3270://127.0.0.1:4331/MEMBER_INQUIRY"}}
-{"seq":30,"at":"2026-09-16T23:27:34.947Z","runId":"replay-20260916-232734-uars","type":"drift.detected","data":{"stepId":"s05","degraded":"frame-mismatch","frame":[]}}
-{"seq":31,"at":"2026-09-16T23:27:34.949Z","runId":"replay-20260916-232734-uars","type":"step.start","data":{"stepId":"s05","intent":"Run the member search","kind":"click","risk":"safe","target":"button \"Search\"","resolved":"Search","attempt":1}}
-{"seq":32,"at":"2026-09-16T23:27:34.952Z","runId":"replay-20260916-232734-uars","type":"observe","data":{"url":"tn3270://127.0.0.1:4331/MEMBER_INQUIRY","title":"MEMBER INQUIRY","nodes":5}}
-{"seq":33,"at":"2026-09-16T23:27:34.955Z","runId":"replay-20260916-232734-uars","type":"note","data":{"evidence":"033-outcome-member-not-found.txt","label":"outcome-MEMBER_NOT_FOUND"}}
-{"seq":34,"at":"2026-09-16T23:27:34.957Z","runId":"replay-20260916-232734-uars","type":"outcome.detected","data":{"code":"MEMBER_NOT_FOUND","description":"No member record exists for the number supplied.","classification":"business","url":"tn3270://127.0.0.1:4331/MEMBER_INQUIRY","evidence":"033-outcome-member-not-found.txt"}}
-{"seq":35,"at":"2026-09-16T23:27:34.960Z","runId":"replay-20260916-232734-uars","type":"run.end","data":{"status":"business_outcome","code":"MEMBER_NOT_FOUND"}}
+{"seq":0,"at":"2026-09-16T23:55:26.795Z","runId":"replay-20260916-235526-xgcq","type":"run.start","data":{"mode":"replay","capability":"meridian.member.savings-balance","version":"1.1.0","approval":"approved","inputs":["memberId"]}}
+{"seq":1,"at":"2026-09-16T23:55:26.796Z","runId":"replay-20260916-235526-xgcq","type":"observe","data":{"url":"tn3270://127.0.0.1:4331/SIGN_ON","title":"SIGN ON","nodes":5}}
+{"seq":2,"at":"2026-09-16T23:55:26.798Z","runId":"replay-20260916-235526-xgcq","type":"policy.decision","data":{"url":"tn3270://127.0.0.1:4331/","decision":"allow"}}
+{"seq":3,"at":"2026-09-16T23:55:26.800Z","runId":"replay-20260916-235526-xgcq","type":"step.start","data":{"stepId":"s00","intent":"Open MERIDIAN Core Member Services at its entry point","kind":"navigate","risk":"safe","attempt":1}}
+{"seq":4,"at":"2026-09-16T23:55:26.801Z","runId":"replay-20260916-235526-xgcq","type":"policy.decision","data":{"url":"tn3270://127.0.0.1:4331/","decision":"allow"}}
+{"seq":5,"at":"2026-09-16T23:55:26.803Z","runId":"replay-20260916-235526-xgcq","type":"observe","data":{"url":"tn3270://127.0.0.1:4331/SIGN_ON","title":"SIGN ON","nodes":5}}
+{"seq":6,"at":"2026-09-16T23:55:26.804Z","runId":"replay-20260916-235526-xgcq","type":"step.end","data":{"stepId":"s00","ok":true}}
+{"seq":7,"at":"2026-09-16T23:55:26.806Z","runId":"replay-20260916-235526-xgcq","type":"observe","data":{"url":"tn3270://127.0.0.1:4331/SIGN_ON","title":"SIGN ON","nodes":5}}
+{"seq":8,"at":"2026-09-16T23:55:26.807Z","runId":"replay-20260916-235526-xgcq","type":"drift.detected","data":{"stepId":"s01","recorded":"c8f2709e","actual":"5d920532","url":"tn3270://127.0.0.1:4331/SIGN_ON"}}
+{"seq":9,"at":"2026-09-16T23:55:26.809Z","runId":"replay-20260916-235526-xgcq","type":"step.start","data":{"stepId":"s01","intent":"Enter the operator ID on the sign-on screen","kind":"type","risk":"safe","target":"textbox \"Operator ID\"","resolved":"Operator ID","attempt":1}}
+{"seq":10,"at":"2026-09-16T23:55:26.810Z","runId":"replay-20260916-235526-xgcq","type":"observe","data":{"url":"tn3270://127.0.0.1:4331/SIGN_ON","title":"SIGN ON","nodes":5}}
+{"seq":11,"at":"2026-09-16T23:55:26.812Z","runId":"replay-20260916-235526-xgcq","type":"step.end","data":{"stepId":"s01","ok":true}}
+{"seq":12,"at":"2026-09-16T23:55:26.813Z","runId":"replay-20260916-235526-xgcq","type":"observe","data":{"url":"tn3270://127.0.0.1:4331/SIGN_ON","title":"SIGN ON","nodes":5}}
+{"seq":13,"at":"2026-09-16T23:55:26.815Z","runId":"replay-20260916-235526-xgcq","type":"drift.detected","data":{"stepId":"s02","recorded":"c8f2709e","actual":"5d920532","url":"tn3270://127.0.0.1:4331/SIGN_ON"}}
+{"seq":14,"at":"2026-09-16T23:55:26.816Z","runId":"replay-20260916-235526-xgcq","type":"step.start","data":{"stepId":"s02","intent":"Enter the operator password on the sign-on screen","kind":"type","risk":"safe","target":"textbox \"Password\"","resolved":"Password","attempt":1}}
+{"seq":15,"at":"2026-09-16T23:55:26.818Z","runId":"replay-20260916-235526-xgcq","type":"observe","data":{"url":"tn3270://127.0.0.1:4331/SIGN_ON","title":"SIGN ON","nodes":5}}
+{"seq":16,"at":"2026-09-16T23:55:26.819Z","runId":"replay-20260916-235526-xgcq","type":"step.end","data":{"stepId":"s02","ok":true}}
+{"seq":17,"at":"2026-09-16T23:55:26.821Z","runId":"replay-20260916-235526-xgcq","type":"observe","data":{"url":"tn3270://127.0.0.1:4331/SIGN_ON","title":"SIGN ON","nodes":5}}
+{"seq":18,"at":"2026-09-16T23:55:26.822Z","runId":"replay-20260916-235526-xgcq","type":"drift.detected","data":{"stepId":"s03","recorded":"c8f2709e","actual":"5d920532","url":"tn3270://127.0.0.1:4331/SIGN_ON"}}
+{"seq":19,"at":"2026-09-16T23:55:26.824Z","runId":"replay-20260916-235526-xgcq","type":"step.start","data":{"stepId":"s03","intent":"Submit the sign-on form","kind":"click","risk":"safe","target":"button \"Sign On\"","resolved":"Sign On","attempt":1}}
+{"seq":20,"at":"2026-09-16T23:55:26.826Z","runId":"replay-20260916-235526-xgcq","type":"observe","data":{"url":"tn3270://127.0.0.1:4331/MEMBER_INQUIRY","title":"MEMBER INQUIRY","nodes":4}}
+{"seq":21,"at":"2026-09-16T23:55:26.828Z","runId":"replay-20260916-235526-xgcq","type":"step.end","data":{"stepId":"s03","ok":true}}
+{"seq":22,"at":"2026-09-16T23:55:26.829Z","runId":"replay-20260916-235526-xgcq","type":"observe","data":{"url":"tn3270://127.0.0.1:4331/MEMBER_INQUIRY","title":"MEMBER INQUIRY","nodes":4}}
+{"seq":23,"at":"2026-09-16T23:55:26.831Z","runId":"replay-20260916-235526-xgcq","type":"drift.detected","data":{"stepId":"s04","recorded":"92140295","actual":"11da983e","url":"tn3270://127.0.0.1:4331/MEMBER_INQUIRY"}}
+{"seq":24,"at":"2026-09-16T23:55:26.832Z","runId":"replay-20260916-235526-xgcq","type":"drift.detected","data":{"stepId":"s04","degraded":"frame-mismatch","frame":[]}}
+{"seq":25,"at":"2026-09-16T23:55:26.834Z","runId":"replay-20260916-235526-xgcq","type":"step.start","data":{"stepId":"s04","intent":"Enter the member number into the inquiry form","kind":"type","risk":"safe","target":"textbox \"Member Number\"","resolved":"Member Number","attempt":1}}
+{"seq":26,"at":"2026-09-16T23:55:26.836Z","runId":"replay-20260916-235526-xgcq","type":"observe","data":{"url":"tn3270://127.0.0.1:4331/MEMBER_INQUIRY","title":"MEMBER INQUIRY","nodes":4}}
+{"seq":27,"at":"2026-09-16T23:55:26.838Z","runId":"replay-20260916-235526-xgcq","type":"step.end","data":{"stepId":"s04","ok":true}}
+{"seq":28,"at":"2026-09-16T23:55:26.840Z","runId":"replay-20260916-235526-xgcq","type":"observe","data":{"url":"tn3270://127.0.0.1:4331/MEMBER_INQUIRY","title":"MEMBER INQUIRY","nodes":4}}
+{"seq":29,"at":"2026-09-16T23:55:26.842Z","runId":"replay-20260916-235526-xgcq","type":"drift.detected","data":{"stepId":"s05","recorded":"92140295","actual":"11da983e","url":"tn3270://127.0.0.1:4331/MEMBER_INQUIRY"}}
+{"seq":30,"at":"2026-09-16T23:55:26.843Z","runId":"replay-20260916-235526-xgcq","type":"drift.detected","data":{"stepId":"s05","degraded":"frame-mismatch","frame":[]}}
+{"seq":31,"at":"2026-09-16T23:55:26.845Z","runId":"replay-20260916-235526-xgcq","type":"step.start","data":{"stepId":"s05","intent":"Run the member search","kind":"click","risk":"safe","target":"button \"Search\"","resolved":"Search","attempt":1}}
+{"seq":32,"at":"2026-09-16T23:55:26.847Z","runId":"replay-20260916-235526-xgcq","type":"observe","data":{"url":"tn3270://127.0.0.1:4331/MEMBER_INQUIRY","title":"MEMBER INQUIRY","nodes":5}}
+{"seq":33,"at":"2026-09-16T23:55:26.850Z","runId":"replay-20260916-235526-xgcq","type":"note","data":{"evidence":"033-outcome-member-not-found.txt","label":"outcome-MEMBER_NOT_FOUND"}}
+{"seq":34,"at":"2026-09-16T23:55:26.852Z","runId":"replay-20260916-235526-xgcq","type":"outcome.detected","data":{"code":"MEMBER_NOT_FOUND","description":"No member record exists for the number supplied.","classification":"business","url":"tn3270://127.0.0.1:4331/MEMBER_INQUIRY","evidence":"033-outcome-member-not-found.txt"}}
+{"seq":35,"at":"2026-09-16T23:55:26.854Z","runId":"replay-20260916-235526-xgcq","type":"run.end","data":{"status":"business_outcome","code":"MEMBER_NOT_FOUND"}}

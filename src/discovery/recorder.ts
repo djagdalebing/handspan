@@ -491,7 +491,12 @@ function buildOutput(
   // results and logs unredacted. Classify by label instead and err high: a
   // reviewer can downgrade a false positive, but nobody reviews a leak that
   // already happened.
-  const labelish = `${o.name} ${o.readoutLabel ?? ''} ${o.description}`;
+  // The field's *identity*, not its prose. Matching the free-text description
+  // classified "current balance of the member's share savings account" as PII
+  // because it mentions a member, pseudonymising the very number the caller
+  // asked for. Over-classification is the safe direction for a label; for a
+  // sentence it is just noise.
+  const labelish = `${o.name} ${o.readoutLabel ?? ''} ${o.tableSelectColumn ?? ''}`;
   const sensitive = looksSensitive(labelish);
   const common = {
     name: o.name.replace(/[^a-zA-Z0-9_]/g, '_').replace(/^[^a-zA-Z]+/, ''),

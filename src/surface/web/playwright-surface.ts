@@ -290,6 +290,26 @@ export class WebSurface implements Surface, LiveControl {
             for (const inp of Array.from(document.querySelectorAll('input[type=password]'))) {
               marks.push(inp as HTMLElement);
             }
+            // Columns of a data table. Row-based masking only covers
+            // "Label: value" pairs, so an account-number column sat in clear
+            // in every stored screenshot while the labelled fields beside it
+            // were blacked out.
+            for (const table of Array.from(document.querySelectorAll('table'))) {
+              const rows = Array.from((table as HTMLTableElement).rows);
+              const header = rows[0];
+              if (!header || rows.length < 2) continue;
+              const cols: number[] = [];
+              Array.from(header.cells).forEach((cell, i) => {
+                if (re.test((cell as HTMLElement).innerText ?? '')) cols.push(i);
+              });
+              if (cols.length === 0) continue;
+              for (const row of rows.slice(1)) {
+                for (const i of cols) {
+                  const cell = row.cells[i];
+                  if (cell) marks.push(cell as HTMLElement);
+                }
+              }
+            }
             // Leaf elements whose own text carries a declared PII value.
             if (lits.length > 0) {
               for (const el of Array.from(document.body.querySelectorAll('*')) as HTMLElement[]) {

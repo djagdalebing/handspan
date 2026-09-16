@@ -172,13 +172,13 @@ Human actions are recorded, typed *content* only as a character count.
 
 ## 6. Safety
 
-**The allowlist is the hard boundary.** Every navigation the *engine* makes —
-step, recovery handler, nested capability, any surface — goes through one
-chokepoint enforcing the intersection of the deployment's policy and the
-capability's declared origins. Operator navigation from the console is checked
-against the deployment policy only, not that intersection: an operator holding
-the lease can move the session anywhere the deployment permits. That is a gap,
-not a design — it needs the same chokepoint. For that second half to mean anything, a
+**The allowlist is the hard boundary**, enforced by one function every
+navigation passes through — step, recovery handler, nested capability, operator
+console, any surface — as the intersection of the deployment's policy and the
+capability's declared origins. It lived only in the engine for a while, so the
+console was checked against the deployment policy alone; in the target
+environment one deployment lists every tenant's origin, which made that the
+difference between isolation and none. For that second half to mean anything, a
 capability declares only the origins its recording touched, per-tenant origins
 come from a deployment-owned registry rather than from the overlay asking for
 them, and an empty list denies everything. The files naming those rules come

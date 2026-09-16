@@ -96,6 +96,27 @@ const RANK: Record<Risk, number> = { safe: 0, mutating: 1, irreversible: 2 };
  * as special, which quietly matches nothing — so a non-web surface would have
  * been denied for the wrong reason, or worse, compared "null" to "null".
  */
+/**
+ * The one place a location is authorised: the deployment's allowlist AND the
+ * origins the capability itself declares, intersected.
+ *
+ * It lived only in the replay engine, so operator navigation from the console
+ * was checked against the deployment policy alone — and in the target
+ * environment, one deployment lists every tenant's origin, so anything holding
+ * the console token could walk a live session into another institution.
+ * Returns a reason when the navigation must not happen.
+ */
+export function denyLocation(policy: Policy, declaredOrigins: string[], url: string): string | null {
+  const check = policy.checkUrl(url);
+  if (check.decision === 'deny') return check.reason;
+  if (!declaredOrigins.some((o) => url.startsWith(o))) {
+    return declaredOrigins.length === 0
+      ? `${url} is refused: this capability declares no permitted origins`
+      : `${url} is outside the origins this capability declares (${declaredOrigins.join(', ')})`;
+  }
+  return null;
+}
+
 export function originOf(u: URL): string {
   const scheme = u.protocol.replace(/:$/, '');
   if (u.origin && u.origin !== 'null') return u.origin;

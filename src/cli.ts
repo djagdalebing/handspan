@@ -136,6 +136,9 @@ async function bootstrap(kind: 'discover' | 'replay', args: Args, entry = 'http:
   broker.registerSession(runId, {
     control, surface, log, policy,
     observe: () => surface.observe(),
+    // Filled in once the capability is resolved; until then the operator is
+    // bound to nothing, which fails closed rather than open.
+    allowedOrigins: [],
   });
 
   return {
@@ -194,6 +197,14 @@ async function cmdDiscover(args: Args): Promise<number> {
   const rt = await bootstrap('discover', args, job.entry);
 
   // The goal itself may reference parameters; bind them for readability.
+  // During discovery the capability does not exist yet, so the operator is
+  // bound to the entry point's origin.
+  try {
+    broker.setSessionOrigins(rt.runId, [new URL(job.entry).origin === 'null'
+      ? `${new URL(job.entry).protocol}//${new URL(job.entry).host}`
+      : new URL(job.entry).origin]);
+  } catch { /* an unparseable entry is refused by the policy check anyway */ }
+
   const goal = job.goal.replace(/\{\{(\w+)\}\}/g, (_m, k: string) => values[k] ?? `{{${k}}}`);
   for (const p of inputs) rt.redactor.register(values[p.name], p.sensitivity, p.name);
 
@@ -385,6 +396,7 @@ async function cmdReplay(args: Args, mode: 'replay' | 'invoke'): Promise<number>
   const entryStep = capability.steps.find((x) => x.action.kind === 'navigate');
   const entry = entryStep && entryStep.action.kind === 'navigate' ? entryStep.action.url : 'http://';
   const rt = await bootstrap('replay', args, entry);
+  broker.setSessionOrigins(rt.runId, capability.policy.allowedOrigins);
 
   const fault = str(args, 'fault');
   if (fault) await injectFault(str(args, 'app-url', 'http://127.0.0.1:4311'), fault);

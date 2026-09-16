@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Policy } from '../src/safety/policy.js';
+import { denyLocation, Policy } from '../src/safety/policy.js';
 import { Redactor, looksSensitive } from '../src/safety/redact.js';
 import { EnvCredentialProvider } from '../src/safety/credentials.js';
 
@@ -190,5 +190,31 @@ describe('action kinds', () => {
 
   it('still refuses an action kind nobody declared', () => {
     expect(Policy.from({}).checkActionKind('execute_script').decision).toBe('deny');
+  });
+});
+
+describe('location authorisation', () => {
+  const policy = Policy.from({
+    allowedOrigins: ['http://a.example', 'http://b.example'],
+    allowedSchemes: ['http'],
+  });
+
+  /**
+   * One deployment serving many institutions lists every tenant's origin, so
+   * the deployment allowlist alone does not isolate them. The capability's own
+   * declared origins are the second half — and the operator console used to
+   * check only the first, so anything holding the console token could steer a
+   * live session into another institution.
+   */
+  it('requires both the deployment allowlist and the capability origins', () => {
+    expect(denyLocation(policy, ['http://a.example'], 'http://a.example/x')).toBeNull();
+    expect(denyLocation(policy, ['http://a.example'], 'http://b.example/x'))
+      .toMatch(/outside the origins this capability declares/);
+    expect(denyLocation(policy, ['http://c.example'], 'http://c.example/x'))
+      .toMatch(/not on the allowlist/);
+  });
+
+  it('fails closed when a capability declares no origins', () => {
+    expect(denyLocation(policy, [], 'http://a.example/x')).toMatch(/declares no permitted origins/);
   });
 });

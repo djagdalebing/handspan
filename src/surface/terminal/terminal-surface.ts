@@ -260,7 +260,13 @@ export class TerminalSurface implements Surface {
   async screenshot(opts: { maskSensitive?: boolean; maskValues?: string[] } = {}): Promise<Buffer> {
     if (opts.maskSensitive === false) return Buffer.from(this.screen.join('\n'), 'utf8');
 
-    const masked = this.screen.map((line) => {
+    // Columns of a data grid, by the same rule the web driver uses: if the
+    // header names a regulated field, the cells under it are masked. Without
+    // this the account-number column sat in clear in every stored screen while
+    // the labelled fields above it were starred out.
+    const sensitiveCols = this.sensitiveColumns();
+
+    const masked = this.screen.map((line, row) => {
       // A `Label: value` row whose label names regulated data.
       const m = line.match(/^(\s+[A-Za-z][A-Za-z0-9 ()]*?:\s+)(\S.*?)(\s*)$/);
       let out = line;
@@ -270,9 +276,41 @@ export class TerminalSurface implements Surface {
       for (const value of opts.maskValues ?? []) {
         if (value.length >= 3) out = out.split(value).join('*'.repeat(value.length));
       }
+      for (const span of sensitiveCols.get(row) ?? []) {
+        const seg = out.slice(span.from, span.to);
+        out = out.slice(0, span.from) + seg.replace(/\S/g, '*') + out.slice(span.to);
+      }
       return out;
     });
     return Buffer.from(masked.join('\n'), 'utf8');
+  }
+
+  /**
+   * Character ranges to blank, keyed by row: the cells beneath any grid header
+   * that names a regulated field.
+   */
+  private sensitiveColumns(): Map<number, Array<{ from: number; to: number }>> {
+    const spans = new Map<number, Array<{ from: number; to: number }>>();
+    for (let row = 0; row < this.screen.length; row++) {
+      const line = this.screen[row] ?? '';
+      const cells = [...line.matchAll(/\S(?:[^ ]| (?! ))*/g)];
+      const isHeader =
+        cells.length >= 3 && line.trim() === line.trim().toUpperCase() &&
+        !line.includes(':') && /[A-Z]{3,}/.test(line);
+      if (!isHeader) continue;
+
+      const starts = cells.map((c) => c.index ?? 0);
+      const hits = cells
+        .map((c, i) => ({ text: c[0], from: starts[i]!, to: starts[i + 1] ?? line.length }))
+        .filter((c) => looksSensitive(c.text));
+      if (hits.length === 0) continue;
+
+      for (let r = row + 1; r < this.screen.length; r++) {
+        if (!(this.screen[r] ?? '').trim()) break;
+        spans.set(r, hits.map(({ from, to }) => ({ from, to })));
+      }
+    }
+    return spans;
   }
 
   async location(): Promise<string> {

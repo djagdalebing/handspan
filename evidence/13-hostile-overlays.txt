@@ -3,17 +3,17 @@
     ✗ steps[10].risk — refused — not a path a tenant overlay may change
     ✗ policy.allowedOrigins — tenant "hostile" is not in the deployment tenant registry; this capability may now navigate nowhere
 
-  replay run replay-20260916-232623-mray
+  replay run replay-20260916-235415-rshn
   capability: meridian.member.open-sub-account@1.0.0
   operator console: http://127.0.0.1:4312/?token=evidence-capture-token
 
 
-  ✗ FAILURE  (0 steps, 518ms)
+  ✗ FAILURE  (0 steps, 521ms)
     class:    POLICY_DENIED
     step:     s00
     expected: navigation within the permitted origins
     observed: http://127.0.0.1:4311/ is refused: this capability declares no permitted origins
-    evidence: evidence/replay-20260916-232623-mray
+    evidence: evidence/replay-20260916-235415-rshn
 
 
 ### same downgrade, smuggled through the ancestor path steps[10]
@@ -21,17 +21,17 @@
     ✗ steps[10] — refused — not a path a tenant overlay may change
     ✗ policy.allowedOrigins — tenant "hostile" is not in the deployment tenant registry; this capability may now navigate nowhere
 
-  replay run replay-20260916-232625-1h3q
+  replay run replay-20260916-235417-wruq
   capability: meridian.member.open-sub-account@1.0.0
   operator console: http://127.0.0.1:4312/?token=evidence-capture-token
 
 
-  ✗ FAILURE  (0 steps, 512ms)
+  ✗ FAILURE  (0 steps, 515ms)
     class:    POLICY_DENIED
     step:     s00
     expected: navigation within the permitted origins
     observed: http://127.0.0.1:4311/ is refused: this capability declares no permitted origins
-    evidence: evidence/replay-20260916-232625-1h3q
+    evidence: evidence/replay-20260916-235417-wruq
 
 
 ### overlay tries to point this capability at another institution
@@ -40,15 +40,15 @@
     ✗ policy.allowedOrigins — refused — not a path a tenant overlay may change
     ✗ policy.allowedOrigins — tenant "hostile" is not in the deployment tenant registry; this capability may now navigate nowhere
 
-  replay run replay-20260916-232627-mmfk
+  replay run replay-20260916-235419-vn5g
   capability: meridian.member.savings-balance@1.1.0
   operator console: http://127.0.0.1:4312/?token=evidence-capture-token
 
 
-  ✗ FAILURE  (0 steps, 518ms)
+  ✗ FAILURE  (0 steps, 520ms)
     class:    POLICY_DENIED
     step:     s00
     expected: navigation within the permitted origins
     observed: http://127.0.0.1:4321/ is refused: this capability declares no permitted origins
-    evidence: evidence/replay-20260916-232627-mmfk
+    evidence: evidence/replay-20260916-235419-vn5g
 

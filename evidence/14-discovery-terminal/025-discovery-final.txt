@@ -8,8 +8,8 @@
    SSN (last 4):  ***********                                                   
                                                                                 
    ACCOUNT TYPE        ACCOUNT NO    CURRENT BALANCE                            
-   SHARE SAVINGS       S-0001        $4,812.55                                  
-   SHARE DRAFT         D-0001        $1,290.03                                  
+   SHARE SAVINGS       ******        $4,812.55                                  
+   SHARE DRAFT         ******        $1,290.03                                  
                                                                                 
                                                                                 
                                                                                 

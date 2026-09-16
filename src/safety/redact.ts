@@ -29,7 +29,7 @@ import type { Sensitivity } from '../artifact/schema.js';
  * sensitivity of a recorded output or parameter when nobody declared one.
  */
 export const SENSITIVE_LABEL =
-  /\bssn\b|social security|tax\s*id\b|\bein\b|date of birth|\bdob\b|password|passcode|\bpin\b|card number|routing|account number|driver.?s licen[cs]e|passport|\bname\b|address|\bphone\b|\bemail\b|\bmaiden\b|\bmember\b|\bcustomer\b|\bholder\b|\bborrower\b/i;
+  /\bssn\b|social security|tax\s*id\b|\bein\b|date of birth|\bdob\b|password|passcode|\bpin\b|card number|routing|account\s*(?:number|no|num|nbr)\b|driver.?s licen[cs]e|passport|\bname\b|address|\bphone\b|\bemail\b|\bmaiden\b|\bmember\b|\bcustomer\b|\bholder\b|\bborrower\b/i;
 
 /**
  * Whether a field label names regulated data.

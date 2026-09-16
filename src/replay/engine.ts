@@ -24,7 +24,7 @@ import type { CredentialProvider } from '../safety/credentials.js';
 import type { Redactor } from '../safety/redact.js';
 import { looksSensitive } from '../safety/redact.js';
 import type { RunLog } from '../observability/run-log.js';
-import { Policy } from '../safety/policy.js';
+import { denyLocation, Policy } from '../safety/policy.js';
 
 const RISK_RANK: Record<Risk, number> = { safe: 0, mutating: 1, irreversible: 2 };
 import { SessionControl, type ReleaseSignal } from '../escalation/control.js';
@@ -642,6 +642,13 @@ export class ReplayEngine {
     base: Omit<ReplayResult, 'status'> & Record<string, unknown>
   ): Promise<ReplayResult> {
     const extraction = extractOutputs(outcome.outputs, obs, bindings);
+    // The success path registers its outputs so the redactor knows them; this
+    // one did not, so anything an outcome declared would have reached
+    // result.json in clear. Nothing declares outcome outputs today — the
+    // schema permits it, which is enough.
+    for (const out of outcome.outputs) {
+      this.o.redactor.register(String(extraction.values[out.name] ?? ''), effectiveSensitivity(out), out.name);
+    }
     const shot = await this.o.log.screenshot(this.o.surface, `outcome-${outcome.code}`);
     this.o.log.event('outcome.detected', {
       code: outcome.code, description: outcome.description,
@@ -843,21 +850,9 @@ export class ReplayEngine {
    * declared origins, intersected.
    */
   private denyNavigation(cap: Capability, url: string): string | null {
-    const check = this.o.policy.checkUrl(url);
-    if (check.decision === 'deny') {
-      this.o.log.event('policy.decision', { url, ...check });
-      return check.reason;
-    }
-    const declared = cap.policy.allowedOrigins;
-    if (!declared.some((o) => url.startsWith(o))) {
-      const reason = declared.length === 0
-        ? `${url} is refused: this capability declares no permitted origins`
-        : `${url} is outside the origins this capability declares (${declared.join(', ')})`;
-      this.o.log.event('policy.decision', { url, decision: 'deny', reason });
-      return reason;
-    }
-    this.o.log.event('policy.decision', { url, decision: 'allow' });
-    return null;
+    const reason = denyLocation(this.o.policy, cap.policy.allowedOrigins, url);
+    this.o.log.event('policy.decision', reason ? { url, decision: 'deny', reason } : { url, decision: 'allow' });
+    return reason;
   }
 
   private targetOf(action: StepAction): Target | null {
