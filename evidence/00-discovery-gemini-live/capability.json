@@ -20,7 +20,7 @@
       "description": "The member number to look up.",
       "sensitivity": "pii",
       "pattern": "^[0-9]{5}$",
-      "example": "«memberId#5994»"
+      "example": "\u00abmemberId#5994\u00bb"
     }
   ],
   "outputs": [
@@ -71,7 +71,7 @@
     },
     {
       "id": "s01",
-      "intent": "Enter the operator ID '«MERIDIAN_OPERATOR_ID»' into the Operator ID field.",
+      "intent": "Enter the operator ID '\u00abMERIDIAN_OPERATOR_ID\u00bb' into the Operator ID field.",
       "action": {
         "kind": "type",
         "target": {
@@ -80,7 +80,7 @@
           "nameMatch": "exact",
           "framePath": []
         },
-        "secretRef": "«redacted»",
+        "secretRef": "\u00abredacted\u00bb",
         "clearFirst": true
       },
       "risk": "safe",
@@ -102,7 +102,7 @@
     },
     {
       "id": "s02",
-      "intent": "Enter the password '«MERIDIAN_OPERATOR_PASSWORD»' into the Password field.",
+      "intent": "Enter the password '\u00abMERIDIAN_OPERATOR_PASSWORD\u00bb' into the Password field.",
       "action": {
         "kind": "type",
         "target": {
@@ -111,7 +111,7 @@
           "nameMatch": "exact",
           "framePath": []
         },
-        "secretRef": "«redacted»",
+        "secretRef": "\u00abredacted\u00bb",
         "clearFirst": true
       },
       "risk": "safe",
@@ -164,7 +164,7 @@
     },
     {
       "id": "s04",
-      "intent": "Enter the member number «memberId#5994» into the Member Number field.",
+      "intent": "Enter the member number \u00abmemberId#5994\u00bb into the Member Number field.",
       "action": {
         "kind": "type",
         "target": {
@@ -216,7 +216,7 @@
         "type": "textMatches",
         "value": {
           "mode": "contains",
-          "value": "MEMBER DETAIL — {{memberId}}",
+          "value": "MEMBER DETAIL \u2014 {{memberId}}",
           "caseSensitive": false
         }
       },
@@ -232,7 +232,7 @@
     "type": "textMatches",
     "value": {
       "mode": "contains",
-      "value": "MEMBER DETAIL — {{memberId}}",
+      "value": "MEMBER DETAIL \u2014 {{memberId}}",
       "caseSensitive": false
     }
   },
@@ -252,7 +252,7 @@
       "afterSteps": [],
       "terminal": true,
       "outputs": [],
-      "verified": true
+      "verified": false
     },
     {
       "code": "INSUFFICIENT_PERMISSIONS",
@@ -286,7 +286,7 @@
       "afterSteps": [],
       "terminal": true,
       "outputs": [],
-      "verified": true
+      "verified": false
     }
   ],
   "interstitials": [],
@@ -309,7 +309,7 @@
     "recordedAt": "2026-09-11T18:13:13.175Z",
     "recordedBy": "llm",
     "model": "gemini:gemini-2.5-flash-lite",
-    "discoveryRunId": "discover-«card#78c1»mh3c",
-    "goal": "Sign on as the operator, look up member «memberId#5994» in Member Inquiry, and reach the member detail screen showing their share savings balance."
+    "discoveryRunId": "discover-\u00abcard#78c1\u00bbmh3c",
+    "goal": "Sign on as the operator, look up member \u00abmemberId#5994\u00bb in Member Inquiry, and reach the member detail screen showing their share savings balance."
   }
 }

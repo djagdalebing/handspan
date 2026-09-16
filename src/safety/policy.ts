@@ -31,7 +31,9 @@ export interface PolicyConfig {
   allowedPathPrefixes: string[];
   /** Paths that are never permitted even on an allowed origin. */
   deniedPathPrefixes: string[];
-  allowedActions: Array<'navigate' | 'click' | 'type' | 'select' | 'press' | 'wait' | 'run_capability'>;
+  allowedActions: Array<
+    'navigate' | 'click' | 'type' | 'type_secret' | 'select' | 'press' | 'wait' | 'run_capability'
+  >;
   /**
    * Location schemes the deployment permits, e.g. `http`, `https`, `tn3270`.
    *
@@ -69,7 +71,9 @@ export const DEFAULT_POLICY: PolicyConfig = {
   allowedOrigins: [],
   allowedPathPrefixes: [],
   deniedPathPrefixes: [],
-  allowedActions: ['navigate', 'click', 'type', 'select', 'press', 'wait', 'run_capability'],
+  // `type_secret` fills a credential field without the value passing through
+  // the model. It is a *narrower* capability than `type`, not a wider one.
+  allowedActions: ['navigate', 'click', 'type', 'type_secret', 'select', 'press', 'wait', 'run_capability'],
   allowedSchemes: ['http', 'https'],
   confirmAtRisk: 'irreversible',
   maxSteps: 40,

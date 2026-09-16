@@ -1,4 +1,0 @@
-{"seq":0,"at":"2026-09-16T22:20:58.723Z","runId":"replay-20260916-222058-9ucn","type":"run.start","data":{"mode":"replay","capability":"meridian.member.open-sub-account","version":"1.0.0","approval":"approved","inputs":["memberId","accountType","openingDeposit"]}}
-{"seq":1,"at":"2026-09-16T22:20:59.273Z","runId":"replay-20260916-222058-9ucn","type":"observe","data":{"url":"about:blank","title":"","nodes":0}}
-{"seq":2,"at":"2026-09-16T22:20:59.278Z","runId":"replay-20260916-222058-9ucn","type":"policy.decision","data":{"url":"http://127.0.0.1:4311/","decision":"deny","reason":"http://127.0.0.1:4311/ is refused: this capability declares no permitted origins"}}
-{"seq":3,"at":"2026-09-16T22:20:59.283Z","runId":"replay-20260916-222058-9ucn","type":"run.end","data":{"status":"failure","class":"POLICY_DENIED","stepId":"s00","expected":"navigation within the permitted origins","observed":"http://127.0.0.1:4311/ is refused: this capability declares no permitted origins"}}

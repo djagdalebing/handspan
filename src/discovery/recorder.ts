@@ -400,6 +400,12 @@ function buildAction(
     case 'select':
       if (!target) return null;
       return { kind: 'select', target, option: canon(d.option ?? '') };
+    case 'type_secret': {
+      // The model named a credential rather than typing one, so there is no
+      // literal to strip and no chance of one reaching the artifact.
+      if (!target || !d.secretRef) return null;
+      return { kind: 'type', target, secretRef: d.secretRef, clearFirst: true };
+    }
     case 'type': {
       if (!target) return null;
       const secret = args.secretFields?.find((s) => s.nameMatches.test(rec.node?.name ?? ''));

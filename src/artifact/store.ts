@@ -24,9 +24,29 @@ export function capabilityPath(cap: Pick<Capability, 'id' | 'version'>, dir = CA
   return join(dir, `${cap.id}@${cap.version}.json`);
 }
 
-export function saveCapability(cap: Capability, dir = CAPABILITY_DIR): string {
+/**
+ * Writes a capability, refusing to silently replace an approved one.
+ *
+ * A version is an identity, not a filename: re-running discovery used to
+ * overwrite `<id>@<version>.json` without a word, so a model-authored draft
+ * could quietly take the place of a reviewed, approved artifact that tenants
+ * inherit from. Overwriting a draft is ordinary iteration; overwriting an
+ * approval is not something to do by accident.
+ */
+export function saveCapability(cap: Capability, dir = CAPABILITY_DIR, allowOverwrite = false): string {
   mkdirSync(dir, { recursive: true });
   const path = capabilityPath(cap, dir);
+
+  if (!allowOverwrite && existsSync(path)) {
+    const existing = loadCapabilityFile(path);
+    if (existing.approval === 'approved') {
+      throw new Error(
+        `${cap.id}@${cap.version} already exists and is approved. Recording over a reviewed ` +
+        `capability would replace what tenants inherit; bump the version instead.`
+      );
+    }
+  }
+
   writeFileSync(path, JSON.stringify(cap, null, 2) + '\n');
   return path;
 }

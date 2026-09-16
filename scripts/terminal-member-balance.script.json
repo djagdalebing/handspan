@@ -1,34 +1,87 @@
 [
-  { "screen": "Terminal sign-on", "reasoning": "Authenticate before any inquiry.",
-    "action": "type", "intent": "Enter the operator ID on the sign-on screen",
-    "ref": "@textbox:Operator ID", "text": "demo" },
-  { "screen": "Terminal sign-on", "reasoning": "Supply the operator password.",
-    "action": "type", "intent": "Enter the operator password on the sign-on screen",
-    "ref": "@textbox:Password", "text": "demo" },
-  { "screen": "Terminal sign-on", "reasoning": "Submit with the sign-on action key.",
-    "action": "click", "intent": "Submit the sign-on screen", "ref": "@button:Sign On" },
-  { "screen": "Member inquiry", "reasoning": "The inquiry screen takes the member number.",
-    "action": "type", "intent": "Enter the member number into the inquiry field",
-    "ref": "@textbox:Member Number", "text": "12345", "parameterName": "memberId" },
-  { "screen": "Member inquiry", "reasoning": "Run the search.",
-    "action": "click", "intent": "Run the member search", "ref": "@button:Search" },
-  { "screen": "Member detail", "reasoning": "The detail screen shows the share savings balance.",
-    "action": "finish", "intent": "Member detail reached", "message": "Detail screen shows the share savings balance." },
+  {
+    "screen": "Terminal sign-on",
+    "reasoning": "Authenticate before any inquiry.",
+    "action": "type_secret",
+    "intent": "Enter the operator ID on the sign-on screen",
+    "ref": "@textbox:Operator ID",
+    "secretRef": "MERIDIAN_OPERATOR_ID"
+  },
+  {
+    "screen": "Terminal sign-on",
+    "reasoning": "Supply the operator password.",
+    "action": "type_secret",
+    "intent": "Enter the operator password on the sign-on screen",
+    "ref": "@textbox:Password",
+    "secretRef": "MERIDIAN_OPERATOR_PASSWORD"
+  },
+  {
+    "screen": "Terminal sign-on",
+    "reasoning": "Submit with the sign-on action key.",
+    "action": "click",
+    "intent": "Submit the sign-on screen",
+    "ref": "@button:Sign On"
+  },
+  {
+    "screen": "Member inquiry",
+    "reasoning": "The inquiry screen takes the member number.",
+    "action": "type",
+    "intent": "Enter the member number into the inquiry field",
+    "ref": "@textbox:Member Number",
+    "text": "12345",
+    "parameterName": "memberId"
+  },
+  {
+    "screen": "Member inquiry",
+    "reasoning": "Run the search.",
+    "action": "click",
+    "intent": "Run the member search",
+    "ref": "@button:Search"
+  },
+  {
+    "screen": "Member detail",
+    "reasoning": "The detail screen shows the share savings balance.",
+    "action": "finish",
+    "intent": "Member detail reached",
+    "message": "Detail screen shows the share savings balance."
+  },
   {
     "successMarker": "MEMBER DETAIL",
     "successReadoutLabel": "Member Name",
     "outputs": [
-      { "name": "memberName", "type": "string", "description": "The member's name as held on the core.",
-        "sourceKind": "readout", "readoutLabel": "Member Name", "transform": "trim" },
-      { "name": "accountStatus", "type": "string", "description": "Membership status.",
-        "sourceKind": "readout", "readoutLabel": "Status", "transform": "upper" },
-      { "name": "savingsBalance", "type": "number", "description": "Current balance of the share savings account in dollars.",
-        "sourceKind": "table", "tableWhereColumn": "ACCOUNT TYPE", "tableWhereEquals": "SHARE SAVINGS",
-        "tableSelectColumn": "CURRENT BALANCE", "transform": "money" }
+      {
+        "name": "memberName",
+        "type": "string",
+        "description": "The member's name as held on the core.",
+        "sourceKind": "readout",
+        "readoutLabel": "Member Name",
+        "transform": "trim"
+      },
+      {
+        "name": "accountStatus",
+        "type": "string",
+        "description": "Membership status.",
+        "sourceKind": "readout",
+        "readoutLabel": "Status",
+        "transform": "upper"
+      },
+      {
+        "name": "savingsBalance",
+        "type": "number",
+        "description": "Current balance of the share savings account in dollars.",
+        "sourceKind": "table",
+        "tableWhereColumn": "ACCOUNT TYPE",
+        "tableWhereEquals": "SHARE SAVINGS",
+        "tableSelectColumn": "CURRENT BALANCE",
+        "transform": "money"
+      }
     ],
     "proposedOutcomes": [
-      { "code": "MEMBER_NOT_FOUND", "description": "No member record exists for the number supplied.",
-        "textMarker": "No matching member found" }
+      {
+        "code": "MEMBER_NOT_FOUND",
+        "description": "No member record exists for the number supplied.",
+        "textMarker": "No matching member found"
+      }
     ],
     "proposedInterstitials": []
   }

@@ -41,6 +41,11 @@ You reply with exactly ONE action. Rules:
   - When you type a value that came from the supplied parameters, set
     "parameterName" to that parameter's name. This is how the recorded flow
     becomes reusable for other values instead of being hard-coded to this one.
+  - You are never shown credentials. To fill a sign-on field, use the action
+    "type_secret" and set "secretRef" to one of the CREDENTIALS AVAILABLE
+    names; the value is fetched and typed without passing through you, and the
+    recorded step stores the reference rather than the secret. Do not look for
+    a password on the screen and do not invent one.
   - Take the shortest safe path to the goal. Do not explore, do not verify by
     navigating away and back, do not click things to see what they do.
   - Actions that post, submit, transfer, delete or otherwise commit something
@@ -65,11 +70,12 @@ export const DECISION_SCHEMA: Record<string, unknown> = {
     reasoning: { type: 'STRING', description: 'Why this action, briefly.' },
     action: {
       type: 'STRING',
-      enum: ['click', 'type', 'select', 'navigate', 'press', 'wait', 'finish', 'escalate'],
+      enum: ['click', 'type', 'type_secret', 'select', 'navigate', 'press', 'wait', 'finish', 'escalate'],
     },
     intent: { type: 'STRING', description: 'Reviewable description of this step.' },
     ref: { type: 'STRING', description: 'Control ref, for click/type/select.' },
     text: { type: 'STRING', description: 'Text to type.' },
+    secretRef: { type: 'STRING', description: 'Credential name, for type_secret.' },
     parameterName: { type: 'STRING', description: 'Parameter this text came from, if any.' },
     option: { type: 'STRING', description: 'Option label, for select.' },
     url: { type: 'STRING', description: 'Absolute URL, for navigate.' },
@@ -83,10 +89,11 @@ export const DECISION_SCHEMA: Record<string, unknown> = {
 export interface Decision {
   screen: string;
   reasoning: string;
-  action: 'click' | 'type' | 'select' | 'navigate' | 'press' | 'wait' | 'finish' | 'escalate';
+  action: 'click' | 'type' | 'type_secret' | 'select' | 'navigate' | 'press' | 'wait' | 'finish' | 'escalate';
   intent: string;
   ref?: string;
   text?: string;
+  secretRef?: string;
   parameterName?: string;
   option?: string;
   url?: string;

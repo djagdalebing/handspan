@@ -229,6 +229,9 @@ async function cmdDiscover(args: Args): Promise<number> {
       allowEscalation: !bool(args, 'no-escalation'),
       riskyActions: (str(args, 'risky', 'escalate') as 'escalate' | 'block' | 'proceed'),
       capabilityId: `${job.id}@${job.version}`,
+      credentials: rt.credentials,
+      secretRefs: (job.secretFields ?? []).map((f) => f.secretRef),
+      escalationTimeoutMs: rt.policy.config.escalationTimeoutMs,
     });
 
     if (!outcome.ok) {

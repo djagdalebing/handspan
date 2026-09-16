@@ -237,9 +237,13 @@ evidence/               captured runs — see evidence/README.md
 - **The human operator.** The console is real and drives the live session;
   `scripts/operator-demo.ts` is a script that does what a person does, through
   the same HTTP endpoints, so the demo runs unattended.
-- **The desktop surface.** Only the web surface is implemented. The seam it
-  would plug into is `src/surface/types.ts`.
-- **Multi-tenant infrastructure.** Overlay resolution is implemented and
-  demonstrated; there is no tenant registry, queue or scheduler, deliberately.
+- **The desktop surface.** Two drivers exist — the frameset web app and a
+  3270-style green screen — so the seam is exercised rather than assumed. A
+  UIA/AX driver is the one that would test it hardest and is not built; the
+  seam it would plug into is `src/surface/types.ts`.
+- **Multi-tenant infrastructure.** Overlay resolution and a deployment-owned
+  tenant registry (`config/tenants.json`, load-bearing for the origin model) are
+  implemented and demonstrated. There is no queue, scheduler or tenant
+  provisioning, deliberately.
 
 See `REPORT.md` for the reasoning behind all of it.

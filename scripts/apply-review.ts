@@ -105,6 +105,8 @@ if (keptPii.length > 0) {
 
 cap.provenance.reviewNote = notes.join('; ');
 
-const path = saveCapability(zCapability.parse(cap));
+// Re-running the review deliberately rewrites its own output, so the
+// approved-overwrite guard is waived here rather than bypassed everywhere.
+const path = saveCapability(zCapability.parse(cap), undefined, true);
 process.stdout.write(`  ✓ reviewed ${cap.id}@${cap.version} (approved)\n    ${path}\n`);
 for (const n of notes) process.stdout.write(`    · ${n}\n`);

@@ -2,18 +2,18 @@
   {
     "screen": "Operator sign-on",
     "reasoning": "Need to authenticate before any inquiry is possible.",
-    "action": "type",
+    "action": "type_secret",
     "intent": "Enter the operator ID on the sign-on screen",
     "ref": "@textbox:Operator ID",
-    "text": "demo"
+    "secretRef": "MERIDIAN_OPERATOR_ID"
   },
   {
     "screen": "Operator sign-on",
     "reasoning": "Supply the operator password.",
-    "action": "type",
+    "action": "type_secret",
     "intent": "Enter the operator password on the sign-on screen",
     "ref": "@textbox:Password",
-    "text": "demo"
+    "secretRef": "MERIDIAN_OPERATOR_PASSWORD"
   },
   {
     "screen": "Operator sign-on",

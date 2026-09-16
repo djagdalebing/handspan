@@ -428,8 +428,24 @@ export class EscalationBroker {
     // Loopback only. `app.listen(port)` binds every interface, which for a
     // console that deliberately serves an *unmasked* live banking screen is
     // the wrong default by a wide margin.
-    await new Promise<void>((resolve) => {
-      this.server = app.listen(this.port, '127.0.0.1', () => resolve());
+    //
+    // A port clash used to take the whole process down with an unhandled
+    // `EADDRINUSE`. Concurrent runs are the normal case for a system whose
+    // premise is "an agent invokes capabilities on demand", so a busy port
+    // has to be a message, not a stack trace.
+    await new Promise<void>((resolve, reject) => {
+      const server = app.listen(this.port, '127.0.0.1', () => {
+        this.server = server;
+        resolve();
+      });
+      server.on('error', (e: NodeJS.ErrnoException) => {
+        reject(new Error(
+          e.code === 'EADDRINUSE'
+            ? `the operator console port ${this.port} is already in use — another run is probably ` +
+              `holding it. Set HS_OPERATOR_PORT to a free port for this run.`
+            : `the operator console could not start: ${e.message}`
+        ));
+      });
     });
   }
 

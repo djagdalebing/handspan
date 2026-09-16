@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { applyOverlay, setAtPath, toCatalogEntry } from '../src/artifact/store.js';
+import { afterEach, describe, expect, it } from 'vitest';
+import { rmSync } from 'node:fs';
+import { applyOverlay, saveCapability, setAtPath, toCatalogEntry } from '../src/artifact/store.js';
 import { zCapability, zOverlay, type Capability } from '../src/artifact/schema.js';
 
 const base = (): Capability => zCapability.parse({
@@ -320,5 +321,33 @@ describe('overlay allow-list, as a property', () => {
     const r = applyOverlay(b, overlay([], [{ role: 'button', from: 'Search', to: 'Find' }]), registry);
     // `Search` appears in this base inside steps[1].waitFor, so re-review applies.
     expect(r.capability.approval).toBe('draft');
+  });
+});
+
+
+describe('saving a capability', () => {
+  const dir = 'evidence/.test-save';
+
+  afterEach(() => rmSync(dir, { recursive: true, force: true }));
+
+  // Re-running discovery used to overwrite `<id>@<version>.json` in silence, so
+  // a model-authored draft could replace a reviewed artifact tenants inherit.
+  it('refuses to record over an approved capability', () => {
+    const cap = base();
+    cap.approval = 'approved';
+    saveCapability(cap, dir);
+    expect(() => saveCapability(base(), dir)).toThrow(/approved/);
+  });
+
+  it('allows iterating on a draft', () => {
+    saveCapability(base(), dir);
+    expect(() => saveCapability(base(), dir)).not.toThrow();
+  });
+
+  it('allows an explicit overwrite, for the review step rewriting its own output', () => {
+    const cap = base();
+    cap.approval = 'approved';
+    saveCapability(cap, dir);
+    expect(() => saveCapability(cap, dir, true)).not.toThrow();
   });
 });

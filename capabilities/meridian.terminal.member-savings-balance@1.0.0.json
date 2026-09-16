@@ -330,10 +330,10 @@
     "s05": "11da983e"
   },
   "provenance": {
-    "recordedAt": "2026-09-16T22:21:03.430Z",
+    "recordedAt": "2026-09-16T23:26:29.763Z",
     "recordedBy": "llm",
     "model": "scripted",
-    "discoveryRunId": "discover-20260916-222103-h7t8",
+    "discoveryRunId": "discover-20260916-232629-e39q",
     "goal": "Sign on at the terminal, look up member 12345, and reach the member detail screen showing their share savings balance."
   }
 }

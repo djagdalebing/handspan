@@ -176,3 +176,19 @@ describe('redaction of system identifiers', () => {
     expect(r.piiLiterals()).toEqual(['12345']);    // secrets are never handed to the page
   });
 });
+
+describe('action kinds', () => {
+  /**
+   * `type_secret` fills a credential field without the value passing through
+   * the model. Omitting it from the allowlist silently broke live discovery:
+   * every attempt was denied and the run looped until stuck detection fired.
+   */
+  it('permits type_secret, which is narrower than type rather than wider', () => {
+    expect(Policy.from({}).checkActionKind('type_secret').decision).toBe('allow');
+    expect(Policy.from({}).checkActionKind('type').decision).toBe('allow');
+  });
+
+  it('still refuses an action kind nobody declared', () => {
+    expect(Policy.from({}).checkActionKind('execute_script').decision).toBe('deny');
+  });
+});

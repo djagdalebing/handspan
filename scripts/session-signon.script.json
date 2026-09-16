@@ -1,20 +1,43 @@
 [
-  { "screen": "Operator sign-on", "reasoning": "Authenticate to obtain a session.",
-    "action": "type", "intent": "Enter the operator ID on the sign-on screen",
-    "ref": "@textbox:Operator ID", "text": "demo" },
-  { "screen": "Operator sign-on", "reasoning": "Supply the operator password.",
-    "action": "type", "intent": "Enter the operator password on the sign-on screen",
-    "ref": "@textbox:Password", "text": "demo" },
-  { "screen": "Operator sign-on", "reasoning": "Submit the credentials.",
-    "action": "click", "intent": "Submit the sign-on form", "ref": "@button:Sign On" },
-  { "screen": "Member Inquiry desk", "reasoning": "The desk is loaded, so the session is established.",
-    "action": "finish", "intent": "Operator desk reached", "message": "Signed on; Member Inquiry is available." },
+  {
+    "screen": "Operator sign-on",
+    "reasoning": "Authenticate to obtain a session.",
+    "action": "type_secret",
+    "intent": "Enter the operator ID on the sign-on screen",
+    "ref": "@textbox:Operator ID",
+    "secretRef": "MERIDIAN_OPERATOR_ID"
+  },
+  {
+    "screen": "Operator sign-on",
+    "reasoning": "Supply the operator password.",
+    "action": "type_secret",
+    "intent": "Enter the operator password on the sign-on screen",
+    "ref": "@textbox:Password",
+    "secretRef": "MERIDIAN_OPERATOR_PASSWORD"
+  },
+  {
+    "screen": "Operator sign-on",
+    "reasoning": "Submit the credentials.",
+    "action": "click",
+    "intent": "Submit the sign-on form",
+    "ref": "@button:Sign On"
+  },
+  {
+    "screen": "Member Inquiry desk",
+    "reasoning": "The desk is loaded, so the session is established.",
+    "action": "finish",
+    "intent": "Operator desk reached",
+    "message": "Signed on; Member Inquiry is available."
+  },
   {
     "successMarker": "MEMBER INQUIRY",
     "outputs": [],
     "proposedOutcomes": [
-      { "code": "SIGNON_REJECTED", "description": "The operator ID or password was rejected.",
-        "textMarker": "Invalid operator ID or password" }
+      {
+        "code": "SIGNON_REJECTED",
+        "description": "The operator ID or password was rejected.",
+        "textMarker": "Invalid operator ID or password"
+      }
     ],
     "proposedInterstitials": []
   }

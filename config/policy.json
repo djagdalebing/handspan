@@ -12,6 +12,7 @@
     "navigate",
     "click",
     "type",
+    "type_secret",
     "select",
     "press",
     "wait",

@@ -21,6 +21,7 @@ import type { LiveControl } from '../surface/web/playwright-surface.js';
 import type { ModelProvider, Part } from '../llm/provider.js';
 import type { RunLog } from '../observability/run-log.js';
 import type { Redactor } from '../safety/redact.js';
+import type { CredentialProvider } from '../safety/credentials.js';
 import { Policy } from '../safety/policy.js';
 import { SessionControl } from '../escalation/control.js';
 import { broker } from '../escalation/broker.js';
@@ -49,6 +50,12 @@ export interface DiscoveryOptions {
   allowEscalation: boolean;
   riskyActions: 'escalate' | 'block' | 'proceed';
   capabilityId: string;
+  /** Resolves credentials the model may use without ever seeing them. */
+  credentials: CredentialProvider;
+  /** Credential names the model may reference. Names only, never values. */
+  secretRefs: string[];
+  /** How long an unanswered intervention waits before the run gives up. */
+  escalationTimeoutMs: number;
 }
 
 export interface RecordedAction {
@@ -154,6 +161,11 @@ export async function runDiscovery(o: DiscoveryOptions): Promise<DiscoveryOutcom
           ? o.paramDecls.map((p) => `  ${p.name} = ${JSON.stringify(o.params[p.name] ?? '')}  (${p.description})`)
           : ['  (none)']),
         '',
+        // Names only. The model can ask for a credential to be typed without
+        // ever being shown it, which is what lets the screen stay redacted.
+        'CREDENTIALS AVAILABLE (use action "type_secret"; values are never shown):',
+        ...(o.secretRefs.length ? o.secretRefs.map((r) => `  ${r}`) : ['  (none)']),
+        '',
         'STEPS SO FAR:',
         o.redactor.string(renderHistory(history)),
         '',
@@ -215,7 +227,7 @@ export async function runDiscovery(o: DiscoveryOptions): Promise<DiscoveryOutcom
     }
 
     let node: UiNode | null = null;
-    if (['click', 'type', 'select'].includes(decision.action)) {
+    if (['click', 'type', 'type_secret', 'select'].includes(decision.action)) {
       if (!decision.ref) {
         history.push({ intent: decision.intent, action: decision.action, result: 'REJECTED: no ref supplied' });
         continue;
@@ -326,6 +338,24 @@ async function performDecision(
         { kind: 'type', target: { role: node!.role, name: node!.name, nameMatch: 'exact' }, text: d.text ?? '' },
         node
       );
+    case 'type_secret': {
+      // The value is fetched here and handed straight to the surface. It is
+      // registered with the redactor so that if the application echoes it back
+      // onto a later screen, it is scrubbed before the next prompt is built.
+      const ref = d.secretRef ?? '';
+      if (!o.secretRefs.includes(ref)) {
+        return { ok: false, error: `"${ref}" is not a credential this job makes available` };
+      }
+      if (!o.credentials.has(ref)) {
+        return { ok: false, error: `credential "${ref}" is not configured in this environment` };
+      }
+      const value = o.credentials.resolve(ref);
+      o.redactor.registerSecret(value, ref);
+      return o.surface.act(
+        { kind: 'type', target: { role: node!.role, name: node!.name, nameMatch: 'exact' }, text: value },
+        node
+      );
+    }
     default: return { ok: false, error: `unsupported action ${d.action}` };
   }
 }
@@ -341,6 +371,10 @@ async function escalate(
     return null;
   }
   const { signal } = await broker.raise({
+    // Bounded, like the replay path. Without this an unanswered intervention
+    // during discovery blocks the run forever, which is the unsafe default and
+    // made a stuck live run hang past every configured ceiling.
+    timeoutMs: o.escalationTimeoutMs,
     runId: o.runId,
     mode: 'discovery',
     capabilityId: o.capabilityId,
