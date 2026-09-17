@@ -3,25 +3,7 @@
     ✗ steps[10].risk — refused — not a path a tenant overlay may change
     ✗ policy.allowedOrigins — tenant "hostile" is not in the deployment tenant registry; this capability may now navigate nowhere
 
-  replay run replay-20260916-235415-rshn
-  capability: meridian.member.open-sub-account@1.0.0
-  operator console: http://127.0.0.1:4312/?token=evidence-capture-token
-
-
-  ✗ FAILURE  (0 steps, 521ms)
-    class:    POLICY_DENIED
-    step:     s00
-    expected: navigation within the permitted origins
-    observed: http://127.0.0.1:4311/ is refused: this capability declares no permitted origins
-    evidence: evidence/replay-20260916-235415-rshn
-
-
-### same downgrade, smuggled through the ancestor path steps[10]
-  [overlay] tenant hostile: 0 patch(es) applied, 2 REJECTED
-    ✗ steps[10] — refused — not a path a tenant overlay may change
-    ✗ policy.allowedOrigins — tenant "hostile" is not in the deployment tenant registry; this capability may now navigate nowhere
-
-  replay run replay-20260916-235417-wruq
+  replay run replay-20260917-172903-mxzp
   capability: meridian.member.open-sub-account@1.0.0
   operator console: http://127.0.0.1:4312/?token=evidence-capture-token
 
@@ -31,7 +13,25 @@
     step:     s00
     expected: navigation within the permitted origins
     observed: http://127.0.0.1:4311/ is refused: this capability declares no permitted origins
-    evidence: evidence/replay-20260916-235417-wruq
+    evidence: evidence/replay-20260917-172903-mxzp
+
+
+### same downgrade, smuggled through the ancestor path steps[10]
+  [overlay] tenant hostile: 0 patch(es) applied, 2 REJECTED
+    ✗ steps[10] — refused — not a path a tenant overlay may change
+    ✗ policy.allowedOrigins — tenant "hostile" is not in the deployment tenant registry; this capability may now navigate nowhere
+
+  replay run replay-20260917-172905-i6ya
+  capability: meridian.member.open-sub-account@1.0.0
+  operator console: http://127.0.0.1:4312/?token=evidence-capture-token
+
+
+  ✗ FAILURE  (0 steps, 521ms)
+    class:    POLICY_DENIED
+    step:     s00
+    expected: navigation within the permitted origins
+    observed: http://127.0.0.1:4311/ is refused: this capability declares no permitted origins
+    evidence: evidence/replay-20260917-172905-i6ya
 
 
 ### overlay tries to point this capability at another institution
@@ -40,15 +40,15 @@
     ✗ policy.allowedOrigins — refused — not a path a tenant overlay may change
     ✗ policy.allowedOrigins — tenant "hostile" is not in the deployment tenant registry; this capability may now navigate nowhere
 
-  replay run replay-20260916-235419-vn5g
+  replay run replay-20260917-172908-20jx
   capability: meridian.member.savings-balance@1.1.0
   operator console: http://127.0.0.1:4312/?token=evidence-capture-token
 
 
-  ✗ FAILURE  (0 steps, 520ms)
+  ✗ FAILURE  (0 steps, 518ms)
     class:    POLICY_DENIED
     step:     s00
     expected: navigation within the permitted origins
     observed: http://127.0.0.1:4321/ is refused: this capability declares no permitted origins
-    evidence: evidence/replay-20260916-235419-vn5g
+    evidence: evidence/replay-20260917-172908-20jx
 

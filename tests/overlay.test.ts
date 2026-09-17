@@ -210,6 +210,33 @@ describe('overlay guardrails', () => {
   });
 
   // The legitimate case must still work, or the control is just a blocker.
+  /**
+   * A tenant says "the balance is in a column called BALANCE here". It does not
+   * get to say "read it with a raw text pattern instead" — that changes the
+   * mechanism, and a text extractor has no label for the PII check to read.
+   */
+  it('refuses to change an extractor kind while allowing its sub-fields', () => {
+    const wholesale = applyOverlay(
+      base(),
+      overlay([{ path: 'outputs[0].source', value: { from: 'text', pattern: '(S-\\d{4})', group: 1 } }]),
+      registry
+    );
+    expect(wholesale.capability.outputs[0]!.source.from).toBe('table');
+    expect(wholesale.rejected.some((x) => x.path === 'outputs[0].source')).toBe(true);
+
+    const subfield = applyOverlay(
+      base(),
+      overlay([{ path: 'outputs[0].source.selectColumn', value: 'BALANCE' }]),
+      registry
+    );
+    expect(subfield.capability.outputs[0]!.source).toMatchObject({ selectColumn: 'BALANCE' });
+  });
+
+  it('refuses the extractor kind even when spelled directly', () => {
+    const r = applyOverlay(base(), overlay([{ path: 'outputs[0].source.from', value: 'text' }]), registry);
+    expect(r.capability.outputs[0]!.source.from).toBe('table');
+  });
+
   it('still allows retargeting and repointing, keeping approval', () => {
     const b = base();
     b.approval = 'approved';

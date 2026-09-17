@@ -218,3 +218,24 @@ describe('location authorisation', () => {
     expect(denyLocation(policy, [], 'http://a.example/x')).toMatch(/declares no permitted origins/);
   });
 });
+
+describe('value-level regulated-data backstop', () => {
+  /**
+   * Classification keys off a field's label, which has a blind spot: a text
+   * extractor has no label. An overlay repointing an output at a raw pattern
+   * pulled an account number onto disk in clear past a label-only check.
+   */
+  it('recognises regulated-looking values with no label to go on', () => {
+    const r = new Redactor();
+    expect(r.looksRegulatedValue('123-45-6789')).toBe(true);
+    expect(r.looksRegulatedValue('4111 1111 1111 1111')).toBe(true);
+  });
+
+  // The balance is the thing these capabilities exist to read.
+  it('does not flag ordinary business values', () => {
+    const r = new Redactor();
+    for (const v of ['4,812.55', 'ACTIVE', 'SHARE SAVINGS', 'EASTGATE 004']) {
+      expect(r.looksRegulatedValue(v)).toBe(false);
+    }
+  });
+});

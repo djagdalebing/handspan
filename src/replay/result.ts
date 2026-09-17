@@ -78,6 +78,12 @@ export interface NeedsHumanResult extends ResultBase {
   escalationId: string;
   reason: string;
   stepId?: string;
+  /** What the artifact expected at the point it stopped. */
+  expected?: string;
+  /** What was actually on screen. */
+  observed?: string;
+  /** Files under `evidenceDir` that explain where it stopped. */
+  evidence: string[];
 }
 
 export interface FailureResult extends ResultBase {

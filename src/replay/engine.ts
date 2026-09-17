@@ -70,7 +70,9 @@ export class ReplayEngine {
   private t0 = Date.now();
   private _lastObservation: Observation | null = null;
   /** Set when an escalation was needed but nobody resolved it. */
-  private unresolvedEscalation: { escalationId?: string; reason: string } | null = null;
+  private unresolvedEscalation: {
+    escalationId?: string; reason: string; expected?: string; observed?: string;
+  } | null = null;
 
   /** The most recent screen this run perceived. Used by discovery probes. */
   get lastObservation(): Observation | null {
@@ -246,7 +248,8 @@ export class ReplayEngine {
       // -- outputs --------------------------------------------------------
       const extraction = extractOutputs(cap.outputs, finalObs, bindings);
       for (const out of cap.outputs) {
-        this.o.redactor.register(String(extraction.values[out.name] ?? ''), effectiveSensitivity(out), out.name);
+        const value = String(extraction.values[out.name] ?? '');
+        this.o.redactor.register(value, effectiveSensitivity(out, value, this.o.redactor), out.name);
       }
       if (extraction.missing.length > 0) {
         const dump = this.o.log.dumpObservation(finalObs, 'output-missing');
@@ -390,7 +393,7 @@ export class ReplayEngine {
             continue;
           }
           if (signal?.disposition === 'complete') return { kind: 'human_completed' };
-          const pending = this.humanRequired(cap, step.id);
+          const pending = await this.humanRequired(cap, step.id);
           if (pending) return { kind: 'result', result: pending };
 
           const shot = await this.o.log.screenshot(this.o.surface, `${cls.toLowerCase()}-${step.id}`);
@@ -484,7 +487,7 @@ export class ReplayEngine {
             continue;
           }
           if (signal?.disposition === 'complete') return { kind: 'human_completed' };
-          const pendingTimeout = this.humanRequired(cap, step.id);
+          const pendingTimeout = await this.humanRequired(cap, step.id);
           if (pendingTimeout) return { kind: 'result', result: pendingTimeout };
 
           const shot = await this.o.log.screenshot(this.o.surface, `step-timeout-${step.id}`);
@@ -529,7 +532,7 @@ export class ReplayEngine {
           : null;
         if (signal?.disposition === 'resume') { changed = true; break; }  // operator cleared it by hand
         if (signal?.disposition === 'complete') return { changed, humanCompleted: true };
-        const pendingLoop = this.humanRequired(cap, step.id);
+        const pendingLoop = await this.humanRequired(cap, step.id);
         if (pendingLoop) return { changed, escalationResult: pendingLoop };
         const dump = this.o.log.dumpObservation(current, `interstitial-loop-${hit.code}`);
         return {
@@ -647,7 +650,8 @@ export class ReplayEngine {
     // result.json in clear. Nothing declares outcome outputs today — the
     // schema permits it, which is enough.
     for (const out of outcome.outputs) {
-      this.o.redactor.register(String(extraction.values[out.name] ?? ''), effectiveSensitivity(out), out.name);
+      const value = String(extraction.values[out.name] ?? '');
+      this.o.redactor.register(value, effectiveSensitivity(out, value, this.o.redactor), out.name);
     }
     const shot = await this.o.log.screenshot(this.o.surface, `outcome-${outcome.code}`);
     this.o.log.event('outcome.detected', {
@@ -697,7 +701,7 @@ export class ReplayEngine {
       // reporting this as a hard failure would read as "the automation is
       // broken" when the truth is "this one needs a human".
       this.o.log.event('note', { message: 'escalation suppressed (unattended run)', reason, summary });
-      this.unresolvedEscalation = { reason: `${reason}: ${summary}` };
+      this.unresolvedEscalation = { reason: `${reason}: ${summary}`, expected: ctx.expected, observed: ctx.observed };
       return null;
     }
     // Never wait for an operator longer than the run itself is allowed to
@@ -719,6 +723,8 @@ export class ReplayEngine {
       this.unresolvedEscalation = {
         escalationId: intervention.id,
         reason: `${reason}: ${summary} (no operator resolved it in time)`,
+        expected: ctx.expected,
+        observed: ctx.observed,
       };
     }
     return signal;
@@ -731,17 +737,33 @@ export class ReplayEngine {
    * waiting on a person. Collapsing it into `failure` is what makes callers
    * retry things that will never succeed without someone looking.
    */
-  private humanRequired(cap: Capability, stepId?: string): ReplayResult | null {
+  private async humanRequired(cap: Capability, stepId?: string): Promise<ReplayResult | null> {
     const pending = this.unresolvedEscalation;
     if (!pending) return null;
     this.unresolvedEscalation = null;
-    this.o.log.event('run.end', { status: 'needs_human', ...pending, stepId });
+
+    // The same evidence a failure gets. This used to return first, so an
+    // unattended run — which is how `invoke` runs, i.e. production — got a
+    // reason string and nothing to debug it with: no screenshot, no perceived
+    // control list, and the near-miss control names the locator had already
+    // computed were discarded.
+    const evidence: string[] = [];
+    const shot = await this.o.log.screenshot(this.o.surface, `needs-human-${stepId ?? 'run'}`);
+    if (shot) evidence.push(shot);
+    if (this._lastObservation) {
+      evidence.push(this.o.log.dumpObservation(this._lastObservation, `needs-human-${stepId ?? 'run'}`));
+    }
+
+    this.o.log.event('run.end', { status: 'needs_human', ...pending, stepId, evidence });
     return {
       ...(this.baseFor(cap) as object),
       status: 'needs_human',
       escalationId: pending.escalationId ?? 'not-raised',
       reason: pending.reason,
       stepId,
+      expected: pending.expected,
+      observed: pending.observed,
+      evidence,
     } as ReplayResult;
   }
 
@@ -777,7 +799,7 @@ export class ReplayEngine {
     if (!signal) {
       // Nobody approved it, so nobody approved it. Proceeding would make the
       // gate decorative; failing would say the flow is broken when it is not.
-      const pending = this.humanRequired(cap, step.id);
+      const pending = await this.humanRequired(cap, step.id);
       if (pending) return { kind: 'result', result: pending };
     }
     if (!signal || signal.disposition === 'abort') {
@@ -1007,15 +1029,24 @@ export class ReplayEngine {
  * Declaration can raise the classification; it cannot lower it below what the
  * label implies.
  */
-function effectiveSensitivity(out: Output): Sensitivity {
+function effectiveSensitivity(out: Output, value?: string, redactor?: Redactor): Sensitivity {
   if (out.sensitivity === 'secret' || out.sensitivity === 'pii') return out.sensitivity;
+
   const src = out.source;
   const label =
     src.from === 'readout' ? src.label.value
     : src.from === 'node' ? src.target.name
     : src.from === 'table' ? `${src.selectColumn} ${src.whereColumn}`
+    // A text extractor has no label, which is exactly the hole: the pattern is
+    // the closest thing it has to one, so classify on that too.
+    : src.from === 'text' ? src.pattern
     : '';
-  return looksSensitive(`${out.name} ${label}`) ? 'pii' : out.sensitivity;
+  if (looksSensitive(`${out.name} ${label}`)) return 'pii';
+
+  // The only line that does not depend on a label existing: ask whether the
+  // value itself looks like regulated data.
+  if (value && redactor?.looksRegulatedValue(value)) return 'pii';
+  return out.sensitivity;
 }
 
 function sleep(ms: number): Promise<void> {

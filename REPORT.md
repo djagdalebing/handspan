@@ -172,10 +172,12 @@ Human actions are recorded, typed *content* only as a character count.
 
 ## 6. Safety
 
-**The allowlist is the hard boundary**, enforced by one function every
+**The allowlist is the hard boundary**, enforced by one function every *replay*
 navigation passes through — step, recovery handler, nested capability, operator
 console, any surface — as the intersection of the deployment's policy and the
-capability's declared origins. It lived only in the engine for a while, so the
+capability's declared origins. Discovery checks the deployment policy alone,
+because the capability whose origins would form the other half does not exist
+yet; the entry point's origin bounds the operator instead. It lived only in the engine for a while, so the
 console was checked against the deployment policy alone; in the target
 environment one deployment lists every tenant's origin, which made that the
 difference between isolation and none. For that second half to mean anything, a

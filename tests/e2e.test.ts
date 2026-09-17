@@ -137,6 +137,26 @@ describe('replay against the live legacy app', () => {
     expect(r.status).not.toBe('success');
   }, 60_000);
 
+  /**
+   * `invoke` runs unattended, so this is the mode production uses. The richer
+   * failure signal used to be skipped there: a reason string and nothing to
+   * debug it with.
+   */
+  it('captures evidence when an unattended run needs a human', async () => {
+    const cap = capability();
+    const step = cap.steps.find((x) => x.id === 's05')!;
+    if ('target' in step.action) step.action.target.name = 'Nonexistent Button';
+    const r = await engine().run(cap, { memberId: '12345' });
+
+    expect(r.status).toBe('needs_human');
+    if (r.status === 'needs_human') {
+      expect(r.evidence.length).toBeGreaterThan(0);
+      expect(r.evidence.some((f) => f.endsWith('.observation.json'))).toBe(true);
+      // The near-miss control names the locator already computed.
+      expect(r.observed).toMatch(/nearest/);
+    }
+  }, 60_000);
+
   it('refuses to navigate outside the capability\'s declared origins', async () => {
     const cap = capability();
     cap.policy.allowedOrigins = ['http://127.0.0.1:4311'];

@@ -102,6 +102,19 @@ export class Redactor {
     }
   }
 
+  /**
+   * Whether a *value* looks regulated on its own, with no label to go on.
+   *
+   * Label-based classification has a blind spot: an extractor that reads raw
+   * text has no label, so an output declared `internal` could pull an account
+   * number straight onto disk. This asks the same patterns that backstop the
+   * log whether the value itself looks like regulated data.
+   */
+  looksRegulatedValue(value: string): boolean {
+    if (!value || value.length < 4) return false;
+    return sweep(value) !== value;
+  }
+
   /** Registered PII values, for masking them out of stored screenshots. */
   piiLiterals(): string[] {
     return [...this.pii];

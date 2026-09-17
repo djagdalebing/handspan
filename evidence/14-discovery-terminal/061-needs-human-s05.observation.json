@@ -1,0 +1,69 @@
+{
+  "url": "tn3270://127.0.0.1:4331/MEMBER_INQUIRY",
+  "title": "MEMBER INQUIRY",
+  "at": "2026-09-17T17:29:41.847Z",
+  "text": " MERIDIAN CORE 7.2.1                                      MEMBER INQUIRY\n ------------------------------------------------------------------------------\n\n   Member Number: «memberId#c9a813»____\n\n   MCS-0404 - No member record found for the number entered.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n PF3=Exit  ENTER=Search",
+  "nodes": [
+    {
+      "ref": "t0",
+      "role": "heading",
+      "name": "MEMBER INQUIRY",
+      "framePath": [],
+      "bounds": {
+        "x": 40,
+        "y": 0,
+        "w": 14,
+        "h": 1
+      }
+    },
+    {
+      "ref": "t1",
+      "role": "textbox",
+      "name": "Member Number",
+      "value": "«memberId#c9a813»",
+      "framePath": [],
+      "bounds": {
+        "x": 18,
+        "y": 3,
+        "w": 9,
+        "h": 1
+      }
+    },
+    {
+      "ref": "t2",
+      "role": "alert",
+      "name": "MCS-0404 - No member record found for the number entered.",
+      "framePath": [],
+      "bounds": {
+        "x": 0,
+        "y": 5,
+        "w": 80,
+        "h": 1
+      }
+    },
+    {
+      "ref": "t3",
+      "role": "button",
+      "name": "Exit",
+      "framePath": [],
+      "bounds": {
+        "x": 1,
+        "y": 23,
+        "w": 8,
+        "h": 1
+      }
+    },
+    {
+      "ref": "t4",
+      "role": "button",
+      "name": "Search",
+      "framePath": [],
+      "bounds": {
+        "x": 11,
+        "y": 23,
+        "w": 12,
+        "h": 1
+      }
+    }
+  ]
+}

@@ -427,10 +427,10 @@
     "s05": "92140295"
   },
   "provenance": {
-    "recordedAt": "2026-09-16T23:51:48.998Z",
+    "recordedAt": "2026-09-17T17:26:30.544Z",
     "recordedBy": "llm",
     "model": "scripted",
-    "discoveryRunId": "discover-20260916-235146-wwfh",
+    "discoveryRunId": "discover-20260917-172627-g8h7",
     "goal": "Sign on as the operator, look up member 12345 in Member Inquiry, and reach the member detail screen showing their share savings balance."
   }
 }

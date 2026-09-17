@@ -137,7 +137,14 @@ const PATCHABLE: RegExp[] = [
   /^steps\[\d+\]\.(timeoutMs|optional)$/,
   /^steps\[\d+\]\.retry\.(attempts|backoffMs)$/,
   /^steps\[\d+\]\.waitFor(\..*)?$/,
-  /^outputs\[\d+\]\.source(\..*)?$/,
+  // Sub-fields of an extractor, but never `from`. A tenant legitimately says
+  // "the balance is in a column called BALANCE here"; changing the *mechanism*
+  // from a labelled readout to a raw text pattern is not a specialisation, and
+  // it slipped past the label-based PII classification because a text
+  // extractor has no label to classify.
+  /^outputs\[\d+\]\.source\.(whereColumn|selectColumn|pattern|group|attr)$/,
+  /^outputs\[\d+\]\.source\.(label|whereEquals|table)(\..*)?$/,
+  /^outputs\[\d+\]\.source\.target\.(name|nameMatch|group|ordinal|framePath|domHint|inRowContaining)$/,
   /^outputs\[\d+\]\.transform$/,
   /^outcomes\[\d+\]\.when(\..*)?$/,
   /^interstitials\[\d+\]\.when(\..*)?$/,
@@ -178,6 +185,7 @@ const SEALED: Array<{ name: string; read: (c: Capability) => unknown }> = [
   { name: 'step sequence', read: (c) => c.steps.map((x) => `${x.id}:${x.risk}:${x.action.kind}`).join(',') },
   { name: 'input sensitivity', read: (c) => c.inputs.map((i) => `${i.name}:${i.sensitivity}`).join(',') },
   { name: 'output sensitivity', read: (c) => c.outputs.map((o) => `${o.name}:${o.sensitivity}:${o.type}`).join(',') },
+  { name: 'output extractor kinds', read: (c) => c.outputs.map((o) => `${o.name}:${o.source.from}`).join(',') },
   { name: 'outcome codes', read: (c) => c.outcomes.map((o) => `${o.code}:${o.classification}`).join(',') },
   { name: 'interstitial codes', read: (c) => c.interstitials.map((i) => `${i.code}:${i.restartFlow}`).join(',') },
 ];
