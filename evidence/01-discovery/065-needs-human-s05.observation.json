@@ -1,8 +1,8 @@
 {
   "url": "http://127.0.0.1:4311/desk",
   "title": "MERIDIAN Core :: Desk",
-  "at": "2026-09-17T17:27:23.659Z",
-  "text": "MERIDIAN CORE Member Services 7.2.1 OPER: DEMO\n---\nMENU Member Inquiry Account Services Teller Ops Reports\n---\nACCOUNT ALERT — ACKNOWLEDGEMENT REQUIRED This member record carries a compliance review flag. You must acknowledge this notice before the record can be displayed.",
+  "at": "2026-09-18T23:42:20.978Z",
+  "text": "MERIDIAN CORE Member Services 7.2.1 OPER: DEMO\n---\nMENU Member Inquiry Account Services Teller Ops Reports\n---\nMEMBER INQUIRY MCS-0404 — No member record found for the number entered. Return to inquiry",
   "nodes": [
     {
       "ref": "n2_0",
@@ -38,24 +38,24 @@
     },
     {
       "ref": "n3_0",
-      "role": "button",
-      "name": "Acknowledge",
+      "role": "link",
+      "name": "Return to inquiry",
       "framePath": [
         "main"
       ],
-      "group": "ACCOUNT ALERT — ACKNOWLEDGEMENT REQUIRED",
-      "domHint": "input type=submit",
+      "group": "MCS-0404",
+      "domHint": "a href=/app/home",
       "bounds": {
         "x": 159,
         "y": 117,
-        "w": 86,
-        "h": 19
+        "w": 85,
+        "h": 12
       }
     },
     {
       "ref": "n3_1",
       "role": "alert",
-      "name": "This member record carries a compliance review flag. You must acknowledge this notice before the record can be displayed.",
+      "name": "MCS-0404 — No member record found for the number entered.",
       "framePath": [
         "main"
       ],

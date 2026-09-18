@@ -187,6 +187,11 @@ interface Job {
 }
 
 async function cmdDiscover(args: Args): Promise<number> {
+  // Before the job file is read and long before a browser opens. The host
+  // policy is the only one that gets a vote on whether the caller may supply
+  // their own.
+  checkOverrides(args, loadPolicy(hostPolicyPath()), 'discover');
+
   const job = JSON.parse(readFileSync(str(args, 'job'), 'utf8')) as Job;
   const inputs: Param[] = job.inputs.map((i) => zParam.parse(i));
   const values = { ...job.values, ...kvPairs(args.repeated.param) };
@@ -329,8 +334,15 @@ function makeProvider(args: Args): ModelProvider {
  * Refuses caller-supplied flags that would weaken a guardrail, unless the
  * *deployment* has opted in. `invoke` is the agent-facing entry point and
  * never accepts them at all.
+ *
+ * Every command that opens a surface goes through this, `discover` included.
+ * It did not, once: `cmdDiscover` handed `--policy` straight to `bootstrap`,
+ * so the one command that puts a model in the loop was the one command whose
+ * allowlist the caller could replace — while the README claimed the opposite.
+ * A gate with a hole in the command that matters most is documentation, not a
+ * control.
  */
-function checkOverrides(args: Args, policy: Policy, mode: 'replay' | 'invoke'): void {
+function checkOverrides(args: Args, policy: Policy, mode: 'replay' | 'invoke' | 'discover'): void {
   // Two different questions, and conflating them broke the legitimate case.
   //
   // An overlay is how a tenant *runs* — an operator supplying one is normal

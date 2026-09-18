@@ -426,10 +426,10 @@
     "s05": "92140295"
   },
   "provenance": {
-    "recordedAt": "2026-09-17T17:26:30.544Z",
+    "recordedAt": "2026-09-18T23:42:03.279Z",
     "recordedBy": "llm",
     "model": "scripted",
-    "discoveryRunId": "discover-20260917-172627-g8h7",
+    "discoveryRunId": "discover-20260918-234200-brqs",
     "goal": "Sign on as the operator, look up member 12345 in Member Inquiry, and reach the member detail screen showing their share savings balance.",
     "derivedFrom": {
       "id": "meridian.member.savings-balance",

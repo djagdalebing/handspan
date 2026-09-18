@@ -77,7 +77,20 @@ if exactly one candidate survives. Legacy apps churn "Member Number:" into
 happened next, so waiting is condition-based rather than timed, which also
 absorbs transient slowness. Settling polls *every frame's* `readyState`: on a
 frameset a link inside `main` does not reload the top document, so a page-level
-load wait returns instantly and you observe a blank frame.
+load wait returns instantly and you observe a blank frame. Polling readyState
+is still not enough on its own: a click submits into `main` before the new
+document begins loading, so every frame reads `complete` and settling finishes
+on the screen the click left. Settling now waits for a frame to actually
+depart, capped at 1.2s.
+
+**The loop tells the model what changed, not where it is.** Reporting the
+top-level URL after each action is a constant on a frameset — the surface this
+exists for — so the model's only feedback signal was fixed. It clicked Search,
+was told it was still at `/desk`, re-clicked the navigation link, wiped the
+form it had just filled, and stalled. Each turn now reports the controls that
+appeared and vanished, values that changed, and any new message on screen; an
+action that changed nothing says so in those words. I found this by watching a
+live run fail on it, not by reading the code.
 
 **The result contract separates whose problem it is** — `success` /
 `business_outcome` / `needs_human` / `failure`, with thirteen failure classes.

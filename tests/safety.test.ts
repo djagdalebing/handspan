@@ -1,4 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { spawnSync } from 'node:child_process';
+import { writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { denyLocation, Policy } from '../src/safety/policy.js';
 import { Redactor, looksSensitive } from '../src/safety/redact.js';
 import { EnvCredentialProvider } from '../src/safety/credentials.js';
@@ -237,5 +241,46 @@ describe('value-level regulated-data backstop', () => {
     for (const v of ['4,812.55', 'ACTIVE', 'SHARE SAVINGS', 'EASTGATE 004']) {
       expect(r.looksRegulatedValue(v)).toBe(false);
     }
+  });
+});
+
+describe('caller-supplied configuration', () => {
+  /**
+   * A unit test of the gate would have passed throughout the bug: the gate was
+   * correct, `cmdDiscover` simply never called it, and discovery is the one
+   * command that puts a model in the loop. So this drives the real CLI.
+   */
+  const run = (args: string[]): { code: number | null; err: string } => {
+    const r = spawnSync('npx', ['tsx', 'src/cli.ts', ...args], { encoding: 'utf8' });
+    return { code: r.status, err: `${r.stderr}${r.stdout}` };
+  };
+
+  const wide = join(tmpdir(), `hs-wide-${process.pid}.json`);
+  beforeAll(() => {
+    writeFileSync(wide, JSON.stringify({
+      allowedOrigins: ['https://example.com'],
+      allowCallerOverrides: true,
+      riskyActions: 'proceed',
+    }));
+  });
+  afterAll(() => { rmSync(wide, { force: true }); });
+
+  it('refuses a caller-supplied policy on discover', () => {
+    const { code, err } = run(['discover', '--job', 'jobs/member-savings-balance.json', '--policy', wide]);
+    expect(code).not.toBe(0);
+    expect(err).toMatch(/--policy is refused/);
+  });
+
+  it('refuses it before the job file is even read', () => {
+    // A gate that runs after the surface opens is a post-mortem, not a gate.
+    const { code, err } = run(['discover', '--job', '/nonexistent/job.json', '--policy', wide]);
+    expect(code).not.toBe(0);
+    expect(err).toMatch(/--policy is refused/);
+    expect(err).not.toMatch(/ENOENT/);
+  });
+
+  it('still refuses it on replay, and refuses --overlay only to a calling agent', () => {
+    expect(run(['replay', 'x', '--policy', wide]).err).toMatch(/--policy is refused/);
+    expect(run(['invoke', 'x', '--overlay', wide]).err).toMatch(/--overlay/);
   });
 });

@@ -161,10 +161,12 @@ export class WebSurface implements Surface, LiveControl {
         case 'navigate':
           await this.page.goto(action.url, { waitUntil: 'domcontentloaded' });
           return { ok: true };
-        case 'press':
+        case 'press': {
+          const before = this.frameSignature();
           await this.page.keyboard.press(action.key);
-          await this.settle();
+          await this.settle(before);
           return { ok: true };
+        }
         case 'wait':
           await new Promise((r) => setTimeout(r, action.ms));
           return { ok: true };
@@ -173,6 +175,11 @@ export class WebSurface implements Surface, LiveControl {
       if (!resolved) return { ok: false, error: 'no resolved target supplied' };
       const handle = await this.handleFor(resolved.ref);
       if (!handle) return { ok: false, error: `element for ${resolved.ref} is no longer attached` };
+
+      // Only actions that can navigate get the wait-for-departure treatment;
+      // typing into a field never does, and should not pay for it.
+      const navigational = action.kind === 'click' || action.kind === 'select';
+      const before = navigational ? this.frameSignature() : undefined;
 
       switch (action.kind) {
         case 'click':
@@ -194,7 +201,7 @@ export class WebSurface implements Surface, LiveControl {
         }
       }
       await handle.dispose().catch(() => {});
-      await this.settle();
+      await this.settle(before);
       return { ok: true };
     } catch (e) {
       return { ok: false, error: e instanceof Error ? e.message : String(e) };
@@ -231,7 +238,37 @@ export class WebSurface implements Surface, LiveControl {
    * is exactly the kind of thing that makes legacy surfaces different from
    * modern single-document apps.
    */
-  private async settle(): Promise<void> {
+  /** Where every frame currently points. Cheap, synchronous, and the only
+   *  signal a frameset gives that a click went somewhere. */
+  private frameSignature(): string {
+    return this.page.frames().map((f) => f.url()).join('\n');
+  }
+
+  /**
+   * @param wasBefore frame signature captured immediately before an action
+   *   that can navigate. Supplying it makes `settle` wait for the navigation
+   *   to *start*, not just for the current documents to finish loading.
+   *
+   * Polling `readyState` alone loses a race that shows up roughly one run in
+   * five here: a click submits the form in the `main` frame, but the new
+   * document has not begun loading yet, so every frame still reads
+   * `complete` and settle returns on the *old* screen. Discovery perceived
+   * the unchanged search form after clicking Search — visible only once the
+   * loop started reporting what changed, as a flat "nothing changed" on the
+   * one action that mattered. Replay survived it because its checkpoint wait
+   * retries; discovery gets one look.
+   *
+   * Being intermittent, this is guarded rather than proven by a failing
+   * test — the e2e case below exercises the path, not the timing.
+   */
+  private async settle(wasBefore?: string): Promise<void> {
+    if (wasBefore !== undefined) {
+      const started = Date.now() + 1_200;
+      while (Date.now() < started && this.frameSignature() === wasBefore) {
+        await new Promise((r) => setTimeout(r, 40));
+      }
+    }
+
     await this.page.waitForLoadState('domcontentloaded', { timeout: 5_000 }).catch(() => {});
 
     const deadline = Date.now() + 5_000;

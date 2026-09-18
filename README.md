@@ -39,12 +39,14 @@ probes, escalation, the tests — runs without one:
 
 ```bash
 export GEMINI_API_KEY=...
-export HS_GEMINI_MODEL=gemini-2.5-flash-lite   # optional; this is the default
+export HS_GEMINI_MODEL=gemini-2.5-flash        # optional; this is the default
 ```
 
 Deployment config is read from the environment rather than the command line,
 because a caller who can point `--policy` at their own file has replaced the
-rules rather than bent them:
+rules rather than bent them. That check runs on `discover` as well as on
+`replay` and `invoke` — it did not, once, and discovery is the command with a
+model in the loop:
 
 ```bash
 export HS_POLICY_FILE=config/policy.json       # allowlist, risk gate, timeouts
@@ -206,7 +208,7 @@ npx tsx src/cli.ts invoke meridian.member.savings-balance@1.1.0 --input memberId
 
 ```bash
 ./scripts/capture-evidence.sh    # regenerates /evidence from scratch
-npm test                         # 179 tests, incl. end-to-end against both surfaces
+npm test                         # 188 tests, incl. end-to-end against both surfaces
 npm run typecheck
 ```
 

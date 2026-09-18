@@ -165,3 +165,43 @@ describe('replay against the live legacy app', () => {
     if (r.status === 'failure') expect(r.failure.class).toBe('POLICY_DENIED');
   }, 30_000);
 });
+
+/**
+ * The frameset race, from the perceiving side.
+ *
+ * A click submits the form inside the `main` frame, but the new document has
+ * not begun loading when the action returns, so every frame still reads
+ * `readyState: complete` and settling finished on the *old* screen. Replay
+ * survived it by retrying; discovery got one look and reported "nothing
+ * changed" on the one action that mattered.
+ *
+ * Honest about what this test is: the race is intermittent (about one run in
+ * five, and not on this in-process server), so this does not reproduce the
+ * timing. It pins the path — observe immediately after a click, no retry —
+ * so the guard in `settle` cannot be removed without something failing here
+ * when the timing does go wrong.
+ */
+describe('observing immediately after a click', () => {
+  it('sees the screen the click produced, not the one it left', async () => {
+    await surface.act({ kind: 'navigate', url: `${ORIGIN}/` }, null);
+
+    const find = async (role: string, name: string) => {
+      const obs = await surface.observe();
+      const n = obs.nodes.find((x) => x.role === role && x.name === name);
+      if (!n) throw new Error(`no ${role} "${name}" on ${obs.url}`);
+      return n;
+    };
+
+    await surface.act({ kind: 'type', target: { role: 'textbox', name: 'Operator ID', nameMatch: 'exact' }, text: 'demo' }, await find('textbox', 'Operator ID'));
+    await surface.act({ kind: 'type', target: { role: 'textbox', name: 'Password', nameMatch: 'exact' }, text: 'demo' }, await find('textbox', 'Password'));
+    await surface.act({ kind: 'click', target: { role: 'button', name: 'Sign On', nameMatch: 'exact' } }, await find('button', 'Sign On'));
+
+    await surface.act({ kind: 'type', target: { role: 'textbox', name: 'Member Number', nameMatch: 'exact' }, text: '12345' }, await find('textbox', 'Member Number'));
+    await surface.act({ kind: 'click', target: { role: 'button', name: 'Search', nameMatch: 'exact' } }, await find('button', 'Search'));
+
+    // No retry, no wait, no second observation: exactly what discovery does.
+    const after = await surface.observe();
+    expect(after.text).toContain('MEMBER DETAIL');
+    expect(after.nodes.some((n) => n.role === 'button' && n.name === 'Search')).toBe(false);
+  }, 60_000);
+});

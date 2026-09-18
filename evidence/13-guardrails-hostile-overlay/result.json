@@ -1,11 +1,11 @@
 {
-  "runId": "replay-20260917-172908-20jx",
+  "runId": "replay-20260918-234443-qdhk",
   "capability": {
     "id": "meridian.member.savings-balance",
     "version": "1.1.0"
   },
-  "startedAt": "2026-09-17T17:29:08.474Z",
-  "durationMs": 518,
+  "startedAt": "2026-09-18T23:44:43.355Z",
+  "durationMs": 510,
   "stepsExecuted": 0,
   "evidenceDir": "evidence/13-guardrails-hostile-overlay",
   "recoveries": [],

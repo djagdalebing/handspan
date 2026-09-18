@@ -243,3 +243,66 @@ export function renderHistory(history: Array<{ intent: string; action: string; r
     .map((h, i) => `${i + 1}. ${h.intent} [${h.action}] → ${h.result}`)
     .join('\n');
 }
+
+/**
+ * What changed on screen between the observation an action was chosen from
+ * and the next one.
+ *
+ * The loop used to report `now at <url>` after every action, which on a
+ * frameset — the surface this project exists for — is a constant. The model
+ * clicked Search, was told it was still at `/desk`, concluded nothing had
+ * happened, re-clicked the navigation link, wiped the form it had just
+ * filled, and stalled. The URL is the one signal these applications do not
+ * give you; the control list is the one they do.
+ *
+ * Alerts come first and are called out separately, because on these screens
+ * an error is an alert and it is the most consequential thing that can have
+ * changed. "No visible change" is stated explicitly rather than left as an
+ * empty result: an action that did nothing is information, and a model that
+ * is told so stops repeating it.
+ */
+export function describeChange(before: Observation, after: Observation): string {
+  const key = (n: UiNode): string => `${n.role} "${n.name}"`;
+  const beforeByKey = new Map(before.nodes.map((n) => [key(n), n]));
+  const afterByKey = new Map(after.nodes.map((n) => [key(n), n]));
+
+  const parts: string[] = [];
+
+  if (after.url !== before.url) parts.push(`navigated to ${after.url}`);
+  else if (after.title !== before.title) parts.push(`screen is now "${after.title}"`);
+
+  const newAlerts = after.nodes
+    .filter((n) => n.role === 'alert')
+    .filter((n) => !before.nodes.some((b) => b.role === 'alert' && b.name === n.name));
+  if (newAlerts.length) {
+    parts.push(`message on screen: ${newAlerts.map((a) => `"${a.name}"`).join('; ')}`);
+  }
+
+  const structural = (k: string): boolean => !k.startsWith('alert ');
+  const appeared = [...afterByKey.keys()].filter((k) => !beforeByKey.has(k) && structural(k));
+  const gone = [...beforeByKey.keys()].filter((k) => !afterByKey.has(k) && structural(k));
+
+  const changedValues: string[] = [];
+  for (const [k, n] of afterByKey) {
+    const b = beforeByKey.get(k);
+    if (!b) continue;
+    const bv = b.value ?? '';
+    const av = n.value ?? '';
+    if (bv !== av) changedValues.push(`${k} now ${av === '' ? 'empty' : `"${av}"`}`);
+  }
+
+  if (appeared.length) parts.push(`appeared: ${cap(appeared)}`);
+  if (gone.length) parts.push(`no longer present: ${cap(gone)}`);
+  if (changedValues.length) parts.push(cap(changedValues));
+
+  if (parts.length === 0) {
+    return `NOTHING CHANGED on screen (still at ${after.url}) — that action had no visible effect, so repeating it will not help`;
+  }
+  return parts.join('; ');
+}
+
+/** Long lists of controls are noise past the first few. */
+function cap(items: string[], limit = 6): string {
+  if (items.length <= limit) return items.join(', ');
+  return `${items.slice(0, limit).join(', ')} and ${items.length - limit} more`;
+}

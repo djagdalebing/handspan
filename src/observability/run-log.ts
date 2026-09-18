@@ -22,7 +22,7 @@ import { looksSensitive, Redactor } from '../safety/redact.js';
 export type EventType =
   | 'run.start' | 'run.end'
   | 'policy.decision'
-  | 'step.start' | 'step.end'
+  | 'step.start' | 'step.end' | 'step.effect'
   | 'observe'
   | 'model.request' | 'model.response'
   | 'outcome.detected' | 'interstitial.recovered'

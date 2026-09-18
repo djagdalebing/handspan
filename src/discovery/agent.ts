@@ -28,7 +28,7 @@ import { broker } from '../escalation/broker.js';
 import { fingerprintObservation } from '../replay/locator.js';
 import {
   DECISION_SCHEMA, SUMMARY_SCHEMA, SUMMARY_SYSTEM, SYSTEM_PROMPT,
-  renderHistory, renderObservation,
+  describeChange, renderHistory, renderObservation,
   type Decision, type SummaryResponse,
 } from './prompt.js';
 
@@ -116,11 +116,23 @@ export async function runDiscovery(o: DiscoveryOptions): Promise<DiscoveryOutcom
   let obs = await o.surface.observe();
   let finishMessage = '';
 
+  // The previous turn's result is filled in from the *next* observation, so
+  // the model is told what its action actually did to the screen rather than
+  // where it nominally is. Deferring it to the top of the loop costs no extra
+  // perception: this observation was going to happen anyway.
+  let pending: { turn: { result: string }; before: Observation } | null = null;
+
   for (let step = 0; step < o.maxSteps; step++) {
     if (!o.control.canAutomate()) await o.control.requestHandoff();
 
     obs = await o.surface.observe();
     o.log.event('observe', { step, url: obs.url, nodes: obs.nodes.length });
+
+    if (pending) {
+      pending.turn.result = describeChange(pending.before, obs);
+      o.log.event('step.effect', { step: step - 1, change: pending.turn.result });
+      pending = null;
+    }
 
     // --- stuck detection ---------------------------------------------------
     // The signature has to include field *values*, not just the control
@@ -292,7 +304,11 @@ export async function runDiscovery(o: DiscoveryOptions): Promise<DiscoveryOutcom
 
     recorded.push({ intent: decision.intent, decision, node, obsBefore: obs, fingerprint, risk });
     const after = await o.surface.location();
-    history.push({ intent: decision.intent, action: decision.action, result: `now at ${after}` });
+    // Provisional. The next observation replaces this with what changed; if
+    // the loop ends here, "now at" is still an honest last line.
+    const turn = { intent: decision.intent, action: decision.action, result: `now at ${after}` };
+    history.push(turn);
+    pending = { turn, before: obs };
     o.log.event('step.end', { step, intent: decision.intent, action: decision.action, ok: true, url: after });
   }
 

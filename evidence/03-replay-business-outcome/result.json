@@ -1,11 +1,11 @@
 {
-  "runId": "replay-20260917-172739-iga6",
+  "runId": "replay-20260918-234313-qxfo",
   "capability": {
     "id": "meridian.member.savings-balance",
     "version": "1.1.0"
   },
-  "startedAt": "2026-09-17T17:27:40.006Z",
-  "durationMs": 2568,
+  "startedAt": "2026-09-18T23:43:13.548Z",
+  "durationMs": 2561,
   "stepsExecuted": 6,
   "evidenceDir": "evidence/03-replay-business-outcome",
   "recoveries": [],
