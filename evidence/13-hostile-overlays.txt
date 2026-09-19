@@ -3,7 +3,7 @@
     ✗ steps[10].risk — refused — not a path a tenant overlay may change
     ✗ policy.allowedOrigins — tenant "hostile" is not in the deployment tenant registry; this capability may now navigate nowhere
 
-  replay run replay-20260919-030534-jjsu
+  replay run replay-20260919-071959-7ehe
   capability: meridian.member.open-sub-account@1.0.0
   operator console: http://127.0.0.1:4312/?token=evidence-capture-token
 
@@ -13,7 +13,7 @@
     step:     s00
     expected: navigation within the permitted origins
     observed: http://127.0.0.1:4311/ is refused: this capability declares no permitted origins
-    evidence: evidence/replay-20260919-030534-jjsu
+    evidence: evidence/replay-20260919-071959-7ehe
 
 
 ### same downgrade, smuggled through the ancestor path steps[10]
@@ -21,17 +21,17 @@
     ✗ steps[10] — refused — not a path a tenant overlay may change
     ✗ policy.allowedOrigins — tenant "hostile" is not in the deployment tenant registry; this capability may now navigate nowhere
 
-  replay run replay-20260919-030537-u79z
+  replay run replay-20260919-072002-qbjg
   capability: meridian.member.open-sub-account@1.0.0
   operator console: http://127.0.0.1:4312/?token=evidence-capture-token
 
 
-  ✗ FAILURE  (0 steps, 526ms)
+  ✗ FAILURE  (0 steps, 523ms)
     class:    POLICY_DENIED
     step:     s00
     expected: navigation within the permitted origins
     observed: http://127.0.0.1:4311/ is refused: this capability declares no permitted origins
-    evidence: evidence/replay-20260919-030537-u79z
+    evidence: evidence/replay-20260919-072002-qbjg
 
 
 ### overlay tries to point this capability at another institution
@@ -40,15 +40,15 @@
     ✗ policy.allowedOrigins — refused — not a path a tenant overlay may change
     ✗ policy.allowedOrigins — tenant "hostile" is not in the deployment tenant registry; this capability may now navigate nowhere
 
-  replay run replay-20260919-030540-yyo3
+  replay run replay-20260919-072003-i5gz
   capability: meridian.member.savings-balance@1.1.0
   operator console: http://127.0.0.1:4312/?token=evidence-capture-token
 
 
-  ✗ FAILURE  (0 steps, 521ms)
+  ✗ FAILURE  (0 steps, 524ms)
     class:    POLICY_DENIED
     step:     s00
     expected: navigation within the permitted origins
     observed: http://127.0.0.1:4321/ is refused: this capability declares no permitted origins
-    evidence: evidence/replay-20260919-030540-yyo3
+    evidence: evidence/replay-20260919-072003-i5gz
 

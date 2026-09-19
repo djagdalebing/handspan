@@ -1,6 +1,6 @@
 ### discovery on the second surface: a capability recorded from characters
 
-  discovery run discover-20260919-030542-g3cj
+  discovery run discover-20260919-072005-5fvk
   goal: Sign on at the terminal, look up member 12345, and reach the member detail screen showing their share savings balance.
   model: scripted
   operator console: http://127.0.0.1:4312/?token=evidence-capture-token
@@ -18,7 +18,7 @@
 
   ✓ recorded meridian.terminal.member-savings-balance@1.0.0 (6 steps, approval=draft)
     artifact: capabilities/meridian.terminal.member-savings-balance@1.0.0.json
-    evidence: evidence/discover-20260919-030542-g3cj
+    evidence: evidence/discover-20260919-072005-5fvk
     success condition: page text contains "MEMBER DETAIL" AND field "Member Name" regex "."
     returns: memberName: string, accountStatus: string, savingsBalance: number
     proposed outcomes (for review): MEMBER_NOT_FOUND, MEMBER_RESTRICTED
@@ -35,17 +35,17 @@
     ~ policy.allowedOrigins — from the tenant registry (Meridian green-screen terminal)
     ~ checkpoint/conditions — success-condition changes attested by d.jagdale (verified the heading differs only in punctuation)
 
-  replay run replay-20260919-030647-q5fz
+  replay run replay-20260919-072109-40yv
   capability: meridian.member.savings-balance@1.1.0
   operator console: http://127.0.0.1:4312/?token=evidence-capture-token
 
 
-  ✓ SUCCESS  (6 steps, 74ms)
-    memberName = "«memberName#c8738f»"
+  ✓ SUCCESS  (6 steps, 94ms)
+    memberName = "«memberName#58af95»"
     accountStatus = "ACTIVE"
     savingsBalance = 4812.55
     drift:    screen changed at [s01, s02, s03, s04, s05], relaxed match at [-], frame moved at [s04, s05]
-    evidence: evidence/replay-20260919-030647-q5fz
+    evidence: evidence/replay-20260919-072109-40yv
 
 
 ### and the same business outcome, from detectors built against the web app
@@ -55,14 +55,14 @@
     ~ policy.allowedOrigins — from the tenant registry (Meridian green-screen terminal)
     ~ checkpoint/conditions — success-condition changes attested by d.jagdale (verified the heading differs only in punctuation)
 
-  replay run replay-20260919-030649-1ydf
+  replay run replay-20260919-072111-trmt
   capability: meridian.member.savings-balance@1.1.0
   operator console: http://127.0.0.1:4312/?token=evidence-capture-token
 
 
-  • BUSINESS_OUTCOME  (6 steps, 83ms)
+  • BUSINESS_OUTCOME  (6 steps, 75ms)
     code: MEMBER_NOT_FOUND
     No member record exists for the number supplied.
     drift:    screen changed at [s01, s02, s03, s04, s05], relaxed match at [-], frame moved at [s04, s05]
-    evidence: evidence/replay-20260919-030649-1ydf
+    evidence: evidence/replay-20260919-072111-trmt
 

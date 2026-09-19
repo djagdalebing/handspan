@@ -1,11 +1,11 @@
 {
-  "runId": "replay-20260919-030407-2kry",
+  "runId": "replay-20260919-071829-aniq",
   "capability": {
     "id": "meridian.member.savings-balance",
     "version": "1.1.0"
   },
-  "startedAt": "2026-09-19T03:04:07.575Z",
-  "durationMs": 2547,
+  "startedAt": "2026-09-19T07:18:30.046Z",
+  "durationMs": 2596,
   "stepsExecuted": 6,
   "evidenceDir": "evidence/03-replay-business-outcome",
   "recoveries": [],

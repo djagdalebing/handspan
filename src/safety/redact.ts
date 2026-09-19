@@ -204,14 +204,43 @@ export class Redactor {
  * list, from the page text, and from anything else in the same payload, and
  * leaves the same pseudonym each time so a screen stays readable.
  */
-export function registerScreenSecrets(redactor: Redactor, nodes: Array<{ role: string; name: string; value?: string }>): void {
+export function registerScreenSecrets(
+  redactor: Redactor,
+  nodes: Array<{ role: string; name: string; value?: string; grid?: string[][] }>
+): void {
   for (const node of nodes) {
     // Every role with a value, not just readouts: a filled-in textbox under a
     // regulated label holds the same data the readout beside it does.
-    if (!node.value || node.value === '«set»') continue;
-    if (!looksSensitive(node.name)) continue;
-    redactor.register(node.value, 'pii', node.name.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '').toLowerCase());
+    if (node.value && node.value !== '«set»' && looksSensitive(node.name)) {
+      redactor.register(node.value, 'pii', slugLabel(node.name));
+    }
+
+    // A grid holds its data in `grid`, not `value`, so a check that keyed off
+    // `value` skipped tables entirely — and a table is where these screens put
+    // account numbers. The member's name and SSN were protected while the
+    // ACCOUNT NO column beside them went to the model and onto disk in clear.
+    //
+    // The column *header* is the label here, which is the same idea one level
+    // over: a value is regulated when the thing naming it says so.
+    if (!node.grid || node.grid.length < 2) continue;
+    const header = node.grid[0] ?? [];
+    const sensitiveCols = header
+      .map((h, i) => (looksSensitive(h) ? i : -1))
+      .filter((i) => i >= 0);
+    if (sensitiveCols.length === 0) continue;
+
+    for (const row of node.grid.slice(1)) {
+      for (const col of sensitiveCols) {
+        const cell = row[col];
+        if (cell) redactor.register(cell, 'pii', slugLabel(header[col] ?? node.name));
+      }
+    }
   }
+}
+
+/** A label as a redaction token reads better lowercased and underscored. */
+function slugLabel(label: string): string {
+  return label.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '').toLowerCase();
 }
 
 /** Unsalted, for pattern hits only: these are values we were never told about. */

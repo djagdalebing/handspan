@@ -1,11 +1,11 @@
 {
-  "runId": "replay-20260919-030449-22nj",
+  "runId": "replay-20260919-071916-e6jy",
   "capability": {
     "id": "meridian.member.savings-balance",
     "version": "1.0.0"
   },
-  "startedAt": "2026-09-19T03:04:49.942Z",
-  "durationMs": 37998,
+  "startedAt": "2026-09-19T07:19:16.316Z",
+  "durationMs": 38084,
   "stepsExecuted": 7,
   "evidenceDir": "evidence/10-escalation-stuck-recovery",
   "recoveries": [
@@ -22,9 +22,9 @@
   },
   "status": "success",
   "outputs": {
-    "memberName": "«memberName#0ab460»",
+    "memberName": "«memberName#2c9fd4»",
     "accountStatus": "ACTIVE",
-    "ssnLast4": "«ssnLast4#8f3eac»",
+    "ssnLast4": "«ssnLast4#763580»",
     "savingsBalance": 4812.55
   }
 }

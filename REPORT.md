@@ -75,22 +75,19 @@ if exactly one candidate survives. Legacy apps churn "Member Number:" into
 
 **Every step is self-verifying.** Each postcondition is derived from what
 happened next, so waiting is condition-based rather than timed, which also
-absorbs transient slowness. Settling polls *every frame's* `readyState`: on a
+absorbs transient slowness. Settling polls *every frame's* `readyState` — on a
 frameset a link inside `main` does not reload the top document, so a page-level
-load wait returns instantly and you observe a blank frame. Polling readyState
-is still not enough on its own: a click submits into `main` before the new
-document begins loading, so every frame reads `complete` and settling finishes
-on the screen the click left. Settling now waits for a frame to actually
-depart, capped at 1.2s.
+wait returns instantly on a blank frame — and then waits, capped at 1.2s, for a
+frame to actually depart, because a click submits into `main` before the new
+document begins loading and every frame still reads `complete`.
 
-**The loop tells the model what changed, not where it is.** Reporting the
-top-level URL after each action is a constant on a frameset — the surface this
-exists for — so the model's only feedback signal was fixed. It clicked Search,
-was told it was still at `/desk`, re-clicked the navigation link, wiped the
-form it had just filled, and stalled. Each turn now reports the controls that
-appeared and vanished, values that changed, and any new message on screen; an
-action that changed nothing says so in those words. I found this by watching a
-live run fail on it, not by reading the code.
+**The loop tells the model what changed, not where it is.** The top-level URL is
+a constant on a frameset, so reporting it after each action gave the model a
+fixed feedback signal: it clicked Search, was told it was still at `/desk`,
+re-clicked the navigation link, wiped the form it had filled, and stalled. Each
+turn now reports the controls that appeared and vanished, values that changed and
+any new message on screen, and says plainly when an action changed nothing. Found
+by watching a live run fail on it, not by reading the code.
 
 **The result contract separates whose problem it is** — `success` /
 `business_outcome` / `needs_human` / `failure`, with thirteen failure classes.
@@ -98,18 +95,18 @@ live run fail on it, not by reading the code.
 on it. A recognised *application* failure reports as `APP_ERROR` carrying the
 app's own error code, not "could not find the Search button".
 
-**Detectors are verified against real screens, not trusted** — which I only found
-by running a real model. Gemini proposed a `MEMBER_NOT_FOUND` detector matching
-text this app never prints, so it would never fire and a legitimate outcome would
-surface as a step timeout. So discovery probes: a job declares one cheap fact
-("member 99999 does not exist"), the recorded flow is replayed against it, and
-the detector is rebuilt from what the app actually says, preferring its error
-code to prose. Markers that also fire on the success screen or another probe's are rejected.
-A repaired detector is not trusted on the strength of having scraped some text:
-it is re-probed, and `verified` is set only when the run itself reports that
-outcome — which is what a calling agent reads the flag as meaning. Same for a
-recovery read off a stalled screen. Probes cost no model calls and run with
-irreversible steps blocked; what no probe proves ships `verified: false`.
+**Detectors are verified against real screens, not trusted** — which only running
+a real model revealed. Gemini proposed a `MEMBER_NOT_FOUND` detector matching text
+this app never prints, so it would never fire and a legitimate business outcome
+would surface as a step timeout, collapsing the distinction §3 is built on. So
+discovery probes: a job declares one cheap fact ("member 99999 does not exist"),
+the recorded flow is replayed against it, and the detector is rebuilt from what
+the app actually says, preferring its error code to prose. Markers that also fire
+on the success screen or another probe's are rejected. A repaired detector is then
+re-probed, and `verified` is set only when the run itself reports that outcome —
+which is what a calling agent reads the flag as meaning. Same for a recovery read
+off a stalled screen. Probes cost no model calls and run with irreversible steps
+blocked; what no probe proves ships `verified: false`.
 
 Session expiry cannot be resumed from, so recovery runs a separate sign-on
 capability and restarts — but **only for read-only capabilities**, since for
@@ -185,120 +182,72 @@ Human actions are recorded, typed *content* only as a character count.
 
 ## 6. Safety
 
-**The allowlist is the hard boundary**, enforced by one function every *replay*
+**The allowlist is the hard boundary**, enforced by one function every replay
 navigation passes through — step, recovery handler, nested capability, operator
 console, any surface — as the intersection of the deployment's policy, the
 capability's declared origins, and, for a nested capability, the origins its
-caller was confined to. That last term was missing, and its absence made
-composition a way out of a tenant: a capability overlaid onto one institution
-hit `SESSION_EXPIRED`, ran the shared sign-on capability, and *that* artifact's
-declaration — the instance it happened to be recorded against — replaced the
-caller's. A session bound to one credit union typed its operator's credential
-into another's application and the run reported success. A composed capability
-may narrow what it can reach; it may never widen it, and an empty intersection
-denies everything rather than guessing which origin was meant.
-Discovery checks the deployment policy alone,
-because the capability whose origins would form the other half does not exist
-yet; the entry point's origin bounds the operator instead. It lived only in the engine for a while, so the
-console was checked against the deployment policy alone; in the target
-environment one deployment lists every tenant's origin, which made that the
-difference between isolation and none. For that second half to mean anything, a
-capability declares only the origins its recording touched, per-tenant origins
-come from a deployment-owned registry rather than from the overlay asking for
-them, and an empty list denies everything. The files naming those rules come
-from the host environment, not argv: a caller who can point `--policy` at their
-own file has replaced the rules rather than bent them, and the override check
-used to load the very file it was checking.
+caller was confined to. A composed capability may narrow what it reaches and never
+widen it; an empty intersection denies everything rather than guessing which
+origin was meant. For the second term to mean anything, a capability declares only
+the origins its recording touched, and per-tenant origins come from a
+deployment-owned registry rather than from the overlay asking for them. The files
+naming these rules come from the host environment, not argv: a caller who can
+point `--policy` at their own file has replaced the rules rather than bent them.
 
 **Risk classification is a heuristic floor, not a guarantee.** Guessing from a
 label whether "Post Account" commits something is defeatable, so the guess only
 decides *when to stop and ask*; it never authorises. The durable controls are a
-reviewed risk label on every step and `approved` for unattended replay, and
-neither is switchable off by the caller: `--risky proceed` and `--allow-draft`
-need the *deployment* to opt in, and `invoke` refuses them outright, because an
-agent calling capabilities by name is the untrusted side.
+reviewed risk label on every step and `approved` for unattended replay, neither
+switchable off by the caller: `--risky proceed` and `--allow-draft` need the
+deployment to opt in, and `invoke` refuses them outright, because an agent calling
+capabilities by name is the untrusted side. Since an overlay may retarget a step,
+the gate resolves the target first and re-derives risk from the control it is
+about to operate, taking whichever is higher. Irreversible actions **escalate
+rather than block**: in back-office banking the irreversible step is usually the
+entire point, and a system that refuses to post anything is not safe, it is
+useless, and it gets routed around.
 
-That label is itself a floor. An overlay may not relabel a step's risk but may
-legitimately *retarget* one, so the gate resolves the target first and re-derives
-risk from the control it is about to operate, taking whichever is higher.
+**Overlay integrity is an allow-list**, arrived at after a denylist of path
+spellings lost to patching one level up. A patch is refused unless its path is one
+tenant specialisation actually needs, and refused *before* being applied, so the
+audit line cannot describe a revert that never happened. Paths that change what
+counts as success stay patchable — tenants word them differently — but require
+`conditionsReviewedBy`, which is a *declaration*, not a control: free text in the
+same file, forcing the question to be answered rather than proving the answer.
+Making it one means signed overlays, a real gap a required string does not paper
+over.
 
-Overlay integrity took three attempts. A denylist of path *spellings* lost to
-patching one level up. Comparing a hand-enumerated set of fields by value
-afterwards still missed `sensitivity`, and "restored" injected outcome codes by
-looking them up in a base where they did not exist — reporting a revert that had
-not happened, which is worse than no guardrail. It is now an **allow-list**: a
-patch is refused unless its path is one tenant specialisation actually needs,
-and refused *before* being applied, so the audit line cannot lie. Paths that change what *counts* as success stay patchable, since tenants word
-them differently, but require `conditionsReviewedBy` to be filled in. That is a
-*declaration*, not a control: it is free text in the same file, so it forces the
-question to be answered rather than proving the answer. Making it a control
-means signed overlays, which is a real gap and not something a required string
-papers over. Recovery actions are risk-gated too, and a composed
-`run_capability` must name the version it runs — the pin was optional, which
-made it a convention while this sentence called it a rule, and an unpinned
-reference silently resolves to whatever is newest on disk.
+**Regulated data.** Secrets are by reference and never written; on the web surface
+a password field's value is never perceived, while on the terminal surface that is
+a property of the host echoing asterisks rather than of the driver. Anything
+rendering a whole screen — evidence dump, model prompt — first registers that
+screen's regulated fields, by their own labels and column headers, so they are
+scrubbed from the node list, the grid and the page text together: masking a
+screenshot while shipping the same data as text in the same request is a costume,
+not a control, and that is how this shipped. It stays label-based, so a regulated
+value under an unhelpful label still depends on the pattern sweep. PII becomes a
+per-process salted pseudonym — unsalted, four hex characters over a five-digit
+member number is an encoding. An output's sensitivity is classified from the label
+the *screen* used, not the artifact's matcher, since a tenant gets no vote on what
+the application prints; one that reads more than it declares hands the caller a
+pseudonym too, named in `underDeclared`. An output declared `pii` is returned in
+clear, because a reviewer approved it and the catalog says so — `returns:
+{memberName: string [pii], …}`. The parameters block is deliberately not redacted:
+the model must type the member number to do the task, which is this design's
+irreducible disclosure and the reason the production answer is a model inside the
+institution's boundary.
 
-The allow-list closed the channel and opened a narrower one, which is the more
-interesting failure. Classification of an output's sensitivity keyed off the
-artifact's *matcher*, and `outputs[].source.label` is a `contains` pattern a
-tenant may reword legitimately — so `"N (last 4)"` matched the `SSN (last 4)`
-readout, missed the sensitive-label list, and an approved overlay returned an
-SSN to the calling agent under an output declared `internal`. The label that
-decides is now the one the *screen* used, reported back by the extractor,
-because a tenant gets no vote on what the application prints. And since
-registering a value only ever protected the log, an output that reads more than
-it declares now hands the *caller* a pseudonym too, with `underDeclared` naming
-it — an output declared `pii` is still returned in clear, because a reviewer
-approved that and the catalog shows it, `returns: {memberName: string [pii], …}`.
-That last clause was written before it was true: the catalog carried type and
-description only, so an agent had no way to know it had been handed regulated
-data. The same mechanism found a real over-reach of its own — the account number
-a sub-account capability exists to return was pseudonymised to its caller, since
-"New Account Number" is a regulated label and the artifact said `internal`. The
-artifact was wrong, and declaring it is the fix; over-classifying a field costs a
-caller its answer, which is not obviously better than the leak.
-
-Irreversible actions **escalate rather than block**: in back-office banking the
-irreversible step is usually the entire point, and a system that refuses to post
-anything is not safe, it is useless, and it gets routed around.
-
-Secrets are referenced by name and never written anywhere, and on the web
-surface a password field's value is never *perceived*, so it cannot reach a
-prompt, a log or an artifact by that route. On the terminal surface that is a
-property of the host echoing asterisks, not of the driver, which is a real gap
-rather than a claim.
-
-Anything that renders a whole screen registers the regulated fields on it first,
-by their own labels, so they are scrubbed from the node list and the page text
-together: masking a screenshot while shipping the same data as text in the same
-request is a costume, not a control, and that is how this shipped. That check
-lived in the evidence writer and nowhere else for a while, so the local dump was
-careful while the *model prompt* — built from the same observation and sent to a
-third party — carried the member's name in clear under a label this codebase's
-own classifier calls regulated. It is one function now, used by both. It remains
-label-based, so a regulated value under an unhelpful label still depends on the
-pattern sweep. The parameters block is deliberately not redacted — the model must
-type the member number to do the task, which is this design's irreducible
-disclosure and the reason the production answer is a model inside the boundary. Regulated fields
-are identified by label, covering both spellings one arrives in (`Member Name`,
-`memberName`) and the bare person-words this domain uses. PII becomes a pseudonym
-salted per process — unsalted, four hex characters over a five-digit member
-number is an encoding, not a pseudonym. Screenshots are masked in-page by label
-*and* value. One asymmetry: the operator's live view is unmasked, because a
-masked screen is useless to the person we asked to finish the task — which is
-why the console binds loopback only and requires a token on every endpoint,
-reads included, generating one when the deployment does not supply it. It
-defaulted to no authentication at all, undocumented, which made the endpoint
-that authorises a posting open to anything that could reach the port.
-
-**Limits I would not paper over.** Three rounds of adversarial review each found
-guardrails bypassable *after* I had written prose asserting they held, and the
-first two rounds of fixes were themselves bypassed. My instinct is to write the
-control and the claim together, and the claim is cheap; every test covering these
-was written after something broke. The risk heuristic would also miss a commit
-button labelled "OK", pattern redaction is best-effort, and discovery sends
-masked screenshots to a third-party model — where the production answer is a
-model inside the institution's boundary.
+**Limits I would not paper over.** Successive rounds of review each found a
+guardrail bypassable *after* I had written prose asserting it held, and early
+fixes were themselves bypassed: narrowing the overlay allow-list opened a subtler
+channel through the output label it left patchable, and pseudonymising
+under-declared outputs briefly withheld the account number a sub-account
+capability exists to return. My instinct is to write the control and the claim
+together, and the claim is cheap — every test covering these was written after
+something broke. The risk heuristic would miss a commit button labelled "OK",
+pattern redaction is best-effort, the operator's live view is deliberately
+unmasked (hence a loopback-only console requiring a token on every endpoint,
+reads included), and discovery sends masked screenshots to a third-party model.
 
 ## 7. Cuts
 

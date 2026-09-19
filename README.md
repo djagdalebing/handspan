@@ -53,7 +53,16 @@ export HS_POLICY_FILE=config/policy.json       # allowlist, risk gate, timeouts
 export HS_TENANTS_FILE=config/tenants.json     # tenant → permitted origins
 export HS_CAPABILITY_DIR=capabilities
 export HS_OPERATOR_TOKEN=...                   # shared secret for the console
+export HS_REDACT_STDOUT=1                      # redact what the CLI prints, too
 ```
+
+`HS_REDACT_STDOUT` is off by default and on for every run under `/evidence`. It
+governs the terminal only: `events.jsonl`, the artifact and `result.json` are
+always written through the redactor. The default is off because an output the
+capability declares — and that the catalog shows as `pii` — is something the
+caller asked for and a reviewer approved, so an operator running `replay` by hand
+should see it. Set it wherever that output is going somewhere the value should
+not follow.
 
 The operator console requires `HS_OPERATOR_TOKEN` on every endpoint, reads
 included. If you do not set one the broker generates a random token at startup
@@ -208,7 +217,7 @@ npx tsx src/cli.ts invoke meridian.member.savings-balance@1.1.0 --input memberId
 
 ```bash
 ./scripts/capture-evidence.sh    # regenerates /evidence from scratch
-npm test                         # 199 tests, incl. end-to-end against both surfaces
+npm test                         # 202 tests, incl. end-to-end against both surfaces
 npm run typecheck
 ```
 

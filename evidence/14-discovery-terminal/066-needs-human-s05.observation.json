@@ -1,8 +1,8 @@
 {
   "url": "tn3270://127.0.0.1:4331/MEMBER_INQUIRY",
   "title": "MEMBER INQUIRY",
-  "at": "2026-09-19T03:06:13.719Z",
-  "text": " MERIDIAN CORE 7.2.1                                      MEMBER INQUIRY\n ------------------------------------------------------------------------------\n\n   Member Number: «member_number#5d9358»____\n\n   MCS-0404 - No member record found for the number entered.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n PF3=Exit  ENTER=Search",
+  "at": "2026-09-19T07:20:36.571Z",
+  "text": " MERIDIAN CORE 7.2.1                                      MEMBER INQUIRY\n ------------------------------------------------------------------------------\n\n   Member Number: «member_number#76b27f»____\n\n   MCS-0404 - No member record found for the number entered.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n PF3=Exit  ENTER=Search",
   "nodes": [
     {
       "ref": "t0",
@@ -20,7 +20,7 @@
       "ref": "t1",
       "role": "textbox",
       "name": "Member Number",
-      "value": "«member_number#5d9358»",
+      "value": "«member_number#76b27f»",
       "framePath": [],
       "bounds": {
         "x": 18,

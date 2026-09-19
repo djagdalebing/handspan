@@ -343,3 +343,46 @@ describe('a screen registers its own regulated fields', () => {
     expect(r.string('«set»')).toBe('«set»');
   });
 });
+
+describe('regulated values in a grid', () => {
+  /**
+   * A table keeps its data in `grid` and has no `value`, so a check that keyed
+   * off `value` skipped tables wholesale — and a table is where these screens
+   * put account numbers. The member's name was protected while the ACCOUNT NO
+   * column beside it went to the model and onto disk in clear.
+   */
+  const accounts = {
+    role: 'table',
+    name: 'MEMBER DETAIL',
+    grid: [
+      ['ACCOUNT TYPE', 'ACCOUNT NO', 'CURRENT BALANCE'],
+      ['SHARE SAVINGS', 'S-0001', '$4,812.55'],
+      ['SHARE DRAFT', 'S-0002', '$1,290.03'],
+    ],
+  };
+
+  it('registers every cell in a column its header names as regulated', () => {
+    const r = new Redactor();
+    registerScreenSecrets(r, [accounts]);
+    const rendered = r.string('SHARE SAVINGS | S-0001 | $4,812.55\nSHARE DRAFT | S-0002 | $1,290.03');
+    expect(rendered).not.toContain('S-0001');
+    expect(rendered).not.toContain('S-0002');
+    expect(rendered).toMatch(/«account_no#[0-9a-f]+»/);
+  });
+
+  // The balance is what the capability exists to read, and the account type is
+  // what makes the row identifiable. A grid stripped of both is unusable.
+  it('leaves the columns nobody calls regulated alone', () => {
+    const r = new Redactor();
+    registerScreenSecrets(r, [accounts]);
+    const rendered = r.string('SHARE SAVINGS | S-0001 | $4,812.55');
+    expect(rendered).toContain('SHARE SAVINGS');
+    expect(rendered).toContain('$4,812.55');
+  });
+
+  it('ignores a grid with no rows under its header', () => {
+    const r = new Redactor();
+    registerScreenSecrets(r, [{ role: 'table', name: 'Empty', grid: [['ACCOUNT NO']] }]);
+    expect(r.piiLiterals()).toHaveLength(0);
+  });
+});

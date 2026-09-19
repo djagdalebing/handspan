@@ -1,30 +1,30 @@
-{"seq":0,"at":"2026-09-19T03:04:02.943Z","runId":"replay-20260919-030402-4rld","type":"run.start","data":{"mode":"replay","capability":"meridian.member.savings-balance","version":"1.1.0","approval":"approved","inputs":["memberId"]}}
-{"seq":1,"at":"2026-09-19T03:04:03.452Z","runId":"replay-20260919-030402-4rld","type":"observe","data":{"url":"about:blank","title":"","nodes":0}}
-{"seq":2,"at":"2026-09-19T03:04:03.457Z","runId":"replay-20260919-030402-4rld","type":"policy.decision","data":{"url":"http://127.0.0.1:4311/","decision":"allow"}}
-{"seq":3,"at":"2026-09-19T03:04:03.458Z","runId":"replay-20260919-030402-4rld","type":"step.start","data":{"stepId":"s00","intent":"Open MERIDIAN Core Member Services at its entry point","kind":"navigate","risk":"safe","attempt":1}}
-{"seq":4,"at":"2026-09-19T03:04:03.460Z","runId":"replay-20260919-030402-4rld","type":"policy.decision","data":{"url":"http://127.0.0.1:4311/","decision":"allow"}}
-{"seq":5,"at":"2026-09-19T03:04:03.991Z","runId":"replay-20260919-030402-4rld","type":"observe","data":{"url":"http://127.0.0.1:4311/","title":"MERIDIAN CORE :: Sign On","nodes":3}}
-{"seq":6,"at":"2026-09-19T03:04:03.995Z","runId":"replay-20260919-030402-4rld","type":"step.end","data":{"stepId":"s00","ok":true}}
-{"seq":7,"at":"2026-09-19T03:04:04.004Z","runId":"replay-20260919-030402-4rld","type":"observe","data":{"url":"http://127.0.0.1:4311/","title":"MERIDIAN CORE :: Sign On","nodes":3}}
-{"seq":8,"at":"2026-09-19T03:04:04.007Z","runId":"replay-20260919-030402-4rld","type":"step.start","data":{"stepId":"s01","intent":"Enter the operator ID on the sign-on screen","kind":"type","risk":"safe","target":"textbox \"Operator ID\"","resolved":"Operator ID","attempt":1}}
-{"seq":9,"at":"2026-09-19T03:04:04.090Z","runId":"replay-20260919-030402-4rld","type":"observe","data":{"url":"http://127.0.0.1:4311/","title":"MERIDIAN CORE :: Sign On","nodes":3}}
-{"seq":10,"at":"2026-09-19T03:04:04.092Z","runId":"replay-20260919-030402-4rld","type":"step.end","data":{"stepId":"s01","ok":true}}
-{"seq":11,"at":"2026-09-19T03:04:04.098Z","runId":"replay-20260919-030402-4rld","type":"observe","data":{"url":"http://127.0.0.1:4311/","title":"MERIDIAN CORE :: Sign On","nodes":3}}
-{"seq":12,"at":"2026-09-19T03:04:04.100Z","runId":"replay-20260919-030402-4rld","type":"step.start","data":{"stepId":"s02","intent":"Enter the operator password on the sign-on screen","kind":"type","risk":"safe","target":"textbox \"Password\"","resolved":"Password","attempt":1}}
-{"seq":13,"at":"2026-09-19T03:04:04.178Z","runId":"replay-20260919-030402-4rld","type":"observe","data":{"url":"http://127.0.0.1:4311/","title":"MERIDIAN CORE :: Sign On","nodes":3}}
-{"seq":14,"at":"2026-09-19T03:04:04.181Z","runId":"replay-20260919-030402-4rld","type":"step.end","data":{"stepId":"s02","ok":true}}
-{"seq":15,"at":"2026-09-19T03:04:04.186Z","runId":"replay-20260919-030402-4rld","type":"observe","data":{"url":"http://127.0.0.1:4311/","title":"MERIDIAN CORE :: Sign On","nodes":3}}
-{"seq":16,"at":"2026-09-19T03:04:04.188Z","runId":"replay-20260919-030402-4rld","type":"step.start","data":{"stepId":"s03","intent":"Submit the sign-on form","kind":"click","risk":"safe","target":"button \"Sign On\"","resolved":"Sign On","attempt":1}}
-{"seq":17,"at":"2026-09-19T03:04:04.814Z","runId":"replay-20260919-030402-4rld","type":"observe","data":{"url":"http://127.0.0.1:4311/desk","title":"MERIDIAN Core :: Desk","nodes":5}}
-{"seq":18,"at":"2026-09-19T03:04:04.819Z","runId":"replay-20260919-030402-4rld","type":"step.end","data":{"stepId":"s03","ok":true}}
-{"seq":19,"at":"2026-09-19T03:04:04.830Z","runId":"replay-20260919-030402-4rld","type":"observe","data":{"url":"http://127.0.0.1:4311/desk","title":"MERIDIAN Core :: Desk","nodes":5}}
-{"seq":20,"at":"2026-09-19T03:04:04.833Z","runId":"replay-20260919-030402-4rld","type":"step.start","data":{"stepId":"s04","intent":"Enter the member number into the inquiry form","kind":"type","risk":"safe","target":"textbox \"Member Number\"","resolved":"Member Number","attempt":1}}
-{"seq":21,"at":"2026-09-19T03:04:04.886Z","runId":"replay-20260919-030402-4rld","type":"observe","data":{"url":"http://127.0.0.1:4311/desk","title":"MERIDIAN Core :: Desk","nodes":5}}
-{"seq":22,"at":"2026-09-19T03:04:04.889Z","runId":"replay-20260919-030402-4rld","type":"step.end","data":{"stepId":"s04","ok":true}}
-{"seq":23,"at":"2026-09-19T03:04:04.901Z","runId":"replay-20260919-030402-4rld","type":"observe","data":{"url":"http://127.0.0.1:4311/desk","title":"MERIDIAN Core :: Desk","nodes":5}}
-{"seq":24,"at":"2026-09-19T03:04:04.904Z","runId":"replay-20260919-030402-4rld","type":"step.start","data":{"stepId":"s05","intent":"Run the member search","kind":"click","risk":"safe","target":"button \"Search\"","resolved":"Search","attempt":1}}
-{"seq":25,"at":"2026-09-19T03:04:05.503Z","runId":"replay-20260919-030402-4rld","type":"observe","data":{"url":"http://127.0.0.1:4311/desk","title":"MERIDIAN Core :: Desk","nodes":10}}
-{"seq":26,"at":"2026-09-19T03:04:05.507Z","runId":"replay-20260919-030402-4rld","type":"step.end","data":{"stepId":"s05","ok":true}}
-{"seq":27,"at":"2026-09-19T03:04:05.522Z","runId":"replay-20260919-030402-4rld","type":"observe","data":{"url":"http://127.0.0.1:4311/desk","title":"MERIDIAN Core :: Desk","nodes":10}}
-{"seq":28,"at":"2026-09-19T03:04:05.570Z","runId":"replay-20260919-030402-4rld","type":"note","data":{"evidence":"028-checkpoint-ok.png","label":"checkpoint-ok"}}
-{"seq":29,"at":"2026-09-19T03:04:05.573Z","runId":"replay-20260919-030402-4rld","type":"run.end","data":{"status":"success","outputs":{"memberName":"«memberName#d7a5fc»","accountStatus":"ACTIVE","savingsBalance":4812.55}}}
+{"seq":0,"at":"2026-09-19T07:18:25.642Z","runId":"replay-20260919-071825-n7g8","type":"run.start","data":{"mode":"replay","capability":"meridian.member.savings-balance","version":"1.1.0","approval":"approved","inputs":["memberId"]}}
+{"seq":1,"at":"2026-09-19T07:18:26.151Z","runId":"replay-20260919-071825-n7g8","type":"observe","data":{"url":"about:blank","title":"","nodes":0}}
+{"seq":2,"at":"2026-09-19T07:18:26.156Z","runId":"replay-20260919-071825-n7g8","type":"policy.decision","data":{"url":"http://127.0.0.1:4311/","decision":"allow"}}
+{"seq":3,"at":"2026-09-19T07:18:26.159Z","runId":"replay-20260919-071825-n7g8","type":"step.start","data":{"stepId":"s00","intent":"Open MERIDIAN Core Member Services at its entry point","kind":"navigate","risk":"safe","attempt":1}}
+{"seq":4,"at":"2026-09-19T07:18:26.162Z","runId":"replay-20260919-071825-n7g8","type":"policy.decision","data":{"url":"http://127.0.0.1:4311/","decision":"allow"}}
+{"seq":5,"at":"2026-09-19T07:18:26.698Z","runId":"replay-20260919-071825-n7g8","type":"observe","data":{"url":"http://127.0.0.1:4311/","title":"MERIDIAN CORE :: Sign On","nodes":3}}
+{"seq":6,"at":"2026-09-19T07:18:26.704Z","runId":"replay-20260919-071825-n7g8","type":"step.end","data":{"stepId":"s00","ok":true}}
+{"seq":7,"at":"2026-09-19T07:18:26.715Z","runId":"replay-20260919-071825-n7g8","type":"observe","data":{"url":"http://127.0.0.1:4311/","title":"MERIDIAN CORE :: Sign On","nodes":3}}
+{"seq":8,"at":"2026-09-19T07:18:26.718Z","runId":"replay-20260919-071825-n7g8","type":"step.start","data":{"stepId":"s01","intent":"Enter the operator ID on the sign-on screen","kind":"type","risk":"safe","target":"textbox \"Operator ID\"","resolved":"Operator ID","attempt":1}}
+{"seq":9,"at":"2026-09-19T07:18:26.812Z","runId":"replay-20260919-071825-n7g8","type":"observe","data":{"url":"http://127.0.0.1:4311/","title":"MERIDIAN CORE :: Sign On","nodes":3}}
+{"seq":10,"at":"2026-09-19T07:18:26.816Z","runId":"replay-20260919-071825-n7g8","type":"step.end","data":{"stepId":"s01","ok":true}}
+{"seq":11,"at":"2026-09-19T07:18:26.821Z","runId":"replay-20260919-071825-n7g8","type":"observe","data":{"url":"http://127.0.0.1:4311/","title":"MERIDIAN CORE :: Sign On","nodes":3}}
+{"seq":12,"at":"2026-09-19T07:18:26.824Z","runId":"replay-20260919-071825-n7g8","type":"step.start","data":{"stepId":"s02","intent":"Enter the operator password on the sign-on screen","kind":"type","risk":"safe","target":"textbox \"Password\"","resolved":"Password","attempt":1}}
+{"seq":13,"at":"2026-09-19T07:18:26.885Z","runId":"replay-20260919-071825-n7g8","type":"observe","data":{"url":"http://127.0.0.1:4311/","title":"MERIDIAN CORE :: Sign On","nodes":3}}
+{"seq":14,"at":"2026-09-19T07:18:26.888Z","runId":"replay-20260919-071825-n7g8","type":"step.end","data":{"stepId":"s02","ok":true}}
+{"seq":15,"at":"2026-09-19T07:18:26.895Z","runId":"replay-20260919-071825-n7g8","type":"observe","data":{"url":"http://127.0.0.1:4311/","title":"MERIDIAN CORE :: Sign On","nodes":3}}
+{"seq":16,"at":"2026-09-19T07:18:26.898Z","runId":"replay-20260919-071825-n7g8","type":"step.start","data":{"stepId":"s03","intent":"Submit the sign-on form","kind":"click","risk":"safe","target":"button \"Sign On\"","resolved":"Sign On","attempt":1}}
+{"seq":17,"at":"2026-09-19T07:18:27.535Z","runId":"replay-20260919-071825-n7g8","type":"observe","data":{"url":"http://127.0.0.1:4311/desk","title":"MERIDIAN Core :: Desk","nodes":5}}
+{"seq":18,"at":"2026-09-19T07:18:27.540Z","runId":"replay-20260919-071825-n7g8","type":"step.end","data":{"stepId":"s03","ok":true}}
+{"seq":19,"at":"2026-09-19T07:18:27.555Z","runId":"replay-20260919-071825-n7g8","type":"observe","data":{"url":"http://127.0.0.1:4311/desk","title":"MERIDIAN Core :: Desk","nodes":5}}
+{"seq":20,"at":"2026-09-19T07:18:27.559Z","runId":"replay-20260919-071825-n7g8","type":"step.start","data":{"stepId":"s04","intent":"Enter the member number into the inquiry form","kind":"type","risk":"safe","target":"textbox \"Member Number\"","resolved":"Member Number","attempt":1}}
+{"seq":21,"at":"2026-09-19T07:18:27.621Z","runId":"replay-20260919-071825-n7g8","type":"observe","data":{"url":"http://127.0.0.1:4311/desk","title":"MERIDIAN Core :: Desk","nodes":5}}
+{"seq":22,"at":"2026-09-19T07:18:27.626Z","runId":"replay-20260919-071825-n7g8","type":"step.end","data":{"stepId":"s04","ok":true}}
+{"seq":23,"at":"2026-09-19T07:18:27.638Z","runId":"replay-20260919-071825-n7g8","type":"observe","data":{"url":"http://127.0.0.1:4311/desk","title":"MERIDIAN Core :: Desk","nodes":5}}
+{"seq":24,"at":"2026-09-19T07:18:27.641Z","runId":"replay-20260919-071825-n7g8","type":"step.start","data":{"stepId":"s05","intent":"Run the member search","kind":"click","risk":"safe","target":"button \"Search\"","resolved":"Search","attempt":1}}
+{"seq":25,"at":"2026-09-19T07:18:28.236Z","runId":"replay-20260919-071825-n7g8","type":"observe","data":{"url":"http://127.0.0.1:4311/desk","title":"MERIDIAN Core :: Desk","nodes":10}}
+{"seq":26,"at":"2026-09-19T07:18:28.240Z","runId":"replay-20260919-071825-n7g8","type":"step.end","data":{"stepId":"s05","ok":true}}
+{"seq":27,"at":"2026-09-19T07:18:28.251Z","runId":"replay-20260919-071825-n7g8","type":"observe","data":{"url":"http://127.0.0.1:4311/desk","title":"MERIDIAN Core :: Desk","nodes":10}}
+{"seq":28,"at":"2026-09-19T07:18:28.282Z","runId":"replay-20260919-071825-n7g8","type":"note","data":{"evidence":"028-checkpoint-ok.png","label":"checkpoint-ok"}}
+{"seq":29,"at":"2026-09-19T07:18:28.284Z","runId":"replay-20260919-071825-n7g8","type":"run.end","data":{"status":"success","outputs":{"memberName":"«memberName#f1aa11»","accountStatus":"ACTIVE","savingsBalance":4812.55}}}
