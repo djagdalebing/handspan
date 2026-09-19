@@ -17,6 +17,7 @@ import { EnvCredentialProvider } from '../src/safety/credentials.js';
 import { RunLog, newRunId } from '../src/observability/run-log.js';
 import { SessionControl } from '../src/escalation/control.js';
 import { applyOverlay, findCapability } from '../src/artifact/store.js';
+import { readFileSync } from 'node:fs';
 import { zOverlay } from '../src/artifact/schema.js';
 
 const PORT = 4399;
@@ -204,4 +205,91 @@ describe('observing immediately after a click', () => {
     expect(after.text).toContain('MEMBER DETAIL');
     expect(after.nodes.some((n) => n.role === 'button' && n.name === 'Search')).toBe(false);
   }, 60_000);
+});
+
+/**
+ * Two ways an *approved* artifact reached data or an instance it should not,
+ * both found by review rather than by these tests, and both closed here.
+ */
+describe('what an approved capability may reach', () => {
+  /**
+   * Sensitivity was classified from the artifact's *matcher*. A `contains`
+   * label is something a tenant may legitimately reword, and
+   * `outputs[].source.label` is on the overlay allow-list with no re-review,
+   * so `"N (last 4)"` matched the `SSN (last 4)` readout while missing the
+   * sensitive-label list. The output was declared `internal`, so the value
+   * went to the calling agent and into result.json in clear.
+   */
+  it('classifies an output by the label on screen, not the one in the patch', async () => {
+    const cap = capability();
+    const status = cap.outputs.find((o) => o.name === 'accountStatus');
+    expect(status?.source.from).toBe('readout');
+    expect(status?.sensitivity).toBe('internal');
+    if (status?.source.from === 'readout') status.source.label.value = 'N (last 4)';
+
+    const r = await engine().run(cap, { memberId: '12345' });
+    expect(r.status).toBe('success');
+    if (r.status !== 'success') return;
+
+    // It read the SSN readout — the relabel matches — but the value the caller
+    // receives is a pseudonym, and the result says which output under-declared.
+    expect(String(r.outputs.accountStatus)).toMatch(/^«accountStatus#[0-9a-f]+»$/);
+    expect(r.underDeclared).toContain('accountStatus');
+  }, 90_000);
+
+  // The same output, unpatched, must not be swept up by the above.
+  it('leaves an ordinary business field in clear', async () => {
+    const r = await engine().run(capability(), { memberId: '12345' });
+    if (r.status === 'success') expect(r.outputs.accountStatus).toBe('ACTIVE');
+  }, 90_000);
+
+  /**
+   * A nested capability ran under its *own* declared origins, discarding the
+   * caller's. A capability overlaid onto one tenant hit SESSION_EXPIRED, ran
+   * the shared sign-on capability, and signed on to the instance that
+   * capability happened to be recorded against — reporting success.
+   */
+  it('confines a nested capability to the origins its caller was confined to', async () => {
+    const cap = capability();
+    const signon = findCapability('meridian.session.signon', '1.0.0');
+    if (!signon) throw new Error('meridian.session.signon@1.0.0 is not recorded');
+
+    // The caller may reach only this test's instance; the sub-capability
+    // declares the reference instance on 4311.
+    expect(cap.policy.allowedOrigins).toEqual([ORIGIN]);
+    expect(signon.policy.allowedOrigins).not.toContain(ORIGIN);
+
+    cap.interstitials = [{
+      code: 'COMPOSE',
+      description: 'runs a capability recorded against another instance',
+      when: { type: 'textMatches', value: { mode: 'contains', value: 'MERIDIAN', caseSensitive: false } },
+      do: [{ kind: 'run_capability', capability: 'meridian.session.signon', version: '1.0.0', inputs: {} }],
+      maxOccurrences: 1,
+      restartFlow: false,
+      escalateOnFailure: false,
+      verified: false,
+    }];
+
+    const redactor = new Redactor();
+    const runId = newRunId('replay');
+    const log = new RunLog(runId, redactor, 'evidence/.test');
+    const r = await new ReplayEngine({
+      runId, surface, log, redactor,
+      // The deployment permits both instances and the sub-capability declares
+      // 4311, so the only thing that can refuse is the caller's confinement.
+      policy: Policy.from({ allowedOrigins: [ORIGIN, 'http://127.0.0.1:4311'] }),
+      credentials: new EnvCredentialProvider(),
+      control: new SessionControl(runId),
+      allowEscalation: false,
+      riskyActions: 'escalate',
+      requireApproval: true,
+      resolveCapability: (id, v) => findCapability(id, v),
+    }).run(cap, { memberId: '12345' });
+
+    // The deployment permits 4311 and the sub-capability declares it; the only
+    // thing refusing is the caller's own confinement.
+    const events = readFileSync(`${log.dir}/events.jsonl`, 'utf8');
+    expect(events).toMatch(/none of which its caller is permitted/);
+    expect(r.status).not.toBe('success');
+  }, 120_000);
 });

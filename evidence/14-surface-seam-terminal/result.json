@@ -1,11 +1,11 @@
 {
-  "runId": "replay-20260918-234551-b862",
+  "runId": "replay-20260919-020419-u59c",
   "capability": {
     "id": "meridian.member.savings-balance",
     "version": "1.1.0"
   },
-  "startedAt": "2026-09-18T23:45:51.338Z",
-  "durationMs": 68,
+  "startedAt": "2026-09-19T02:04:19.289Z",
+  "durationMs": 51,
   "stepsExecuted": 6,
   "evidenceDir": "evidence/14-surface-seam-terminal",
   "recoveries": [],

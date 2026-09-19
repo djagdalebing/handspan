@@ -19,6 +19,18 @@ export interface ExtractionResult {
   values: Record<string, string | number | boolean>;
   missing: string[];
   notes: string[];
+  /**
+   * Per output, the label the value was *actually* read from — the readout's
+   * accessible name, the resolved control's name, the real column headers.
+   *
+   * This exists because sensitivity classification cannot be allowed to key
+   * off the artifact's *matcher*. A `contains` label is a pattern a tenant
+   * overlay may legitimately reword, and picking a substring that hits the
+   * regulated readout while missing the sensitive-label list turned an
+   * approved overlay into an exfiltration channel. What is on the screen is
+   * not something the overlay gets a vote on.
+   */
+  matchedLabels: Record<string, string>;
 }
 
 export function extractOutputs(
@@ -29,9 +41,14 @@ export function extractOutputs(
   const values: Record<string, string | number | boolean> = {};
   const missing: string[] = [];
   const notes: string[] = [];
+  const matchedLabels: Record<string, string> = {};
 
   for (const out of outputs) {
-    const raw = readOne(out, obs, bindings, notes);
+    const read = readOne(out, obs, bindings, notes);
+    const raw = read?.value;
+    // Recorded even when the value is unusable: the label is what decides how
+    // the value is treated, and a coercion failure still logs the raw string.
+    if (read?.label) matchedLabels[out.name] = read.label;
     if (raw === undefined || raw === '') {
       if (out.required) missing.push(out.name);
       continue;
@@ -46,16 +63,22 @@ export function extractOutputs(
     values[out.name] = coerced;
   }
 
-  return { values, missing, notes };
+  return { values, missing, notes, matchedLabels };
 }
 
-function readOne(out: Output, obs: Observation, bindings: Bindings, notes: string[]): string | undefined {
+/** A value and the on-screen label it came from. */
+interface Read {
+  value: string | undefined;
+  label?: string;
+}
+
+function readOne(out: Output, obs: Observation, bindings: Bindings, notes: string[]): Read | undefined {
   const src = out.source;
   switch (src.from) {
     case 'readout': {
       const hit = obs.nodes.find((n) => n.role === 'readout' && labelMatches(n.name, src.label, bindings));
       if (!hit) notes.push(`output "${out.name}": no readout labelled "${src.label.value}"`);
-      return hit?.value;
+      return { value: hit?.value, label: hit?.name };
     }
 
     case 'table': {
@@ -69,7 +92,16 @@ function readOne(out: Output, obs: Observation, bindings: Bindings, notes: strin
         const selIdx = header.findIndex((h) => norm(h) === norm(src.selectColumn));
         if (whereIdx < 0 || selIdx < 0) continue;
         for (const row of grid.slice(1)) {
-          if (matches(row[whereIdx] ?? '', src.whereEquals, bindings)) return row[selIdx];
+          if (matches(row[whereIdx] ?? '', src.whereEquals, bindings)) {
+            // The header as the grid prints it, not as the artifact spells it.
+            //
+            // The *selected* column only. Including the table's own name swept
+            // up "Member Accounts" and classified the share balance — the one
+            // number these capabilities exist to return — as regulated. The
+            // column a value sits under is what names that value; the table
+            // around it names a screen.
+            return { value: row[selIdx], label: header[selIdx] ?? '' };
+          }
         }
       }
       notes.push(
@@ -90,7 +122,9 @@ function readOne(out: Output, obs: Observation, bindings: Bindings, notes: strin
       }
       const m = obs.text.match(re);
       if (!m) notes.push(`output "${out.name}": pattern did not match page text`);
-      return m?.[src.group];
+      // A raw text match has no label. There is nothing to report, and that
+      // absence is why the pattern and the value itself both get classified.
+      return { value: m?.[src.group] };
     }
 
     case 'node': {
@@ -99,7 +133,10 @@ function readOne(out: Output, obs: Observation, bindings: Bindings, notes: strin
         notes.push(`output "${out.name}": target ${r.reason}`);
         return undefined;
       }
-      return src.attr === 'name' ? r.node.name : r.node.value;
+      return {
+        value: src.attr === 'name' ? r.node.name : r.node.value,
+        label: r.node.name,
+      };
     }
   }
 }

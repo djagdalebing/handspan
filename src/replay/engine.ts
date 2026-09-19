@@ -79,7 +79,12 @@ export class ReplayEngine {
     return this._lastObservation;
   }
 
-  constructor(private o: ReplayOptions) {}
+  /**
+   * Origins the *calling* capability was confined to, when this engine is
+   * running a nested one. A composed capability may narrow what it can reach;
+   * it may never widen it.
+   */
+  constructor(private o: ReplayOptions, private inheritedOrigins: string[] | null = null) {}
 
   async run(cap: Capability, rawInputs: Record<string, unknown>, depth = 0): Promise<ReplayResult> {
     const startedAt = this.startedAt;
@@ -247,9 +252,35 @@ export class ReplayEngine {
 
       // -- outputs --------------------------------------------------------
       const extraction = extractOutputs(cap.outputs, finalObs, bindings);
+      const underDeclared: string[] = [];
       for (const out of cap.outputs) {
         const value = String(extraction.values[out.name] ?? '');
-        this.o.redactor.register(value, effectiveSensitivity(out, value, this.o.redactor), out.name);
+        const effective = effectiveSensitivity(
+          out, value, this.o.redactor, extraction.matchedLabels[out.name]
+        );
+        this.o.redactor.register(value, effective, out.name);
+
+        // Registering the value redacts the log. It does not protect the
+        // *caller's* copy, which is the channel the relabel attack actually
+        // used: an output declared `internal` was handed the SSN verbatim
+        // while the evidence file dutifully showed a pseudonym.
+        //
+        // An output declared `pii` is returned in clear on purpose — a
+        // reviewer approved a caller seeing it, and it is visible as `pii` in
+        // the catalog. An output that turns out to read more than it declared
+        // gets the pseudonym, because nobody approved that.
+        if (effective !== out.sensitivity && (effective === 'pii' || effective === 'secret')) {
+          underDeclared.push(out.name);
+          if (extraction.values[out.name] !== undefined) {
+            extraction.values[out.name] = this.o.redactor.string(value);
+          }
+        }
+      }
+      if (underDeclared.length > 0) {
+        this.o.log.event('note', {
+          message: 'outputs read a more sensitive field than they declare; values pseudonymised for the caller',
+          outputs: underDeclared,
+        });
       }
       if (extraction.missing.length > 0) {
         const dump = this.o.log.dumpObservation(finalObs, 'output-missing');
@@ -263,7 +294,12 @@ export class ReplayEngine {
 
       await this.o.log.screenshot(this.o.surface, 'checkpoint-ok');
       this.o.log.event('run.end', { status: 'success', outputs: extraction.values });
-      return { ...base(), status: 'success', outputs: extraction.values };
+      return {
+        ...base(),
+        status: 'success',
+        outputs: extraction.values,
+        ...(underDeclared.length > 0 ? { underDeclared } : {}),
+      };
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e);
       const shot = await this.o.log.screenshot(this.o.surface, 'surface-error').catch(() => null);
@@ -651,7 +687,11 @@ export class ReplayEngine {
     // schema permits it, which is enough.
     for (const out of outcome.outputs) {
       const value = String(extraction.values[out.name] ?? '');
-      this.o.redactor.register(value, effectiveSensitivity(out, value, this.o.redactor), out.name);
+      this.o.redactor.register(
+        value,
+        effectiveSensitivity(out, value, this.o.redactor, extraction.matchedLabels[out.name]),
+        out.name
+      );
     }
     const shot = await this.o.log.screenshot(this.o.surface, `outcome-${outcome.code}`);
     this.o.log.event('outcome.detected', {
@@ -867,12 +907,49 @@ export class ReplayEngine {
   }
 
   /**
+   * What this capability may actually reach: its own declared origins, narrowed
+   * by whatever its caller was confined to.
+   *
+   * Without the narrowing, composition was a way out of a tenant. A capability
+   * overlaid onto Northgate's instance would hit `SESSION_EXPIRED`, run the
+   * shared sign-on capability, and that capability's own declaration — the
+   * Meridian instance it happened to be recorded against — replaced the
+   * caller's. The session typed a Northgate operator's credential into another
+   * tenant's application and the run reported success.
+   *
+   * An empty intersection denies everything, which is the right answer: it
+   * means a composed capability recorded elsewhere has not been repointed at
+   * this tenant, and guessing which origin was meant is exactly the decision a
+   * deployment owns.
+   */
+  private effectiveOrigins(cap: Capability): string[] {
+    const own = cap.policy.allowedOrigins;
+    if (!this.inheritedOrigins) return own;
+    return own.filter((o) => this.inheritedOrigins!.includes(o));
+  }
+
+  /**
    * The single place a URL is authorised. Returns a reason when the navigation
-   * must not happen: the deployment allowlist and the capability's own
-   * declared origins, intersected.
+   * must not happen: the deployment allowlist, the capability's own declared
+   * origins, and — when this is a nested capability — the origins its caller
+   * was confined to, all intersected.
    */
   private denyNavigation(cap: Capability, url: string): string | null {
-    const reason = denyLocation(this.o.policy, cap.policy.allowedOrigins, url);
+    const effective = this.effectiveOrigins(cap);
+    let reason = denyLocation(this.o.policy, effective, url);
+
+    // Otherwise the refusal reads "this capability declares no permitted
+    // origins" about a capability that declares several — true of the
+    // intersection, misleading about the artifact an operator will go and
+    // read. Say which narrowing emptied it.
+    if (reason && effective.length === 0 && cap.policy.allowedOrigins.length > 0) {
+      reason =
+        `${url} is refused: ${cap.id}@${cap.version} declares ` +
+        `${cap.policy.allowedOrigins.join(', ')}, none of which its caller is permitted ` +
+        `(${(this.inheritedOrigins ?? []).join(', ') || 'none'}). A composed capability ` +
+        `recorded against another instance has to be repointed at this tenant.`;
+    }
+
     this.o.log.event('policy.decision', reason ? { url, decision: 'deny', reason } : { url, decision: 'allow' });
     return reason;
   }
@@ -937,7 +1014,7 @@ export class ReplayEngine {
         // A composed capability is held to the same approval bar as the one
         // that called it; inheriting `false` here would have made composition
         // a way around the gate.
-        const r = await new ReplayEngine(this.o)
+        const r = await new ReplayEngine(this.o, this.effectiveOrigins(cap))
           .run(sub, interpolateDeep(action.inputs, bindings), depth + 1);
         return r.status === 'success'
           ? { ok: true }
@@ -1028,8 +1105,23 @@ export class ReplayEngine {
  * regulated field, the value is treated as PII whatever the artifact says.
  * Declaration can raise the classification; it cannot lower it below what the
  * label implies.
+ *
+ * Which label, though, is the whole question. Classifying on the artifact's
+ * *matcher* left the channel open: a `contains` label is a pattern a tenant
+ * may reword legitimately, `outputs[].source.label` is on the overlay
+ * allow-list and needs no re-review, and a patch to `"N (last 4)"` matches the
+ * `SSN (last 4)` readout while missing the sensitive-label list entirely. An
+ * approved overlay then returned an SSN to the calling agent under an output
+ * declared `internal`. So the label that decides is the one the *screen* used,
+ * reported back by the extractor; the matcher is consulted too, since either
+ * naming a regulated field is enough.
  */
-function effectiveSensitivity(out: Output, value?: string, redactor?: Redactor): Sensitivity {
+function effectiveSensitivity(
+  out: Output,
+  value?: string,
+  redactor?: Redactor,
+  matchedLabel?: string
+): Sensitivity {
   if (out.sensitivity === 'secret' || out.sensitivity === 'pii') return out.sensitivity;
 
   const src = out.source;
@@ -1041,7 +1133,11 @@ function effectiveSensitivity(out: Output, value?: string, redactor?: Redactor):
     // the closest thing it has to one, so classify on that too.
     : src.from === 'text' ? src.pattern
     : '';
-  if (looksSensitive(`${out.name} ${label}`)) return 'pii';
+  // `matchedLabel` is the label the value was actually read from, which no
+  // overlay can choose; `label` is the artifact's matcher, which one can.
+  // Both are consulted, because either naming a regulated field is enough and
+  // neither can lower the other.
+  if (looksSensitive(`${out.name} ${label} ${matchedLabel ?? ''}`)) return 'pii';
 
   // The only line that does not depend on a label existing: ask whether the
   // value itself looks like regulated data.

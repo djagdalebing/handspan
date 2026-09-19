@@ -64,6 +64,14 @@ export interface ResultBase {
 export interface SuccessResult extends ResultBase {
   status: 'success';
   outputs: Record<string, string | number | boolean>;
+  /**
+   * Outputs whose declared sensitivity was lower than what the screen they
+   * were read from implies. Their values are pseudonymised in `outputs`, and
+   * naming them here is what tells the caller why it received a token instead
+   * of a value: the artifact under-declares what it reads, and a reviewer
+   * needs to either raise the declaration or drop the output.
+   */
+  underDeclared?: string[];
 }
 
 export interface BusinessOutcomeResult extends ResultBase {

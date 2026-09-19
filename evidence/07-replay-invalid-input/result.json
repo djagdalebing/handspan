@@ -1,11 +1,11 @@
 {
-  "runId": "replay-20260918-234334-by0n",
+  "runId": "replay-20260919-020206-mvdl",
   "capability": {
     "id": "meridian.member.savings-balance",
     "version": "1.1.0"
   },
-  "startedAt": "2026-09-18T23:43:34.662Z",
-  "durationMs": 2,
+  "startedAt": "2026-09-19T02:02:06.193Z",
+  "durationMs": 1,
   "stepsExecuted": 0,
   "evidenceDir": "evidence/07-replay-invalid-input",
   "recoveries": [],

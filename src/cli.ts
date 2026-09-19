@@ -454,7 +454,13 @@ async function cmdReplay(args: Args, mode: 'replay' | 'invoke'): Promise<number>
 
 function agentView(r: Awaited<ReturnType<ReplayEngine['run']>>): Record<string, unknown> {
   switch (r.status) {
-    case 'success': return { status: r.status, outputs: r.outputs };
+    case 'success': return {
+      status: r.status,
+      outputs: r.outputs,
+      // A caller handed a pseudonym has to be told why, or it will treat the
+      // token as the value.
+      ...(r.underDeclared ? { underDeclared: r.underDeclared } : {}),
+    };
     case 'business_outcome': return { status: r.status, code: r.code, message: r.message, outputs: r.outputs };
     case 'needs_human': return { status: r.status, escalationId: r.escalationId, reason: r.reason };
     case 'failure': return { status: r.status, failure: r.failure };
@@ -467,6 +473,12 @@ function printResult(r: Awaited<ReturnType<ReplayEngine['run']>>): void {
 
   if (r.status === 'success') {
     for (const [k, v] of Object.entries(r.outputs)) process.stdout.write(`    ${k} = ${JSON.stringify(v)}\n`);
+    if (r.underDeclared?.length) {
+      process.stdout.write(
+        `    ! ${r.underDeclared.join(', ')} read a regulated field while declared otherwise; ` +
+        `pseudonymised — raise the declaration or drop the output\n`
+      );
+    }
   }
   if (r.status === 'business_outcome') {
     process.stdout.write(`    code: ${r.code}\n    ${r.message}\n`);

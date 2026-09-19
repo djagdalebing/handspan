@@ -187,8 +187,17 @@ Human actions are recorded, typed *content* only as a character count.
 
 **The allowlist is the hard boundary**, enforced by one function every *replay*
 navigation passes through — step, recovery handler, nested capability, operator
-console, any surface — as the intersection of the deployment's policy and the
-capability's declared origins. Discovery checks the deployment policy alone,
+console, any surface — as the intersection of the deployment's policy, the
+capability's declared origins, and, for a nested capability, the origins its
+caller was confined to. That last term was missing, and its absence made
+composition a way out of a tenant: a capability overlaid onto one institution
+hit `SESSION_EXPIRED`, ran the shared sign-on capability, and *that* artifact's
+declaration — the instance it happened to be recorded against — replaced the
+caller's. A session bound to one credit union typed its operator's credential
+into another's application and the run reported success. A composed capability
+may narrow what it can reach; it may never widen it, and an empty intersection
+denies everything rather than guessing which origin was meant.
+Discovery checks the deployment policy alone,
 because the capability whose origins would form the other half does not exist
 yet; the entry point's origin bounds the operator instead. It lived only in the engine for a while, so the
 console was checked against the deployment policy alone; in the target
@@ -226,6 +235,19 @@ question to be answered rather than proving the answer. Making it a control
 means signed overlays, which is a real gap and not something a required string
 papers over. Recovery actions are risk-gated too, and a composed
 `run_capability` is version-pinned.
+
+The allow-list closed the channel and opened a narrower one, which is the more
+interesting failure. Classification of an output's sensitivity keyed off the
+artifact's *matcher*, and `outputs[].source.label` is a `contains` pattern a
+tenant may reword legitimately — so `"N (last 4)"` matched the `SSN (last 4)`
+readout, missed the sensitive-label list, and an approved overlay returned an
+SSN to the calling agent under an output declared `internal`. The label that
+decides is now the one the *screen* used, reported back by the extractor,
+because a tenant gets no vote on what the application prints. And since
+registering a value only ever protected the log, an output that reads more than
+it declares now hands the *caller* a pseudonym too, with `underDeclared` naming
+it — an output declared `pii` is still returned in clear, because a reviewer
+approved that and the catalog shows it.
 
 Irreversible actions **escalate rather than block**: in back-office banking the
 irreversible step is usually the entire point, and a system that refuses to post
