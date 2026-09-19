@@ -152,6 +152,15 @@ npx tsx src/cli.ts replay meridian.member.savings-balance@1.1.0 --input memberId
 
 ### Human handoff
 
+The console requires a token on every endpoint, reads included. Set one for the
+session so the run and the operator share it — without `HS_OPERATOR_TOKEN` the
+broker generates a token and prints it with the console URL, which is fine for
+the browser but leaves the scripted operator below with no way to authenticate:
+
+```bash
+export HS_OPERATOR_TOKEN=demo-operator-token
+```
+
 Start a replay of the capability that posts an irreversible transaction. It
 stops at the posting step and prints a console URL:
 
@@ -160,18 +169,23 @@ npx tsx src/cli.ts replay meridian.member.open-sub-account --input memberId=1234
   --input accountType="VACATION CLUB" --input openingDeposit=50.00
 ```
 
-Open `http://127.0.0.1:4312/` in a browser, click into the intervention, press
-**Take control**, and you are driving the same live session the automation was
-using — clicking on the screenshot clicks the real page. Then either
-**Resume automation**, **I finished it**, or **Abort run**.
+Open the printed URL in a browser, click into the intervention, press **Take
+control**, and you are driving the same live session the automation was using —
+clicking on the screenshot clicks the real page. Then either **Resume
+automation**, **I finished it**, or **Abort run**.
 
-To see it without a browser, a scripted operator does the same thing through
-the same HTTP endpoints:
+To see it without a browser, a scripted operator does the same thing through the
+same HTTP endpoints. Start it *before* the replay above, in the same shell, so it
+is waiting when the intervention is raised:
 
 ```bash
 npx tsx scripts/operator-demo.ts --disposition resume &     # approve and hand back
 npx tsx scripts/operator-demo.ts --takeover &               # post it manually, then hand back
 ```
+
+Both read `HS_OPERATOR_TOKEN` from the environment. Without it they get 401s,
+never see the queue, and the replay waits out its escalation timeout and returns
+`needs_human`.
 
 ### Discovery and replay on a completely different surface
 
