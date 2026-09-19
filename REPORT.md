@@ -234,7 +234,9 @@ them differently, but require `conditionsReviewedBy` to be filled in. That is a
 question to be answered rather than proving the answer. Making it a control
 means signed overlays, which is a real gap and not something a required string
 papers over. Recovery actions are risk-gated too, and a composed
-`run_capability` is version-pinned.
+`run_capability` must name the version it runs — the pin was optional, which
+made it a convention while this sentence called it a rule, and an unpinned
+reference silently resolves to whatever is newest on disk.
 
 The allow-list closed the channel and opened a narrower one, which is the more
 interesting failure. Classification of an output's sensitivity keyed off the
@@ -247,20 +249,37 @@ because a tenant gets no vote on what the application prints. And since
 registering a value only ever protected the log, an output that reads more than
 it declares now hands the *caller* a pseudonym too, with `underDeclared` naming
 it — an output declared `pii` is still returned in clear, because a reviewer
-approved that and the catalog shows it.
+approved that and the catalog shows it, `returns: {memberName: string [pii], …}`.
+That last clause was written before it was true: the catalog carried type and
+description only, so an agent had no way to know it had been handed regulated
+data. The same mechanism found a real over-reach of its own — the account number
+a sub-account capability exists to return was pseudonymised to its caller, since
+"New Account Number" is a regulated label and the artifact said `internal`. The
+artifact was wrong, and declaring it is the fix; over-classifying a field costs a
+caller its answer, which is not obviously better than the leak.
 
 Irreversible actions **escalate rather than block**: in back-office banking the
 irreversible step is usually the entire point, and a system that refuses to post
 anything is not safe, it is useless, and it gets routed around.
 
-Secrets are referenced by name and never written anywhere, and a password
-field's value is never *perceived*, so it cannot reach a prompt, a log or an
-artifact by any route. Everything describing the screen is redacted before it
-leaves the process: masking a screenshot while shipping the same data as text in
-the same request is a costume, not a control, and that is how this shipped. The
-parameters block is deliberately not redacted — the model must type the member
-number to do the task, which is this design's irreducible disclosure and the
-reason the production answer is a model inside the boundary. Regulated fields
+Secrets are referenced by name and never written anywhere, and on the web
+surface a password field's value is never *perceived*, so it cannot reach a
+prompt, a log or an artifact by that route. On the terminal surface that is a
+property of the host echoing asterisks, not of the driver, which is a real gap
+rather than a claim.
+
+Anything that renders a whole screen registers the regulated fields on it first,
+by their own labels, so they are scrubbed from the node list and the page text
+together: masking a screenshot while shipping the same data as text in the same
+request is a costume, not a control, and that is how this shipped. That check
+lived in the evidence writer and nowhere else for a while, so the local dump was
+careful while the *model prompt* — built from the same observation and sent to a
+third party — carried the member's name in clear under a label this codebase's
+own classifier calls regulated. It is one function now, used by both. It remains
+label-based, so a regulated value under an unhelpful label still depends on the
+pattern sweep. The parameters block is deliberately not redacted — the model must
+type the member number to do the task, which is this design's irreducible
+disclosure and the reason the production answer is a model inside the boundary. Regulated fields
 are identified by label, covering both spellings one arrives in (`Member Name`,
 `memberName`) and the bare person-words this domain uses. PII becomes a pseudonym
 salted per process — unsalted, four hex characters over a five-digit member

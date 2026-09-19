@@ -185,6 +185,35 @@ export class Redactor {
   }
 }
 
+/**
+ * Register every value on a screen whose own label names regulated data.
+ *
+ * The redactor knows the values it was *told* about — this capability's
+ * declared parameters and outputs. A screen carries far more: a member detail
+ * page shows a name, an address and a date of birth whether or not the flow
+ * declared them. Anything that renders a whole observation has to protect
+ * itself using the one thing it does know, which is the field's own label.
+ *
+ * This existed inline in the evidence writer and nowhere else, so the local
+ * dump was careful while the *model prompt* — built from the same observation
+ * and sent to a third party — shipped `Member Name: RIVERA, DANA Q` in clear.
+ * The label classifier belongs wherever a screen leaves the process, so it
+ * lives here and both callers use it.
+ *
+ * Values are registered, not blanked: registration scrubs them from the node
+ * list, from the page text, and from anything else in the same payload, and
+ * leaves the same pseudonym each time so a screen stays readable.
+ */
+export function registerScreenSecrets(redactor: Redactor, nodes: Array<{ role: string; name: string; value?: string }>): void {
+  for (const node of nodes) {
+    // Every role with a value, not just readouts: a filled-in textbox under a
+    // regulated label holds the same data the readout beside it does.
+    if (!node.value || node.value === '«set»') continue;
+    if (!looksSensitive(node.name)) continue;
+    redactor.register(node.value, 'pii', node.name.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '').toLowerCase());
+  }
+}
+
 /** Unsalted, for pattern hits only: these are values we were never told about. */
 function hash(v: string): string {
   return createHash('sha256').update(v).digest('hex').slice(0, 6);

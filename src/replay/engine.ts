@@ -271,8 +271,14 @@ export class ReplayEngine {
         // gets the pseudonym, because nobody approved that.
         if (effective !== out.sensitivity && (effective === 'pii' || effective === 'secret')) {
           underDeclared.push(out.name);
-          if (extraction.values[out.name] !== undefined) {
+          const current = extraction.values[out.name];
+          if (typeof current === 'string') {
             extraction.values[out.name] = this.o.redactor.string(value);
+          } else if (current !== undefined) {
+            // A pseudonym is a string. Putting one where the artifact promised
+            // a number breaks the contract the caller programs against, so the
+            // output is withheld instead and `underDeclared` says which.
+            delete extraction.values[out.name];
           }
         }
       }

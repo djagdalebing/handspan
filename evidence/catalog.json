@@ -45,7 +45,8 @@
       },
       "newAccountNumber": {
         "type": "string",
-        "description": "The account number assigned to the new sub-account."
+        "description": "The account number assigned to the new sub-account. Declared PII: it is an account number, so it is pseudonymised in logs and evidence — but returning it is the point of this capability, and a reviewer has approved the caller receiving it.",
+        "sensitivity": "pii"
       }
     },
     "outcomes": [
@@ -97,7 +98,8 @@
     "returns": {
       "memberName": {
         "type": "string",
-        "description": "The member's name as held on the core."
+        "description": "The member's name as held on the core.",
+        "sensitivity": "pii"
       },
       "accountStatus": {
         "type": "string",
@@ -105,7 +107,8 @@
       },
       "ssnLast4": {
         "type": "string",
-        "description": "Last four digits of the member's SSN."
+        "description": "Last four digits of the member's SSN.",
+        "sensitivity": "pii"
       },
       "savingsBalance": {
         "type": "number",
@@ -156,7 +159,8 @@
     "returns": {
       "memberName": {
         "type": "string",
-        "description": "The member's name as held on the core."
+        "description": "The member's name as held on the core.",
+        "sensitivity": "pii"
       },
       "accountStatus": {
         "type": "string",
@@ -235,7 +239,8 @@
     "returns": {
       "memberName": {
         "type": "string",
-        "description": "The member's name as held on the core."
+        "description": "The member's name as held on the core.",
+        "sensitivity": "pii"
       },
       "accountStatus": {
         "type": "string",

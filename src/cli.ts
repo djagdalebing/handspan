@@ -526,7 +526,8 @@ function cmdCatalog(args: Args): number {
     const args_ = Object.entries(e.inputSchema.properties)
       .map(([k, v]) => `${k}: ${v.type}${e.inputSchema.required.includes(k) ? '' : '?'}`);
     process.stdout.write(`    args:    (${args_.join(', ')})\n`);
-    const rets = Object.entries(e.returns).map(([k, v]) => `${k}: ${v.type}`);
+    const rets = Object.entries(e.returns)
+      .map(([k, v]) => `${k}: ${v.type}${v.sensitivity ? ` [${v.sensitivity}]` : ''}`);
     process.stdout.write(`    returns: {${rets.join(', ')}}\n`);
     if (e.outcomes.length) {
       process.stdout.write(`    outcomes the caller must handle: ${e.outcomes.map((o) => o.code).join(', ')}\n`);

@@ -1,11 +1,11 @@
 {
-  "runId": "replay-20260919-020201-mvg8",
+  "runId": "replay-20260919-030424-np5e",
   "capability": {
     "id": "meridian.member.savings-balance",
     "version": "1.1.0"
   },
-  "startedAt": "2026-09-19T02:02:02.072Z",
-  "durationMs": 2543,
+  "startedAt": "2026-09-19T03:04:25.047Z",
+  "durationMs": 2636,
   "stepsExecuted": 6,
   "evidenceDir": "evidence/06-replay-app-error",
   "recoveries": [],

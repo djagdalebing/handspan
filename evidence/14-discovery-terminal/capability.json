@@ -20,7 +20,7 @@
       "description": "The member number to look up.",
       "sensitivity": "pii",
       "pattern": "^[0-9]{5}$",
-      "example": "«memberId#7e6282»"
+      "example": "«member_number#c24481»"
     }
   ],
   "outputs": [
@@ -330,10 +330,10 @@
     "s05": "11da983e"
   },
   "provenance": {
-    "recordedAt": "2026-09-19T02:03:14.194Z",
+    "recordedAt": "2026-09-19T03:05:42.755Z",
     "recordedBy": "llm",
     "model": "scripted",
-    "discoveryRunId": "discover-«card#571d77»5exi",
-    "goal": "Sign on at the terminal, look up member «memberId#7e6282», and reach the member detail screen showing their share savings balance."
+    "discoveryRunId": "discover-«card#5b64f6»g3cj",
+    "goal": "Sign on at the terminal, look up member «member_number#c24481», and reach the member detail screen showing their share savings balance."
   }
 }

@@ -279,6 +279,25 @@ describe('agent-facing catalog', () => {
     expect(e.outcomes.map((o) => o.code)).toEqual(['MEMBER_NOT_FOUND']);
   });
 
+  /**
+   * The replay contract returns a `pii` output to the caller in clear on the
+   * grounds that a reviewer approved it and the caller can see it here. The
+   * catalog emitted type and description only, so an agent had no way to know
+   * it had been handed regulated data.
+   */
+  it('tells the caller which returned values are regulated', () => {
+    const cap = base();
+    const balance = cap.outputs.find((o) => o.name === 'balance');
+    if (balance) balance.sensitivity = 'pii';
+    const e = toCatalogEntry(cap);
+    expect(e.returns.balance?.sensitivity).toBe('pii');
+  });
+
+  // Marking every ordinary field `internal` in the signature is noise.
+  it('says nothing about an ordinary business field', () => {
+    expect(toCatalogEntry(base()).returns.balance?.sensitivity).toBeUndefined();
+  });
+
   // The agent has no business knowing about frames, locators or step order.
   it('does not leak the mechanics of the flow to the caller', () => {
     const json = JSON.stringify(toCatalogEntry(base()));

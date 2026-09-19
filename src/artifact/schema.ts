@@ -197,10 +197,13 @@ export const zStepAction = z.union([
      * happens to be, so dropping a new `signon@1.1.0` into the directory
      * silently changes what an approved, reviewed, fingerprinted artifact
      * does — with no drift signal, because fingerprints track the perceived
-     * screen and not the composition graph. Optional for readability of
-     * hand-written artifacts; the recorder always writes it.
+     * screen and not the composition graph.
+     *
+     * It was optional "for readability of hand-written artifacts", which made
+     * the pin a convention rather than a rule while the write-up called
+     * composition version-pinned. The reason above is a reason to require it.
      */
-    version: z.string().regex(/^\d+\.\d+\.\d+$/).optional(),
+    version: z.string().regex(/^\d+\.\d+\.\d+$/),
     inputs: z.record(z.string()).default({}),
   }),
 ]);

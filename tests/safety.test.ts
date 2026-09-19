@@ -4,7 +4,7 @@ import { writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { denyLocation, Policy } from '../src/safety/policy.js';
-import { Redactor, looksSensitive } from '../src/safety/redact.js';
+import { Redactor, looksSensitive, registerScreenSecrets } from '../src/safety/redact.js';
 import { EnvCredentialProvider } from '../src/safety/credentials.js';
 
 const policy = Policy.from({
@@ -282,5 +282,64 @@ describe('caller-supplied configuration', () => {
   it('still refuses it on replay, and refuses --overlay only to a calling agent', () => {
     expect(run(['replay', 'x', '--policy', wide]).err).toMatch(/--policy is refused/);
     expect(run(['invoke', 'x', '--overlay', wide]).err).toMatch(/--overlay/);
+  });
+});
+
+describe('declared origins are compared as origins', () => {
+  /**
+   * The deployment allowlist always compared origins; this half of the
+   * intersection used `url.startsWith(origin)`, which makes a declared origin
+   * a prefix filter. Both cases below passed.
+   */
+  const declared = ['http://127.0.0.1:4311'];
+  const wide = Policy.from({ allowedOrigins: ['http://127.0.0.1:4311', 'http://127.0.0.1:43110'] });
+
+  it('refuses a port that merely starts with a declared one', () => {
+    expect(denyLocation(wide, declared, 'http://127.0.0.1:43110/app/home')).toBeTruthy();
+  });
+
+  it('refuses a host that merely starts with a declared one', () => {
+    const p = Policy.from({ allowedOrigins: ['https://bank.example.com', 'https://bank.example.com.evil.net'] });
+    expect(denyLocation(p, ['https://bank.example.com'], 'https://bank.example.com.evil.net/x')).toBeTruthy();
+  });
+
+  it('still permits the declared origin, with or without a trailing slash', () => {
+    expect(denyLocation(wide, declared, 'http://127.0.0.1:4311/app/home')).toBeNull();
+    expect(denyLocation(wide, ['http://127.0.0.1:4311/'], 'http://127.0.0.1:4311/app/home')).toBeNull();
+  });
+});
+
+describe('a screen registers its own regulated fields', () => {
+  /**
+   * This check lived in the evidence writer only, so the local dump was careful
+   * while the model prompt — same observation, third party — was not.
+   */
+  const screen = [
+    { role: 'readout', name: 'Member Name:', value: 'RIVERA, DANA Q' },
+    { role: 'readout', name: 'Home Branch:', value: 'EASTGATE 004' },
+    { role: 'textbox', name: 'Mailing Address', value: '18 Larkspur Ln' },
+    { role: 'textbox', name: 'Password', value: '«set»' },
+  ];
+
+  it('scrubs a regulated value out of anything rendered from the screen', () => {
+    const r = new Redactor();
+    registerScreenSecrets(r, screen);
+    const rendered = r.string('FIELDS DISPLAYED:\n  Member Name: RIVERA, DANA Q\n  Home Branch: EASTGATE 004');
+    expect(rendered).not.toContain('RIVERA');
+    expect(rendered).toMatch(/«member_name#[0-9a-f]+»/);
+    // A branch is not regulated, and a screen stripped of everything is useless.
+    expect(rendered).toContain('EASTGATE 004');
+  });
+
+  it('covers a filled-in field, not only a readout', () => {
+    const r = new Redactor();
+    registerScreenSecrets(r, screen);
+    expect(r.string('18 Larkspur Ln')).not.toContain('Larkspur');
+  });
+
+  it('does not register the placeholder a password field perceives', () => {
+    const r = new Redactor();
+    registerScreenSecrets(r, screen);
+    expect(r.string('«set»')).toBe('«set»');
   });
 });

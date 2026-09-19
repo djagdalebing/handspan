@@ -20,7 +20,7 @@ import type { Observation, Surface, UiNode } from '../surface/types.js';
 import type { LiveControl } from '../surface/web/playwright-surface.js';
 import type { ModelProvider, Part } from '../llm/provider.js';
 import type { RunLog } from '../observability/run-log.js';
-import type { Redactor } from '../safety/redact.js';
+import { registerScreenSecrets, type Redactor } from '../safety/redact.js';
 import type { CredentialProvider } from '../safety/credentials.js';
 import { Policy } from '../safety/policy.js';
 import { SessionControl } from '../escalation/control.js';
@@ -127,6 +127,13 @@ export async function runDiscovery(o: DiscoveryOptions): Promise<DiscoveryOutcom
 
     obs = await o.surface.observe();
     o.log.event('observe', { step, url: obs.url, nodes: obs.nodes.length });
+
+    // Before anything renders this screen — for the prompt, for the log, for
+    // the history line. The prompt is the only place data leaves the process
+    // entirely, and it was the one place this was not done: the member's name
+    // went to the model in clear under a label this codebase's own classifier
+    // calls regulated, while the evidence file beside it was careful.
+    registerScreenSecrets(o.redactor, obs.nodes);
 
     if (pending) {
       pending.turn.result = describeChange(pending.before, obs);
@@ -419,7 +426,9 @@ async function summarize(
       ...o.paramDecls.map((p) => `  ${p.name} = ${JSON.stringify(o.params[p.name] ?? '')}`),
       '',
       'FINAL SCREEN:',
-      o.redactor.string(renderObservation(finalObs)),
+      // The summarise call ships a whole screen too, and it is the screen most
+      // likely to be a detail page full of regulated fields.
+      (registerScreenSecrets(o.redactor, finalObs.nodes), o.redactor.string(renderObservation(finalObs))),
     ].join('\n'),
   }];
 

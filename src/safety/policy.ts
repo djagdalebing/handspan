@@ -109,12 +109,40 @@ const RANK: Record<Risk, number> = { safe: 0, mutating: 1, irreversible: 2 };
 export function denyLocation(policy: Policy, declaredOrigins: string[], url: string): string | null {
   const check = policy.checkUrl(url);
   if (check.decision === 'deny') return check.reason;
-  if (!declaredOrigins.some((o) => url.startsWith(o))) {
+
+  // Compare origins, not string prefixes. `startsWith` made the declared
+  // origin a prefix filter, so `http://host:43110` passed against a declared
+  // `http://host:4311`, and `https://bank.example.com.evil.net/` against
+  // `https://bank.example.com`. The deployment allowlist above already
+  // compares origins; this half of the intersection did not.
+  let here: string;
+  try {
+    here = originOf(new URL(url));
+  } catch {
+    return `not a valid location: ${url}`;
+  }
+  if (!declaredOrigins.some((o) => sameOrigin(o, here))) {
     return declaredOrigins.length === 0
       ? `${url} is refused: this capability declares no permitted origins`
       : `${url} is outside the origins this capability declares (${declaredOrigins.join(', ')})`;
   }
   return null;
+}
+
+/**
+ * Whether a declared origin names the same origin as a perceived one.
+ *
+ * Declarations are written by hand and by overlay, so they arrive with and
+ * without a trailing slash and occasionally as a whole URL. Normalising both
+ * sides through the same parser is what keeps the comparison an origin
+ * comparison rather than a string one.
+ */
+function sameOrigin(declared: string, here: string): boolean {
+  try {
+    return originOf(new URL(declared)) === here;
+  } catch {
+    return declared.replace(/\/+$/, '') === here;
+  }
 }
 
 export function originOf(u: URL): string {

@@ -29,8 +29,11 @@ let surface: WebSurface;
 beforeAll(async () => {
   process.env.HS_SECRET_MERIDIAN_OPERATOR_ID = 'demo';
   process.env.HS_SECRET_MERIDIAN_OPERATOR_PASSWORD = 'demo';
-  server = await new Promise<Server>((resolve) => {
+  server = await new Promise<Server>((resolve, reject) => {
+    // Without the error handler an occupied port produces six tests failing on
+    // an unrelated error page 40s apart, which is a bad half-hour. Say it once.
     const s = targetApp.listen(PORT, () => resolve(s));
+    s.on('error', (e) => reject(new Error(`cannot start the test app on ${PORT}: ${e.message}`)));
   });
   surface = await WebSurface.launch('e2e', { headless: true });
 }, 60_000);

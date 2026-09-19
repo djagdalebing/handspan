@@ -17,7 +17,7 @@
 import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Observation, Surface } from '../surface/types.js';
-import { looksSensitive, Redactor } from '../safety/redact.js';
+import { registerScreenSecrets, Redactor } from '../safety/redact.js';
 
 export type EventType =
   | 'run.start' | 'run.end'
@@ -98,12 +98,7 @@ export class RunLog {
    * before writing so they are scrubbed from the node list *and* the page text.
    */
   dumpObservation(obs: Observation, label: string): string {
-    for (const node of obs.nodes) {
-      if (node.role !== 'readout' || !node.value) continue;
-      if (looksSensitive(node.name)) {
-        this.redactor.register(node.value, 'pii', slug(node.name).replace(/-/g, '_'));
-      }
-    }
+    registerScreenSecrets(this.redactor, obs.nodes);
     const name = `${String(this.seq).padStart(3, '0')}-${slug(label)}.observation.json`;
     const payload = this.redactor.value({
       url: obs.url,

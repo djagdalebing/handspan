@@ -16,7 +16,7 @@
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { parseCapability, parseOverlay, type Capability, type Overlay } from './schema.js';
+import { parseCapability, parseOverlay, type Capability, type Overlay, type Sensitivity } from './schema.js';
 
 export const CAPABILITY_DIR = process.env.HS_CAPABILITY_DIR ?? 'capabilities';
 
@@ -395,7 +395,14 @@ export interface CatalogEntry {
     properties: Record<string, { type: string; description: string; enum?: string[]; pattern?: string }>;
     required: string[];
   };
-  returns: Record<string, { type: string; description: string }>;
+  /**
+   * `sensitivity` is carried because the replay contract leans on it: an output
+   * declared `pii` is returned to the caller in clear on the grounds that a
+   * reviewer approved that and the caller can see it here. That was asserted
+   * before it was true — the catalog emitted type and description only — which
+   * left an agent no way to know it had been handed regulated data.
+   */
+  returns: Record<string, { type: string; description: string; sensitivity?: Sensitivity }>;
   /**
    * Only *business* outcomes. A recognised application failure comes back as
    * `status: "failure"`, so listing it here as something the caller handles
@@ -417,7 +424,13 @@ export function toCatalogEntry(cap: Capability): CatalogEntry {
     };
   }
   const returns: CatalogEntry['returns'] = {};
-  for (const o of cap.outputs) returns[o.name] = { type: o.type, description: o.description };
+  for (const o of cap.outputs) {
+    returns[o.name] = {
+      type: o.type,
+      description: o.description,
+      ...(o.sensitivity !== 'internal' ? { sensitivity: o.sensitivity } : {}),
+    };
+  }
 
   return {
     name: cap.id,

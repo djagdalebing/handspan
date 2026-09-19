@@ -208,7 +208,7 @@ npx tsx src/cli.ts invoke meridian.member.savings-balance@1.1.0 --input memberId
 
 ```bash
 ./scripts/capture-evidence.sh    # regenerates /evidence from scratch
-npm test                         # 191 tests, incl. end-to-end against both surfaces
+npm test                         # 199 tests, incl. end-to-end against both surfaces
 npm run typecheck
 ```
 

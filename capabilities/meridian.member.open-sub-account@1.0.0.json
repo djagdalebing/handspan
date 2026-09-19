@@ -65,7 +65,7 @@
     {
       "name": "newAccountNumber",
       "type": "string",
-      "description": "The account number assigned to the new sub-account.",
+      "description": "The account number assigned to the new sub-account. Declared PII: it is an account number, so it is pseudonymised in logs and evidence — but returning it is the point of this capability, and a reviewer has approved the caller receiving it.",
       "source": {
         "from": "readout",
         "label": {
@@ -76,7 +76,7 @@
       },
       "transform": "trim",
       "required": true,
-      "sensitivity": "internal"
+      "sensitivity": "pii"
     }
   ],
   "preconditions": [],
